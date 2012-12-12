@@ -1,10 +1,11 @@
 /*--------------------------------------------------------------------
   Arduino library to control a wide variety of WS2811-based RGB LED
-  devices.  Currently handles 400 and 800 KHz bitstreams on both 8 MHz
-  and 16 MHz ATmega MCUs, with LEDs wired for RGB or GRB color order.
-  8 MHz MCUs provide output on PORTB and PORTD, while 16 MHz chips can
-  handle most output pins (possible exception with some of the upper
-  PORT registers on the Arduino Mega).
+  devices such as Adafruit FLORA RGB Smart Pixels.  Currently handles
+  400 and 800 KHz bitstreams on both 8 MHz and 16 MHz ATmega MCUs,
+  with LEDs wired for RGB or GRB color order.  8 MHz MCUs provide
+  output on PORTB and PORTD, while 16 MHz chips can handle most output
+  pins (possible exception with some of the upper PORT registers on
+  the Arduino Mega).
 
   WILL NOT COMPILE OR WORK ON ARDUINO DUE.  Uses inline assembly.
 
@@ -32,7 +33,7 @@
   <http://www.gnu.org/licenses/>.
   --------------------------------------------------------------------*/
 
-#include "Adafruit_Adafruit_NeoPixel.h"
+#include "Adafruit_NeoPixel.h"
 
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) {
   numBytes = n * 3;
@@ -88,7 +89,7 @@ void Adafruit_NeoPixel::show(void) {
 
   cli(); // Disable interrupts; need 100% focus on instruction timing
 
-#if (F_CPU == 8000000UL) // FLORA, Arduino Pro 8 MHz, etc.
+#if (F_CPU == 8000000UL) // FLORA, Lilypad, Arduino Pro 8 MHz, etc.
 
   if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
 
@@ -105,8 +106,8 @@ void Adafruit_NeoPixel::show(void) {
     // duplicate the else and loop and change the PORT.  Each add'l
     // PORT will require about 150(ish) bytes of program space.
 
-    // 10 instruction clocks per bit: HHxxxxxxLL
-    // OUT instructions:              ^ ^     ^
+    // 10 instruction clocks per bit: HHxxxxxLLL
+    // OUT instructions:              ^ ^    ^
 
     if(port == &PORTD) {
 
@@ -320,13 +321,13 @@ void Adafruit_NeoPixel::show(void) {
       "nop\n\t"            // 1    nop
       "lsr  %4\n\t"        // 1    bit >>= 1 (T = 28)
       "brne nextbit40\n\t" // 1-2  if(bit == 0)
-       "ldi  %4, 0x80\n\t" // 1     bit = 0x80
-       "sbiw %7, 1\n\t"    // 2     i--      (T = 32)
-       "st   %a0, %3\n\t"  // 2     PORT = lo
-       "breq done40\n\t"   // 1-2   if(i)
-       "nop\n\t"           // 1
-       "ld %5, %a6+\n\t"   // 2      b = *ptr++
-       "rjmp head40\n\t"   // 2     -> head (T = 40)
+      "ldi  %4, 0x80\n\t"  // 1     bit = 0x80
+      "sbiw %7, 1\n\t"     // 2     i--      (T = 32)
+      "st   %a0, %3\n\t"   // 2     PORT = lo
+      "breq done40\n\t"    // 1-2   if(i)
+      "nop\n\t"            // 1
+      "ld %5, %a6+\n\t"    // 2      b = *ptr++
+      "rjmp head40\n\t"    // 2     -> head (T = 40)
      "nextbit40:\n\t"
       "mul  r0, r0\n\t"    // 2    nop nop (balance sbiw, T=32)
       "st   %a0, %3\n\t"   // 2    PORT = lo
@@ -355,8 +356,8 @@ void Adafruit_NeoPixel::show(void) {
   // This bizarre floating 'else' is intentional.  Only one of the above
   // blocks is actually compiled (depending on CPU speed), each with one
   // specific 'if' case for pixel speed.  This block now handles the
-  // commonalternate case for either: 800 KHz pixels w/16 MHz CPU clock,
-  // or 400 KHz pixels w/8 MHz CPU.  Instruction timing is the same.
+  // common alternate case for either: 800 KHz pixels w/16 MHz CPU, or
+  // 400 KHz pixels w/8 MHz CPU.  Instruction timing is the same.
   else {
 
     // 20 inst. clocks per bit: HHHHxxxxxxxxxxxxLLLL
@@ -369,8 +370,11 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     if(b & 0x80) next = hi;
 
-    // Unrolled...couldn't *quite* fit it in a nested loop like above.
-    // Close though, might revisit later.
+    // This assembly code makes me throw up in my mouth a little.
+    // The timing is all rock solid and good, but it's unrolled and
+    // bulky because I couldn't *quite* achieve the timing in a
+    // nested loop like above.  There's a little wiggle room in the
+    // '1' bit duty cycle, so might revisit this later.
     asm volatile(
      "head20:\n\t"        // Clk  Pseudocode
       // Bit 7
@@ -500,7 +504,8 @@ void Adafruit_NeoPixel::show(void) {
 }
 
 // Set pixel color from separate R,G,B components:
-void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
+void Adafruit_NeoPixel::setPixelColor(
+ uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
   if(n < numLEDs) {
     uint8_t *p = &pixels[n * 3];
     if((type & NEO_COLMASK) == NEO_GRB) { *p++ = g; *p++ = r; }

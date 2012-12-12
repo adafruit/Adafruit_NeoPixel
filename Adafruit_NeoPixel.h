@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------
-  This file is part of the NeoPixel library.
+  This file is part of the Adafruit NeoPixel library.
 
   NeoPixel is free software: you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
@@ -31,12 +31,12 @@
 #define NEO_KHZ800  0x02 // 800 KHz datastream
 #define NEO_SPDMASK 0x02
 
-class NeoPixel {
+class Adafruit_NeoPixel {
 
  public:
 
   // Constructor: number of LEDs, pin number, LED type
-  NeoPixel(uint16_t n, uint8_t p = 6, uint8_t t = NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, uint8_t t=NEO_GRB + NEO_KHZ800);
 
   void
     begin(void),
