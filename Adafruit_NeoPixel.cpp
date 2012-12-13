@@ -289,59 +289,61 @@ void Adafruit_NeoPixel::show(void) {
   if((type & NEO_SPDMASK) == NEO_KHZ400) { // 400 KHz bitstream
 
     // The 400 KHz clock on 16 MHz MCU is the most 'relaxed' version.
-    // Unrolling the inner loop for each bit is not necessary...but
-    // getting the timing right does involve some loop shenanigans.
+    // Unrolling the inner loop for each bit is not necessary.
 
     // 40 inst. clocks per bit: HHHHHHHHxxxxxxxxxxxxxxxxxxxxxxxxLLLLLLLL
     // ST instructions:         ^       ^                       ^
 
     volatile uint8_t next, bit;
 
-    hi  = *port |  pinMask;
-    lo  = hi    & ~pinMask;
-    bit = 0x80;
+    hi   = *port |  pinMask;
+    lo   = hi    & ~pinMask;
+    next = lo;
+    bit  = 8;
 
     asm volatile(
-     "head40:\n\t"         // Clk  Pseudocode
-      "st   %a0, %1\n\t"   // 2    PORT = hi
-      "mov  %2, %3\n\t"    // 1    next = lo
-      "rol  %5\n\t"        // 1    b <<= 1
-      "brcc .+2\n\t"       // 1-2  if(b & 0x80) before shift
-       "mov %2, %1\n\t"    // 0-1   next = hi
-      "mul  r0, r0\n\t"    // 2    nop nop   (T = 8)
-      "st   %a0, %2\n\t"   // 2    PORT = next
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop   (T = 16)
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop   (T = 24)
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "nop\n\t"            // 1    nop
-      "lsr  %4\n\t"        // 1    bit >>= 1 (T = 28)
+     "head40:\n\t"         // Clk  Pseudocode    (T =  0)
+      "st   %a0, %1\n\t"   // 2    PORT = hi     (T =  2)
+      "sbrc %2, 7\n\t"     // 1-2  if(b & 128)
+       "mov  %4, %1\n\t"   // 0-1   next = hi    (T =  4)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T =  6)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T =  8)
+      "st   %a0, %4\n\t"   // 2    PORT = next   (T = 10)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 12)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 14)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 16)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 18)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 20)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 22)
+      "nop\n\t"            // 1    nop           (T = 23)
+      "mov  %4, %5\n\t"    // 1    next = lo     (T = 24)
+      "dec  %3\n\t"        // 1    bit--         (T = 25)
       "brne nextbit40\n\t" // 1-2  if(bit == 0)
-      "ldi  %4, 0x80\n\t"  // 1     bit = 0x80
-      "sbiw %7, 1\n\t"     // 2     i--      (T = 32)
-      "st   %a0, %3\n\t"   // 2     PORT = lo
-      "breq done40\n\t"    // 1-2   if(i)
-      "nop\n\t"            // 1
-      "ld %5, %a6+\n\t"    // 2      b = *ptr++
-      "rjmp head40\n\t"    // 2     -> head (T = 40)
-     "nextbit40:\n\t"
-      "mul  r0, r0\n\t"    // 2    nop nop (balance sbiw, T=32)
-      "st   %a0, %3\n\t"   // 2    PORT = lo
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "mul  r0, r0\n\t"    // 2    nop nop
-      "rjmp head40\n\t"    // 2    -> head   (T = 40)
+      "ldi  %3, 8\n\t"     // 1     bit = 8      (T = 27)
+      "ld   %2, %a6+\n\t"  // 2     b = *ptr++   (T = 29)
+      "sbiw %7, 1\n\t"     // 2     i--          (T = 31)
+      "nop\n\t"            // 1     nop          (T = 32)
+      "st   %a0, %5\n\t"   // 2     PORT = lo    (T = 34)
+      "breq done40\n\t"    // 1-2   if(i == 0) -> done40
+      "nop\n\t"            // 1     nop          (T = 36)
+      "mul  r0, r0\n\n"    // 2     nop nop      (T = 38)
+      "rjmp head40\n\t"    // 2     -> head40 (next byte)
+     "nextbit40:\n\t"      //                    (T = 27)
+      "rol  %2\n\t"        // 1    b <<= 1       (T = 28)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 30)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 32)
+      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 34)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 36)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 38)
+      "rjmp head40\n\t"    // 2    -> head40 (next bit out)
      "done40:\n\t"
       ::
       "e" (port),          // %a0
       "r" (hi),            // %1
-      "r" (next),          // %2
-      "r" (lo),            // %3
-      "r" (bit),           // %4
-      "r" (b),             // %5
+      "r" (b),             // %2
+      "r" (bit),           // %3
+      "r" (next),          // %4
+      "r" (lo),            // %5
       "e" (ptr),           // %a6
       "w" (i)              // %7
     ); // end asm
@@ -360,142 +362,54 @@ void Adafruit_NeoPixel::show(void) {
   // 400 KHz pixels w/8 MHz CPU.  Instruction timing is the same.
   else {
 
+    // Can use nested loop; no need for unrolling.  Very similar to
+    // 16MHz/400KHz code above, but with fewer NOPs and different end.
+
     // 20 inst. clocks per bit: HHHHxxxxxxxxxxxxLLLL
     // ST instructions:         ^   ^           ^
 
-    volatile uint8_t next;
+    volatile uint8_t next, bit;
 
     hi   = *port |  pinMask;
     lo   = hi    & ~pinMask;
     next = lo;
-    if(b & 0x80) next = hi;
+    bit  = 8;
 
-    // This assembly code makes me throw up in my mouth a little.
-    // The timing is all rock solid and good, but it's unrolled and
-    // bulky because I couldn't *quite* achieve the timing in a
-    // nested loop like above.  There's a little wiggle room in the
-    // '1' bit duty cycle, so might revisit this later.
     asm volatile(
-     "head20:\n\t"        // Clk  Pseudocode
-      // Bit 7
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 6\n\t"    // 1-2  if(b & 0x40)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 6
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 5\n\t"    // 1-2  if(b & 0x20)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 5
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 4\n\t"    // 1-2  if(b & 0x10)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 4
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 3\n\t"    // 1-2  if(b & 0x08)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 3
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 2\n\t"    // 1-2  if(b & 0x04)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 2
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 1\n\t"    // 1-2  if(b & 0x02)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 1
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "nop\n\t"           // 1    nop
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 8)
-      "sbrc %4, 0\n\t"    // 1-2  if(b & 0x01)
-       "mov  %2, %1\n\t"  // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 12)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 20)
-      // Bit 0
-      "st   %a0, %1\n\t"  // 2    PORT = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 4)
-      "st   %a0, %2\n\t"  // 2    PORT = next
-      "subi %5, 1\n\t"    // 2    i--         (T = 8)
-      "breq done20\n\t"   // 1-2  if(!i) -> done
-      "nop\n\t"           // 1   nop
-      "ld   %4, %a6+\n\t" // 2   b = *ptr++
-      "mov  %2, %3\n\t"   // 1    next = lo   (T = 12)
-      "sbrc %4, 7\n\t"    // 1-2  if(b & 0x80)
-       "mov %2, %1\n\t"   // 0-1   next = hi
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo   (T = 18)
-      "rjmp head20\n\t"   // 2    -> head     (T = 20)
-     "done20:\n\t"        //                  (T = 10)
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop
-      "mul  r0, r0\n\t"   // 2    nop nop     (T = 16)
-      "st   %a0, %3\n\t"  // 2    PORT = lo   (T = 18)
+     "head20:\n\t"         // Clk  Pseudocode    (T =  0)
+      "st   %a0, %1\n\t"   // 2    PORT = hi     (T =  2)
+      "sbrc %2, 7\n\t"     // 1-2  if(b & 128)
+       "mov  %4, %1\n\t"   // 0-1   next = hi    (T =  4)
+      "st   %a0, %4\n\t"   // 2    PORT = next   (T =  6)
+      "mov  %4, %5\n\t"    // 1    next = lo     (T =  7)
+      "dec  %3\n\t"        // 1    bit--         (T =  8)
+      "brne nextbit20\n\t" // 1-2  if(bit == 0)
+      "ldi  %3, 8\n\t"     // 1     bit = 8      (T = 10)
+      "ld   %2, %a6+\n\t"  // 2     b = *ptr++   (T = 12)
+      "sbiw %7, 1\n\t"     // 2     i--          (T = 14)
+      "breq done20\n\t"    // 1-2   if(i == 0) -> done20
+      "nop\n\t"            // 1                  (T = 16)
+      "st   %a0, %5\n\t"   // 2     PORT = lo    (T = 18)
+      "rjmp head20\n\t"    // 2     -> head20 (next byte)
+     "nextbit20:\n\t"      //                    (T = 10)
+      "rol  %2\n\t"        // 1    b <<= 1       (T = 11)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 13)
+      "mul  r0, r0\n\n"    // 2    nop nop       (T = 15)
+      "nop\n\t"            // 1    nop           (T = 16)
+      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 18)
+      "rjmp head20\n\t"    // 2    -> head20 (next bit out)
+     "done20:\n\t"         //                    (T = 16)
+      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 18)
       ::
-      "e" (port),         // %a0
-      "r" (hi),           // %1
-      "r" (next),         // %2
-      "r" (lo),           // %3
-      "r" (b),            // %4
-      "w" (i),            // %5
-      "e" (ptr)           // %a6
-     ); // end asm
+      "e" (port),          // %a0
+      "r" (hi),            // %1
+      "r" (b),             // %2
+      "r" (bit),           // %3
+      "r" (next),          // %4
+      "r" (lo),            // %5
+      "e" (ptr),           // %a6
+      "w" (i)              // %7
+    ); // end asm
 
   } // end wacky else (see comment above)
 
