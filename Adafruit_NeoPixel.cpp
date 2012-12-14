@@ -78,11 +78,11 @@ void Adafruit_NeoPixel::show(void) {
 
   // In order to make this code runtime-configurable to work with
   // any pin, SBI/CBI instructions are eschewed in favor of full
-  // PORT writes via the OUT instruction.  It relies on two facts:
-  // that peripheral functions (such as PWM) take precedence on
-  // output pins, so our PORT-wide writes won't interfere, and that
-  // interrupts are globally disabled while data is being issued to
-  // the LEDs, so no other code will be accessing the PORT.  The
+  // PORT writes via the OUT or ST instructions.  It relies on two
+  // facts: that peripheral functions (such as PWM) take precedence
+  // on output pins, so our PORT-wide writes won't interfere, and
+  // that interrupts are globally disabled while data is being issued
+  // to the LEDs, so no other code will be accessing the PORT.  The
   // code takes an initial 'snapshot' of the PORT state, computes
   // 'pin high' and 'pin low' values, and writes these back to the
   // PORT register as needed.
@@ -302,40 +302,40 @@ void Adafruit_NeoPixel::show(void) {
     bit  = 8;
 
     asm volatile(
-     "head40:\n\t"         // Clk  Pseudocode    (T =  0)
-      "st   %a0, %1\n\t"   // 2    PORT = hi     (T =  2)
-      "sbrc %2, 7\n\t"     // 1-2  if(b & 128)
-       "mov  %4, %1\n\t"   // 0-1   next = hi    (T =  4)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T =  6)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T =  8)
-      "st   %a0, %4\n\t"   // 2    PORT = next   (T = 10)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 12)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 14)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 16)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 18)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 20)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 22)
-      "nop\n\t"            // 1    nop           (T = 23)
-      "mov  %4, %5\n\t"    // 1    next = lo     (T = 24)
-      "dec  %3\n\t"        // 1    bit--         (T = 25)
-      "brne nextbit40\n\t" // 1-2  if(bit == 0)
-      "ldi  %3, 8\n\t"     // 1     bit = 8      (T = 27)
-      "ld   %2, %a6+\n\t"  // 2     b = *ptr++   (T = 29)
-      "sbiw %7, 1\n\t"     // 2     i--          (T = 31)
-      "nop\n\t"            // 1     nop          (T = 32)
-      "st   %a0, %5\n\t"   // 2     PORT = lo    (T = 34)
-      "breq done40\n\t"    // 1-2   if(i == 0) -> done40
-      "nop\n\t"            // 1     nop          (T = 36)
-      "mul  r0, r0\n\n"    // 2     nop nop      (T = 38)
-      "rjmp head40\n\t"    // 2     -> head40 (next byte)
-     "nextbit40:\n\t"      //                    (T = 27)
-      "rol  %2\n\t"        // 1    b <<= 1       (T = 28)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 30)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 32)
-      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 34)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 36)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 38)
-      "rjmp head40\n\t"    // 2    -> head40 (next bit out)
+     "head40:\n\t"          // Clk  Pseudocode    (T =  0)
+      "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
+      "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
+       "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T =  6)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T =  8)
+      "st   %a0, %4\n\t"    // 2    PORT = next   (T = 10)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 12)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 14)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 16)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 18)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 20)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 22)
+      "nop\n\t"             // 1    nop           (T = 23)
+      "mov  %4, %5\n\t"     // 1    next = lo     (T = 24)
+      "dec  %3\n\t"         // 1    bit--         (T = 25)
+      "breq nextbyte40\n\t" // 1-2  if(bit == 0)
+      "rol  %2\n\t"         // 1    b <<= 1       (T = 27)
+      "nop\n\t"             // 1    nop           (T = 28)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 30)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 32)
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 36)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 38)
+      "rjmp head40\n\t"     // 2    -> head40 (next bit out)
+     "nextbyte40:\n\t"      //                    (T = 27)
+      "ldi  %3, 8\n\t"      // 1     bit = 8      (T = 28)
+      "ld   %2, %a6+\n\t"   // 2     b = *ptr++   (T = 30)
+      "sbiw %7, 1\n\t"      // 2     i--          (T = 32)
+      "st   %a0, %5\n\t"    // 2     PORT = lo    (T = 34)
+      "breq done40\n\t"     // 1-2   if(i == 0) -> done
+      "nop\n\t"             // 1     nop          (T = 36)
+      "mul  r0, r0\n\n"     // 2     nop nop      (T = 38)
+      "rjmp head40\n\t"     // 1-2   -> head40 (next byte)
      "done40:\n\t"
       ::
       "e" (port),          // %a0
@@ -376,30 +376,27 @@ void Adafruit_NeoPixel::show(void) {
     bit  = 8;
 
     asm volatile(
-     "head20:\n\t"         // Clk  Pseudocode    (T =  0)
-      "st   %a0, %1\n\t"   // 2    PORT = hi     (T =  2)
-      "sbrc %2, 7\n\t"     // 1-2  if(b & 128)
-       "mov  %4, %1\n\t"   // 0-1   next = hi    (T =  4)
-      "st   %a0, %4\n\t"   // 2    PORT = next   (T =  6)
-      "mov  %4, %5\n\t"    // 1    next = lo     (T =  7)
-      "dec  %3\n\t"        // 1    bit--         (T =  8)
-      "brne nextbit20\n\t" // 1-2  if(bit == 0)
-      "ldi  %3, 8\n\t"     // 1     bit = 8      (T = 10)
-      "ld   %2, %a6+\n\t"  // 2     b = *ptr++   (T = 12)
-      "sbiw %7, 1\n\t"     // 2     i--          (T = 14)
-      "breq done20\n\t"    // 1-2   if(i == 0) -> done20
-      "nop\n\t"            // 1                  (T = 16)
-      "st   %a0, %5\n\t"   // 2     PORT = lo    (T = 18)
-      "rjmp head20\n\t"    // 2     -> head20 (next byte)
-     "nextbit20:\n\t"      //                    (T = 10)
-      "rol  %2\n\t"        // 1    b <<= 1       (T = 11)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 13)
-      "mul  r0, r0\n\n"    // 2    nop nop       (T = 15)
-      "nop\n\t"            // 1    nop           (T = 16)
-      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 18)
-      "rjmp head20\n\t"    // 2    -> head20 (next bit out)
-     "done20:\n\t"         //                    (T = 16)
-      "st   %a0, %5\n\t"   // 2    PORT = lo     (T = 18)
+     "head20:\n\t"          // Clk  Pseudocode    (T =  0)
+      "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
+      "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
+       "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+      "st   %a0, %4\n\t"    // 2    PORT = next   (T =  6)
+      "mov  %4, %5\n\t"     // 1    next = lo     (T =  7)
+      "dec  %3\n\t"         // 1    bit--         (T =  8)
+      "breq nextbyte20\n\t" // 1-2  if(bit == 0)
+      "rol  %2\n\t"         // 1    b <<= 1       (T = 10)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 12)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 14)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 16)
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
+      "rjmp head20\n\t"     // 2    -> head20 (next bit out)
+     "nextbyte20:\n\t"      //                    (T = 10)
+      "nop\n\t"             // 1     nop          (T = 11)
+      "ldi  %3, 8\n\t"      // 1     bit = 8      (T = 12)
+      "ld   %2, %a6+\n\t"   // 2     b = *ptr++   (T = 14)
+      "sbiw %7, 1\n\t"      // 2     i--          (T = 16)
+      "st   %a0, %5\n\t"    // 2     PORT = lo    (T = 18)
+      "brne head20\n\t"     // 2     if(i != 0) -> head20 (next byte)
       ::
       "e" (port),          // %a0
       "r" (hi),            // %1
