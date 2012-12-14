@@ -328,15 +328,13 @@ void Adafruit_NeoPixel::show(void) {
       "mul  r0, r0\n\n"     // 2    nop nop       (T = 38)
       "rjmp head40\n\t"     // 2    -> head40 (next bit out)
      "nextbyte40:\n\t"      //                    (T = 27)
-      "ldi  %3, 8\n\t"      // 1     bit = 8      (T = 28)
-      "ld   %2, %a6+\n\t"   // 2     b = *ptr++   (T = 30)
-      "sbiw %7, 1\n\t"      // 2     i--          (T = 32)
-      "st   %a0, %5\n\t"    // 2     PORT = lo    (T = 34)
-      "breq done40\n\t"     // 1-2   if(i == 0) -> done
-      "nop\n\t"             // 1     nop          (T = 36)
-      "mul  r0, r0\n\n"     // 2     nop nop      (T = 38)
-      "rjmp head40\n\t"     // 1-2   -> head40 (next byte)
-     "done40:\n\t"
+      "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 28)
+      "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 30)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 32)
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
+      "mul  r0, r0\n\n"     // 2    nop nop       (T = 36)
+      "sbiw %7, 1\n\t"      // 2    i--           (T = 38)
+      "brne head40\n\t"     // 1-2  if(i != 0) -> head40 (next byte)
       ::
       "e" (port),          // %a0
       "r" (hi),            // %1
@@ -391,12 +389,12 @@ void Adafruit_NeoPixel::show(void) {
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
       "rjmp head20\n\t"     // 2    -> head20 (next bit out)
      "nextbyte20:\n\t"      //                    (T = 10)
-      "nop\n\t"             // 1     nop          (T = 11)
-      "ldi  %3, 8\n\t"      // 1     bit = 8      (T = 12)
-      "ld   %2, %a6+\n\t"   // 2     b = *ptr++   (T = 14)
-      "sbiw %7, 1\n\t"      // 2     i--          (T = 16)
-      "st   %a0, %5\n\t"    // 2     PORT = lo    (T = 18)
-      "brne head20\n\t"     // 2     if(i != 0) -> head20 (next byte)
+      "nop\n\t"             // 1    nop           (T = 11)
+      "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 12)
+      "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 14)
+      "sbiw %7, 1\n\t"      // 2    i--           (T = 16)
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
+      "brne head20\n\t"     // 2    if(i != 0) -> head20 (next byte)
       ::
       "e" (port),          // %a0
       "r" (hi),            // %1
