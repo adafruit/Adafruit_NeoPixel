@@ -44,6 +44,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) {
     pin     = p;
     port    = portOutputRegister(digitalPinToPort(p));
     pinMask = digitalPinToBitMask(p);
+    endTime = 0L;
   } else {
     numLEDs = 0;
   }
@@ -56,8 +57,6 @@ void Adafruit_NeoPixel::begin(void) {
 
 void Adafruit_NeoPixel::show(void) {
 
-  static uint32_t endTime = 0L;
-
   if(!numLEDs) return;
 
   volatile uint16_t
@@ -68,13 +67,16 @@ void Adafruit_NeoPixel::show(void) {
     hi,             // PORT w/output bit set high
     lo;             // PORT w/output bit set low
 
-  // A 50+ microsecond pause in the output stream = data latch.
+  // Data latch = 50+ microsecond pause in the output stream.
   // Rather than put a delay at the end of the function, the ending
   // time is noted and the function will simply hold off (if needed)
   // on issuing the subsequent round of data until the latch time has
   // elapsed.  This allows the mainline code to start generating the
   // next frame of data rather than stalling for the latch.
   while((micros() - endTime) < 50L);
+  // endTime is a private member (rather than global var) so that
+  // mutliple instances on different pins can be quickly issued in
+  // succession (each instance doesn't delay the next).
 
   // In order to make this code runtime-configurable to work with
   // any pin, SBI/CBI instructions are eschewed in favor of full

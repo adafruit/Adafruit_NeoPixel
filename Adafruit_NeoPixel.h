@@ -61,5 +61,7 @@ class Adafruit_NeoPixel {
     type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
   volatile uint8_t
     *port;         // Output PORT register
+  uint32_t
+    endTime;       // Latch timing reference
 
 };
