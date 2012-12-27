@@ -308,33 +308,33 @@ void Adafruit_NeoPixel::show(void) {
       "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
       "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
        "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T =  6)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T =  8)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T =  6)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T =  8)
       "st   %a0, %4\n\t"    // 2    PORT = next   (T = 10)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 12)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 14)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 16)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 18)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 20)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 22)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 12)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 14)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 16)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 18)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 20)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 22)
       "nop\n\t"             // 1    nop           (T = 23)
       "mov  %4, %5\n\t"     // 1    next = lo     (T = 24)
       "dec  %3\n\t"         // 1    bit--         (T = 25)
       "breq nextbyte40\n\t" // 1-2  if(bit == 0)
       "rol  %2\n\t"         // 1    b <<= 1       (T = 27)
       "nop\n\t"             // 1    nop           (T = 28)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 30)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 32)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 30)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 36)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 38)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 38)
       "rjmp head40\n\t"     // 2    -> head40 (next bit out)
      "nextbyte40:\n\t"      //                    (T = 27)
       "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 28)
       "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 30)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 32)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 36)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
       "sbiw %7, 1\n\t"      // 2    i--           (T = 38)
       "brne head40\n\t"     // 1-2  if(i != 0) -> head40 (next byte)
       ::
@@ -350,9 +350,17 @@ void Adafruit_NeoPixel::show(void) {
 
   } // See comments later re 'else'
 
+#elif ((F_CPU == 16500000UL) && defined(__AVR_ATtiny85__))
+  if((type & NEO_SPDMASK) == NEO_KHZ400) {
+    // Empty case.  400 KHz pixels not supported on 16.5 MHz ATtiny85.
+  } // See comments later re 'else'
+  // 800 KHz pixel support on 16.5 MHz ATtiny is experimental and
+  // NOT guaranteed to work.  It's essentially the same loop as the
+  // 16 MHz ATmega code...as a result, the timing is slightly off
+  // (825 KHz vs 800), but the WS2811 datasheet suggests this is
+  // within the allowable margin of error.
 #else
  #error "CPU SPEED NOT SUPPORTED"
-  if(0) {}
 #endif
 
   // This bizarre floating 'else' is intentional.  Only one of the above
@@ -385,9 +393,18 @@ void Adafruit_NeoPixel::show(void) {
       "dec  %3\n\t"         // 1    bit--         (T =  8)
       "breq nextbyte20\n\t" // 1-2  if(bit == 0)
       "rol  %2\n\t"         // 1    b <<= 1       (T = 10)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 12)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 14)
-      "mul  r0, r0\n\n"     // 2    nop nop       (T = 16)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+#else
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 12)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 14)
+      "mul  r0, r0\n\t"     // 2    nop nop       (T = 16)
+#endif
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
       "rjmp head20\n\t"     // 2    -> head20 (next bit out)
      "nextbyte20:\n\t"      //                    (T = 10)
