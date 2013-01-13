@@ -55,6 +55,24 @@ void Adafruit_NeoPixel::begin(void) {
   digitalWrite(pin, LOW);
 }
 
+
+#ifdef __arm__
+static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
+static inline void delayShort(uint32_t num)
+{
+        asm volatile(
+                "L_%=_delayMicroseconds:"               "\n\t"
+                "subs   %0, #1"                         "\n\t"
+                "bne    L_%=_delayMicroseconds"         "\n"
+//#if F_CPU == 48000000
+                //"nop"					"\n\t"
+//#endif
+                : "+r" (num) :
+        );
+}
+#endif // __arm__
+
+
 void Adafruit_NeoPixel::show(void) {
 
   if(!numLEDs) return;
@@ -90,6 +108,8 @@ void Adafruit_NeoPixel::show(void) {
   // PORT register as needed.
 
   cli(); // Disable interrupts; need 100% focus on instruction timing
+
+#ifdef __AVR__
 
 #if (F_CPU == 8000000UL) // FLORA, Lilypad, Arduino Pro 8 MHz, etc.
 
@@ -426,6 +446,81 @@ void Adafruit_NeoPixel::show(void) {
     ); // end asm
 
   } // end wacky else (see comment above)
+
+#endif // __AVR__
+
+
+
+#ifdef __MK20DX128__ // Teensy 3.0
+
+// This implementation may not be quite perfect, but it seems to work
+// reasonably well with an actual 20 LED WS2811 strip.  The timing at
+// 48 MHz is off a bit, perhaps due to flash cache misses?  Ideally
+// this code should execute from RAM to eliminate slight timing
+// differences between flash caches hits and misses.  But it seems to
+// quite well.  More testing is needed with longer strips.
+#if F_CPU == 96000000
+        #define DELAY_800_T0H       2
+        #define DELAY_800_T0L       25
+        #define DELAY_800_T1H       16
+        #define DELAY_800_T1L       11
+        #define DELAY_400_T0H       8
+        #define DELAY_400_T0L       56
+        #define DELAY_400_T1H       33
+        #define DELAY_400_T1L       31
+#elif F_CPU == 48000000
+        #define DELAY_800_T0H       1
+        #define DELAY_800_T0L       13
+        #define DELAY_800_T1H       8
+        #define DELAY_800_T1L       6
+        #define DELAY_400_T0H       4
+        #define DELAY_400_T0L       29
+        #define DELAY_400_T1H       16
+        #define DELAY_400_T1L       17
+#elif F_CPU == 24000000
+        #error "24 MHz not supported, use Tools > CPU Speed at 48 or 96 MHz"
+#endif
+	uint8_t *p   = pixels;
+	uint8_t *end = pixels + numBytes;
+	volatile uint8_t *set = portSetRegister(pin);
+	volatile uint8_t *clr = portClearRegister(pin);
+	if ((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+		while (p < end) {
+			uint8_t pix = *p++;
+			for (int mask = 0x80; mask; mask >>= 1) {
+				if (pix & mask) {
+					*set = 1;
+					delayShort(DELAY_800_T1H);
+					*clr = 1;
+					delayShort(DELAY_800_T1L);
+				} else {
+					*set = 1;
+					delayShort(DELAY_800_T0H);
+					*clr = 1;
+					delayShort(DELAY_800_T0L);
+				}
+			}
+		}
+	} else { // 400 kHz bitstream
+		while (p < end) {
+			uint8_t pix = *p++;
+			for (int mask = 0x80; mask; mask >>= 1) {
+				if (pix & mask) {
+					*set = 1;
+					delayShort(DELAY_400_T1H);
+					*clr = 1;
+					delayShort(DELAY_400_T1L);
+				} else {
+					*set = 1;
+					delayShort(DELAY_400_T0H);
+					*clr = 1;
+					delayShort(DELAY_400_T0L);
+				}
+			}
+		}
+	}
+
+#endif // __MK20DX128__ Teensy 3.0
 
   sei();              // Re-enable interrupts
   endTime = micros(); // Note EOD time for latch on next call
