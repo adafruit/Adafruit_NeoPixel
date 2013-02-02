@@ -42,8 +42,10 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) {
     numLEDs = n;
     type    = t;
     pin     = p;
+#ifndef __SAM3X8E__ // Arduino Due
     port    = portOutputRegister(digitalPinToPort(p));
     pinMask = digitalPinToBitMask(p);
+#endif
     endTime = 0L;
   } else {
     numLEDs = 0;
@@ -57,6 +59,10 @@ void Adafruit_NeoPixel::begin(void) {
 
 
 #ifdef __arm__
+inline void digitalWriteDirect(int pin, boolean val){
+    if(val) g_APinDescription[pin].pPort -> PIO_SODR = g_APinDescription[pin].ulPin;
+    else    g_APinDescription[pin].pPort -> PIO_CODR = g_APinDescription[pin].ulPin;
+}
 static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
 static inline void delayShort(uint32_t num)
 {
@@ -106,6 +112,68 @@ void Adafruit_NeoPixel::show(void) {
   // code takes an initial 'snapshot' of the PORT state, computes
   // 'pin high' and 'pin low' values, and writes these back to the
   // PORT register as needed.
+
+#ifdef __SAM3X8E__ // Arduino Due
+    
+#define DELAY_800_T0H       3
+#define DELAY_800_T0L       20
+#define DELAY_800_T1H       16
+#define DELAY_800_T1L       10
+    
+#define DELAY_400_T0H       6
+#define DELAY_400_T0L       40
+#define DELAY_400_T1H       32
+#define DELAY_400_T1L       20
+    
+	uint8_t *p   = pixels;
+	uint8_t *end = pixels + numBytes;
+	
+    noInterrupts();
+	if ((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+		while (p < end) {
+			uint8_t pix = *p++;
+			for (int mask = 0x80; mask; mask >>= 1) {
+				if (pix & mask) {
+					//*set = 1;
+					digitalWriteDirect(pin, HIGH);
+					delayShort(DELAY_800_T1H);
+					//*clr = 1;
+					digitalWriteDirect(pin, LOW);
+					delayShort(DELAY_800_T1L);
+				} else {
+					//*set = 1;
+					digitalWriteDirect(pin, HIGH);
+					delayShort(DELAY_800_T0H);
+					//*clr = 1;
+					digitalWriteDirect(pin, LOW);
+					delayShort(DELAY_800_T0L);
+				}
+			}
+		}
+	} else { // 400 kHz bitstream
+		while (p < end) {
+			uint8_t pix = *p++;
+			for (int mask = 0x80; mask; mask >>= 1) {
+				if (pix & mask) {
+					//*set = 1;
+					digitalWriteDirect(pin, HIGH);
+					delayShort(DELAY_400_T1H);
+					//*clr = 1;
+					digitalWriteDirect(pin, LOW);
+					delayShort(DELAY_400_T1L);
+				} else {
+					//*set = 1;
+					digitalWriteDirect(pin, HIGH);
+					delayShort(DELAY_400_T0H);
+					//*clr = 1;
+					digitalWriteDirect(pin, LOW);
+					delayShort(DELAY_400_T0L);
+				}
+			}
+		}
+	}
+    interrupts();
+#else
 
   cli(); // Disable interrupts; need 100% focus on instruction timing
 
@@ -523,6 +591,8 @@ void Adafruit_NeoPixel::show(void) {
 #endif // __MK20DX128__ Teensy 3.0
 
   sei();              // Re-enable interrupts
+#endif //  Arduino Due 
+ 
   endTime = micros(); // Note EOD time for latch on next call
 }
 
