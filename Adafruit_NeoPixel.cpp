@@ -327,10 +327,32 @@ void Adafruit_NeoPixel::show(void) {
      "head40:\n\t"          // Clk  Pseudocode    (T =  0)
       "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
       "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
-       "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+      "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+      "nop\n\t"
+      "nop\n\t"
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T =  6)
       "mul  r0, r0\n\t"     // 2    nop nop       (T =  8)
+#endif
       "st   %a0, %4\n\t"    // 2    PORT = next   (T = 10)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 12)
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 14)
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 16)
@@ -338,23 +360,48 @@ void Adafruit_NeoPixel::show(void) {
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 20)
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 22)
       "nop\n\t"             // 1    nop           (T = 23)
+#endif
       "mov  %4, %5\n\t"     // 1    next = lo     (T = 24)
       "dec  %3\n\t"         // 1    bit--         (T = 25)
       "breq nextbyte40\n\t" // 1-2  if(bit == 0)
       "rol  %2\n\t"         // 1    b <<= 1       (T = 27)
       "nop\n\t"             // 1    nop           (T = 28)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+      "nop\n\t"
+      "nop\n\t"
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 30)
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
+#endif
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+      "nop\n\t"
+      "nop\n\t"
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 38)
+#endif
       "rjmp head40\n\t"     // 2    -> head40 (next bit out)
      "nextbyte40:\n\t"      //                    (T = 27)
       "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 28)
       "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 30)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
+#endif
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
+#ifdef __AVR_ATtiny85__
+      "nop\n\t"             // 1 ea.
+      "nop\n\t"             // No MUL on ATtiny
+#else
       "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
+#endif
       "sbiw %7, 1\n\t"      // 2    i--           (T = 38)
       "brne head40\n\t"     // 1-2  if(i != 0) -> head40 (next byte)
       ::
