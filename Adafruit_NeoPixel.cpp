@@ -114,8 +114,8 @@ void Adafruit_NeoPixel::show(void) {
 // AVR ATtiny85 chips, like the MCU on the Digispark, do not support
 // 'mul' instructions, so we use regular nops instead
 #ifdef __AVR_ATtiny85__
-  #define NOP2 "nop\n\t"\
-               "nop\n\t"
+  #define NOP2 "rjmp .+0"	// used two clock cycles, but requires only one instruction
+  				// keeps relative branches from breaking
 #else
   #define NOP2 "mul  r0, r0\n\t"             
 #endif
