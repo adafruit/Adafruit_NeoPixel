@@ -111,6 +111,15 @@ void Adafruit_NeoPixel::show(void) {
 
 #ifdef __AVR__
 
+// AVR ATtiny85 chips, like the MCU on the Digispark, do not support
+// 'mul' instructions, so we use regular nops instead
+#ifdef __AVR_ATtiny85__
+  #define NOP2 "rjmp .+0\n\t"	// used two clock cycles, but requires only one instruction
+  				// keeps relative branches from breaking
+#else
+  #define NOP2 "mul  r0, r0\n\t"             
+#endif
+
 #if (F_CPU == 8000000UL) // FLORA, Lilypad, Arduino Pro 8 MHz, etc.
 
   if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
@@ -130,7 +139,9 @@ void Adafruit_NeoPixel::show(void) {
 
     // 10 instruction clocks per bit: HHxxxxxLLL
     // OUT instructions:              ^ ^    ^
-
+    
+    // ATtiny85 doesn't have PORTD, so this section cannot compile
+#ifndef __AVR_ATtiny85__
     if(port == &PORTD) {
 
       hi = PORTD |  pinMask;
@@ -149,61 +160,61 @@ void Adafruit_NeoPixel::show(void) {
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %3, %4\n\t"   // 1    n2   = lo
         "out  %0, %2\n\t"   // 1    PORT = n1
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 6\n\t"    // 1-2  if(b & 0x40)
          "mov %3, %1\n\t"   // 0-1    n2 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 6:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %2, %4\n\t"   // 1    n1   = lo
         "out  %0, %3\n\t"   // 1    PORT = n2
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 5\n\t"    // 1-2  if(b & 0x20)
          "mov %2, %1\n\t"   // 0-1    n1 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 5:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %3, %4\n\t"   // 1    n2   = lo
         "out  %0, %2\n\t"   // 1    PORT = n1
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 4\n\t"    // 1-2  if(b & 0x10)
          "mov %3, %1\n\t"   // 0-1    n2 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 4:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %2, %4\n\t"   // 1    n1   = lo
         "out  %0, %3\n\t"   // 1    PORT = n2
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 3\n\t"    // 1-2  if(b & 0x08)
          "mov %2, %1\n\t"   // 0-1    n1 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 3:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %3, %4\n\t"   // 1    n2   = lo
         "out  %0, %2\n\t"   // 1    PORT = n1
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 2\n\t"    // 1-2  if(b & 0x04)
          "mov %3, %1\n\t"   // 0-1    n2 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 2:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %2, %4\n\t"   // 1    n1   = lo
         "out  %0, %3\n\t"   // 1    PORT = n2
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 1\n\t"    // 1-2  if(b & 0x02)
          "mov %2, %1\n\t"   // 0-1    n1 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         // Bit 1:
         "out  %0, %1\n\t"   // 1    PORT = hi
         "mov  %3, %4\n\t"   // 1    n2   = lo
         "out  %0, %2\n\t"   // 1    PORT = n1
-        "mul  r0, r0\n\t"   // 2    nop nop
+        NOP2                // 2    nop nop
         "sbrc %5, 0\n\t"    // 1-2  if(b & 0x01)
          "mov %3, %1\n\t"   // 0-1    n2 = hi
         "out  %0, %4\n\t"   // 1    PORT = lo
@@ -229,7 +240,7 @@ void Adafruit_NeoPixel::show(void) {
       ); // end asm
 
     } else if(port == &PORTB) {
-
+#endif
       // Same as above, just switched to PORTB and stripped of comments.
       hi = PORTB |  pinMask;
       lo = hi    & ~pinMask;
@@ -240,55 +251,55 @@ void Adafruit_NeoPixel::show(void) {
         "out  %0, %1\n\t"
         "mov  %3, %4\n\t"
         "out  %0, %2\n\t"
-        "mul  r0, r0\n\t"
+        NOP2
         "sbrc %5, 6\n\t"
          "mov %3, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %2, %4\n\t"
         "out  %0, %3\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 5\n\t"
          "mov %2, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %3, %4\n\t"
         "out  %0, %2\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 4\n\t"
          "mov %3, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %2, %4\n\t"
         "out  %0, %3\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 3\n\t"
          "mov %2, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %3, %4\n\t"
         "out  %0, %2\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 2\n\t"
          "mov %3, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %2, %4\n\t"
         "out  %0, %3\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 1\n\t"
          "mov %2, %1\n\t"
         "out  %0, %4\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "out  %0, %1\n\t"
         "mov  %3, %4\n\t"
         "out  %0, %2\n\t"
-        "mul  r0, r0\n\t"
+        NOP2             
         "sbrc %5, 0\n\t"
          "mov %3, %1\n\t"
         "out  %0, %4\n\t"
@@ -303,7 +314,9 @@ void Adafruit_NeoPixel::show(void) {
         "brne headB\n" :: "I" (_SFR_IO_ADDR(PORTB)), "r" (hi),
           "r" (n1), "r" (n2), "r" (lo), "r" (b), "w" (i), "e" (ptr)
       ); // end asm
+#ifndef __AVR_ATtiny85__
     } // endif PORTB
+#endif
   } // end 800 KHz, see comments later re 'else'
 
 #elif (F_CPU == 16000000UL)
@@ -327,34 +340,34 @@ void Adafruit_NeoPixel::show(void) {
      "head40:\n\t"          // Clk  Pseudocode    (T =  0)
       "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
       "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
-       "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T =  6)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T =  8)
+      "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+      NOP2                  // 2    nop nop       (T =  6)
+      NOP2                  // 2    nop nop       (T =  8)
       "st   %a0, %4\n\t"    // 2    PORT = next   (T = 10)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 12)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 14)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 16)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 18)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 20)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 22)
+      NOP2                  // 2    nop nop       (T = 12)
+      NOP2                  // 2    nop nop       (T = 14)
+      NOP2                  // 2    nop nop       (T = 16)
+      NOP2                  // 2    nop nop       (T = 18)
+      NOP2                  // 2    nop nop       (T = 20)
+      NOP2                  // 2    nop nop       (T = 22)
       "nop\n\t"             // 1    nop           (T = 23)
       "mov  %4, %5\n\t"     // 1    next = lo     (T = 24)
       "dec  %3\n\t"         // 1    bit--         (T = 25)
       "breq nextbyte40\n\t" // 1-2  if(bit == 0)
       "rol  %2\n\t"         // 1    b <<= 1       (T = 27)
       "nop\n\t"             // 1    nop           (T = 28)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 30)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
+      NOP2                  // 2    nop nop       (T = 30)
+      NOP2                  // 2    nop nop       (T = 32)
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 38)
+      NOP2                  // 2    nop nop       (T = 36)
+      NOP2                  // 2    nop nop       (T = 38)
       "rjmp head40\n\t"     // 2    -> head40 (next bit out)
      "nextbyte40:\n\t"      //                    (T = 27)
       "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 28)
       "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 30)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 32)
+      NOP2                  // 2    nop nop       (T = 32)
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 34)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 36)
+      NOP2                  // 2    nop nop       (T = 36)
       "sbiw %7, 1\n\t"      // 2    i--           (T = 38)
       "brne head40\n\t"     // 1-2  if(i != 0) -> head40 (next byte)
       ::
@@ -413,18 +426,9 @@ void Adafruit_NeoPixel::show(void) {
       "dec  %3\n\t"         // 1    bit--         (T =  8)
       "breq nextbyte20\n\t" // 1-2  if(bit == 0)
       "rol  %2\n\t"         // 1    b <<= 1       (T = 10)
-#ifdef __AVR_ATtiny85__
-      "nop\n\t"             // 1 ea.
-      "nop\n\t"             // No MUL on ATtiny
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-#else
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 12)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 14)
-      "mul  r0, r0\n\t"     // 2    nop nop       (T = 16)
-#endif
+      NOP2                  // 2    nop nop       (T = 12)
+      NOP2                  // 2    nop nop       (T = 14)
+      NOP2                  // 2    nop nop       (T = 16)
       "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
       "rjmp head20\n\t"     // 2    -> head20 (next bit out)
      "nextbyte20:\n\t"      //                    (T = 10)
