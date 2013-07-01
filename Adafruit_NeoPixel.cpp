@@ -306,6 +306,56 @@ void Adafruit_NeoPixel::show(void) {
     } // endif PORTB
   } // end 800 KHz, see comments later re 'else'
 
+#elif (F_CPU == 12000000UL)
+
+  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+    // Can use nested loop; no need for unrolling.  Very similar to
+    // 16MHz code above, but with fewer NOPs
+
+    // 25 inst. clocks per bit: HHHHHxxxxxxLLLL
+    // ST instructions:         ^   ^      ^
+
+    volatile uint8_t next, bit;
+
+    hi   = *port |  pinMask;
+    lo   = hi    & ~pinMask;
+    next = lo;
+    bit  = 8;
+
+    asm volatile(
+     "head12800:\n\t"          // Clk  Pseudocode (T =  0)
+      "st   %a0, %1\n\t"    // 2    PORT = hi     (T =  2)
+      "sbrc %2, 7\n\t"      // 1-2  if(b & 128)
+       "mov  %4, %1\n\t"    // 0-1   next = hi    (T =  4)
+      "st   %a0, %4\n\t"    // 2    PORT = next   (T =  6)
+      "mov  %4, %5\n\t"     // 1    next = lo     (T =  7)
+      "dec  %3\n\t"         // 1    bit--         (T =  8)
+      "breq nextbyte12800\n\t" // 1-2  if(bit == 0)
+      "rol  %2\n\t"         // 1    b <<= 1       (T = 10)
+#ifdef __AVR_ATtiny85__
+#else
+#endif
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 12)
+      "rjmp head12800\n\t"     // 2    -> head20 (next bit out)
+     "nextbyte12800:\n\t"      //                 (T = 10)
+      "nop\n\t"             // 1    nop           (T = 11)
+      "ldi  %3, 8\n\t"      // 1    bit = 8       (T = 12)
+      "ld   %2, %a6+\n\t"   // 2    b = *ptr++    (T = 14)
+      "sbiw %7, 1\n\t"      // 2    i--           (T = 16)
+      "st   %a0, %5\n\t"    // 2    PORT = lo     (T = 18)
+      "brne head12800\n\t"     // 2    if(i != 0) -> head20 (next byte)
+      ::
+      "e" (port),          // %a0
+      "r" (hi),            // %1
+      "r" (b),             // %2
+      "r" (bit),           // %3
+      "r" (next),          // %4
+      "r" (lo),            // %5
+      "e" (ptr),           // %a6
+      "w" (i)              // %7
+    ); // end asm
+}
+
 #elif (F_CPU == 16000000UL)
 
   if((type & NEO_SPDMASK) == NEO_KHZ400) { // 400 KHz bitstream
