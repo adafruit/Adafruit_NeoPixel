@@ -50,7 +50,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) {
   }
 }
 
-#ifdef __arm__
+#ifdef __MK20DX128__ // Teensy 3.0
 static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
 static inline void delayShort(uint32_t num) {
   asm volatile(
@@ -679,7 +679,6 @@ void Adafruit_NeoPixel::show(void) {
   // [run] quite well.  More testing is needed with longer strips."
 
 /* If timing can be stabilized, something like this should work:
- #define DCYC  5 // Clock cycles per iteration of delayShort
  #define DELAY_800_T0H (0.40 * F_CPU / 1000000L / DCYC + 0.5)
  #define DELAY_800_T0L (0.85 * F_CPU / 1000000L / DCYC + 0.5)
  #define DELAY_800_T1H (0.80 * F_CPU / 1000000L / DCYC + 0.5)
@@ -690,6 +689,8 @@ void Adafruit_NeoPixel::show(void) {
  #define DELAY_400_T1L (1.30 * F_CPU / 1000000L / DCYC + 0.5)
   But in the meantime, a fixed set of tables is used:
 */
+
+#ifdef __MK20DX128__ // Teensy 3.0
 
 #if (F_CPU == 24000000)
  #define DELAY_800_T0H  2
@@ -718,30 +719,14 @@ void Adafruit_NeoPixel::show(void) {
  #define DELAY_400_T0L 40
  #define DELAY_400_T1H 36
  #define DELAY_400_T1L 22
-#elif (F_CPU == 84000000) // Arduino Due
- #define DELAY_800_T0H  3
- #define DELAY_800_T0L 12
- #define DELAY_800_T1H 16
- #define DELAY_800_T1L  1
- #define DELAY_400_T0H  8
- #define DELAY_400_T0L 42
- #define DELAY_400_T1H 17
- #define DELAY_400_T1L 23
 #else
  #error "CPU SPEED NOT SUPPORTED"
 #endif
 
-#ifdef __MK20DX128__ // Teensy 3.0
   volatile uint8_t *set = portSetRegister(pin);
   volatile uint8_t *clr = portClearRegister(pin);
   #define SET_HI   *set = 1;
   #define SET_LO   *clr = 1;
-#else // Arduino Due
-  #define SET_HI \
-    g_APinDescription[pin].pPort->PIO_SODR = g_APinDescription[pin].ulPin;
-  #define SET_LO \
-    g_APinDescription[pin].pPort->PIO_CODR = g_APinDescription[pin].ulPin;
-#endif
   uint8_t *p   = pixels,
           *end = p + numBytes, pix, mask;
 
@@ -779,7 +764,75 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
 
-#endif // Architecture select (AVR/ARM)
+#else // Arduino Due
+
+  #define SCALE      VARIANT_MCK / 2UL / 1000000UL
+  #define INST       (2UL * F_CPU / VARIANT_MCK)
+  #define TIME_800_L ((int)(0.40 * SCALE + 0.5) - (5 * INST))
+  #define TIME_800_H ((int)(0.80 * SCALE + 0.5) - (5 * INST))
+  #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) - (5 * INST))
+  #define TIME_400_L ((int)(0.50 * SCALE + 0.5) - (5 * INST))
+  #define TIME_400_H ((int)(1.20 * SCALE + 0.5) - (5 * INST))
+  #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) - (5 * INST))
+
+  int             pinMask, timeLo, timeHi, period;
+  Pio            *port;
+  volatile WoReg *portSet, *portClear, *timeValue, *timeReset;
+  uint8_t        *p, *end, pix, mask;
+
+  #define SET_HI *portSet   = pinMask;
+  #define SET_LO *portClear = pinMask;
+
+  pmc_set_writeprotect(false);
+  pmc_enable_periph_clk((uint32_t)TC3_IRQn);
+  TC_Configure(TC1, 0,
+    TC_CMR_WAVE | TC_CMR_WAVSEL_UP | TC_CMR_TCCLKS_TIMER_CLOCK1);
+  TC_Start(TC1, 0);
+
+  pinMask   = g_APinDescription[pin].ulPin; // Don't 'optimize' these into
+  port      = g_APinDescription[pin].pPort; // declarations above.  Want to
+  portSet   = &(port->PIO_SODR);            // burn a few cycles after
+  portClear = &(port->PIO_CODR);            // starting timer to minimize
+  timeValue = &(TC1->TC_CHANNEL[0].TC_CV);  // the initial 'while'.
+  timeReset = &(TC1->TC_CHANNEL[0].TC_CCR);
+  p         =  pixels;
+  end       =  p + numBytes;
+  pix       = *p++;
+  mask      = 0x80;
+
+  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+    timeLo = TIME_800_L;
+    timeHi = TIME_800_H;
+    period = PERIOD_800;
+  } else { // 400 KHz bitstream
+    timeLo = TIME_400_L;
+    timeHi = TIME_400_H;
+    period = PERIOD_400;
+  }
+
+  for(;;) {
+    while(*timeValue < period);
+    SET_HI
+    *timeReset = TC_CCR_CLKEN | TC_CCR_SWTRG;
+    if(pix & mask) {
+      while(*timeValue < timeHi);
+      SET_LO // in both if/else cases so branch doesn't throw off timing
+    } else {
+      while(*timeValue < timeLo);
+      SET_LO
+    }
+    if(!(mask >>= 1)) {   // This 'inside-out' loop logic utilizes
+      if(p >= end) break; // idle time to minimize inter-byte delays.
+      pix = *p++;
+      mask = 0x80;
+    }
+  }
+  while(*timeValue < period); // Wait for last bit
+  TC_Stop(TC1, 0);
+
+#endif // end Arduino Due
+
+#endif // end Architecture select
 
   interrupts();
   endTime = micros(); // Save EOD time for latch on next call
