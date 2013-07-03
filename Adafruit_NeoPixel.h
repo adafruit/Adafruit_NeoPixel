@@ -57,11 +57,14 @@ class Adafruit_NeoPixel {
   uint8_t
    *pixels,        // Holds LED color values (3 bytes each)
     pin,           // Output pin number
-    pinMask,       // Output PORT bitmask
     type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
-  volatile uint8_t
-    *port;         // Output PORT register
   uint32_t
     endTime;       // Latch timing reference
+#ifdef __AVR__
+  volatile uint8_t
+    *port;         // Output PORT register
+  uint8_t
+    pinMask;       // Output PORT bitmask
+#endif
 
 };
