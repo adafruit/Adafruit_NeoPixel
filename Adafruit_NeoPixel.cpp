@@ -775,13 +775,10 @@ void Adafruit_NeoPixel::show(void) {
   #define TIME_400_H ((int)(1.20 * SCALE + 0.5) - (5 * INST))
   #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) - (5 * INST))
 
-  int             pinMask, timeLo, timeHi, period;
+  int             pinMask, timeLo, timeHi, period, t;
   Pio            *port;
   volatile WoReg *portSet, *portClear, *timeValue, *timeReset;
   uint8_t        *p, *end, pix, mask;
-
-  #define SET_HI *portSet   = pinMask;
-  #define SET_LO *portClear = pinMask;
 
   pmc_set_writeprotect(false);
   pmc_enable_periph_clk((uint32_t)TC3_IRQn);
@@ -810,17 +807,13 @@ void Adafruit_NeoPixel::show(void) {
     period = PERIOD_400;
   }
 
-  for(;;) {
+  for(t = timeLo;; t = timeLo) {
+    if(pix & mask) t = timeHi;
     while(*timeValue < period);
-    SET_HI
+    *portSet   = pinMask;
     *timeReset = TC_CCR_CLKEN | TC_CCR_SWTRG;
-    if(pix & mask) {
-      while(*timeValue < timeHi);
-      SET_LO // in both if/else cases so branch doesn't throw off timing
-    } else {
-      while(*timeValue < timeLo);
-      SET_LO
-    }
+    while(*timeValue < t);
+    *portClear = pinMask;
     if(!(mask >>= 1)) {   // This 'inside-out' loop logic utilizes
       if(p >= end) break; // idle time to minimize inter-byte delays.
       pix = *p++;
