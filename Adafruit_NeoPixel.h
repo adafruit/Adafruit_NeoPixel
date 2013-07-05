@@ -1,3 +1,5 @@
+#ifndef ADAFRUIT_NEOPIXEL_H
+#define ADAFRUIT_NEOPIXEL_H
 /*--------------------------------------------------------------------
   This file is part of the Adafruit NeoPixel library.
 
@@ -68,3 +70,5 @@ class Adafruit_NeoPixel {
 #endif
 
 };
+
+#endif // ADAFRUIT_NEOPIXEL_H
