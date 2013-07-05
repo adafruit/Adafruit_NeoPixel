@@ -44,7 +44,8 @@ class Adafruit_NeoPixel {
     begin(void),
     show(void),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
-    setPixelColor(uint16_t n, uint32_t c);
+    setPixelColor(uint16_t n, uint32_t c),
+    setBrightness(uint8_t);
   uint16_t
     numPixels(void);
   uint32_t
@@ -53,19 +54,21 @@ class Adafruit_NeoPixel {
 
  private:
 
-  uint16_t
+  const uint16_t
     numLEDs,       // Number of RGB LEDs in strip
     numBytes;      // Size of 'pixels' buffer below
-  uint8_t
-   *pixels,        // Holds LED color values (3 bytes each)
+  const uint8_t
     pin,           // Output pin number
     type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
+  uint8_t
+    brightness,
+   *pixels;        // Holds LED color values (3 bytes each)
   uint32_t
     endTime;       // Latch timing reference
 #ifdef __AVR__
-  volatile uint8_t
+  const volatile uint8_t
     *port;         // Output PORT register
-  uint8_t
+  const uint8_t
     pinMask;       // Output PORT bitmask
 #endif
 

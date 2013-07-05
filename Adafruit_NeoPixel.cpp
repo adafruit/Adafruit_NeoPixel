@@ -33,20 +33,14 @@
 
 #include "Adafruit_NeoPixel.h"
 
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) {
-  numBytes = n * 3;
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs(n), numBytes(n * 3), pin(p), type(t), pixels(NULL)
+#ifdef AVR
+  ,port(portOutputRegister(digitalPinToPort(p))),
+   pinMask(digitalPinToBitMask(p))
+#endif
+{
   if((pixels = (uint8_t *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
-    numLEDs = n;
-    type    = t;
-    pin     = p;
-#ifdef __AVR__
-    port    = portOutputRegister(digitalPinToPort(p));
-    pinMask = digitalPinToBitMask(p);
-#endif
-    endTime = 0L;
-  } else {
-    numLEDs = 0;
   }
 }
 
@@ -69,7 +63,7 @@ void Adafruit_NeoPixel::begin(void) {
 
 void Adafruit_NeoPixel::show(void) {
 
-  if(!numLEDs) return;
+  if(!pixels) return;
 
   // Data latch = 50+ microsecond pause in the output stream.  Rather than
   // put a delay at the end of the function, the ending time is noted and
@@ -835,6 +829,11 @@ void Adafruit_NeoPixel::show(void) {
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
   if(n < numLEDs) {
+    if(brightness) { // See notes in setBrightness()
+      r = (r * brightness) >> 8;
+      g = (g * brightness) >> 8;
+      b = (b * brightness) >> 8;
+    }
     uint8_t *p = &pixels[n * 3];
     if((type & NEO_COLMASK) == NEO_GRB) { *p++ = g; *p++ = r; }
     else                                { *p++ = r; *p++ = g; }
@@ -845,10 +844,19 @@ void Adafruit_NeoPixel::setPixelColor(
 // Set pixel color from 'packed' 32-bit RGB color:
 void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   if(n < numLEDs) {
+    uint8_t
+      r = (uint8_t)(c >> 16),
+      g = (uint8_t)(c >>  8),
+      b = (uint8_t)c;
+    if(brightness) { // See notes in setBrightness()
+      r = (r * brightness) >> 8;
+      g = (g * brightness) >> 8;
+      b = (b * brightness) >> 8;
+    }
     uint8_t *p = &pixels[n * 3];
-    if((type & NEO_COLMASK) == NEO_GRB) { *p++ = c >>  8; *p++ = c >> 16; }
-    else                                { *p++ = c >> 16; *p++ = c >>  8; }
-    *p = c;
+    if((type & NEO_COLMASK) == NEO_GRB) { *p++ = g; *p++ = r; }
+    else                                { *p++ = r; *p++ = g; }
+    *p = b;
   }
 }
 
@@ -877,4 +885,18 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) {
 
 uint16_t Adafruit_NeoPixel::numPixels(void) {
   return numLEDs;
+}
+
+// Adjust output brightness; 0=darkest (off), 255=brightest.  This does
+// NOT affect what's currently displayed, nor will another call to show().
+// It only affects subsequent setPixelColor() calls.  To change the
+// brightness of existing data on the strip, it must be re-rendered.
+void Adafruit_NeoPixel::setBrightness(uint8_t b) {
+  // Stored brightness value is different than what's passed.
+  // This simplifies the actual scaling math later, allowing a fast
+  // 8x8-bit multiply and taking the MSB.  'brightness' is a uint8_t,
+  // adding 1 here may (intentionally) roll over...so 0 = max brightness
+  // (color values are interpreted literally; no scaling), 1 = min
+  // brightness (off), 255 = just below max brightness.
+  brightness = b + 1;
 }
