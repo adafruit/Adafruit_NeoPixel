@@ -888,9 +888,17 @@ uint16_t Adafruit_NeoPixel::numPixels(void) {
 }
 
 // Adjust output brightness; 0=darkest (off), 255=brightest.  This does
-// NOT affect what's currently displayed, nor will another call to show().
-// It only affects subsequent setPixelColor() calls.  To change the
-// brightness of existing data on the strip, it must be re-rendered.
+// NOT immediately affect what's currently displayed on the LEDs.  The
+// next call to show() will refresh the LEDs at this level.  However,
+// this process is potentially "lossy," especially when increasing
+// brightness.  The tight timing in the WS2811/WS2812 code means there
+// aren't enough free cycles to perform this scaling on the fly as data
+// is issued.  So we make a pass through the existing color data in RAM
+// and scale it (subsequent graphics commands also work at this
+// brightness level).  If there's a significant step up in brightness,
+// the limited number of steps (quantization) in the old data will be
+// quite visible in the re-scaled version.  For a non-destructive
+// change, you'll need to re-render the full strip data.  C'est la vie.
 void Adafruit_NeoPixel::setBrightness(uint8_t b) {
   // Stored brightness value is different than what's passed.
   // This simplifies the actual scaling math later, allowing a fast
@@ -898,5 +906,20 @@ void Adafruit_NeoPixel::setBrightness(uint8_t b) {
   // adding 1 here may (intentionally) roll over...so 0 = max brightness
   // (color values are interpreted literally; no scaling), 1 = min
   // brightness (off), 255 = just below max brightness.
-  brightness = b + 1;
+  uint8_t newBrightness = b + 1;
+  if(newBrightness != brightness) { // Compare against prior value
+    // Brightness has changed -- re-scale existing data in RAM
+    uint8_t  c,
+            *ptr           = pixels,
+             oldBrightness = brightness - 1; // De-wrap old brightness value
+    uint16_t scale;
+    if(oldBrightness == 0) scale = 0; // Avoid /0
+    else if(b == 255) scale = 65535 / oldBrightness;
+    else scale = (((uint16_t)newBrightness << 8) - 1) / oldBrightness;
+    for(uint16_t i=0; i<numBytes; i++) {
+      c      = *ptr;
+      *ptr++ = (c * scale) >> 8;
+    }
+    brightness = newBrightness;
+  }
 }
