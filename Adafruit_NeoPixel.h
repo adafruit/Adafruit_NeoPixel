@@ -1,5 +1,3 @@
-#ifndef ADAFRUIT_NEOPIXEL_H
-#define ADAFRUIT_NEOPIXEL_H
 /*--------------------------------------------------------------------
   This file is part of the Adafruit NeoPixel library.
 
@@ -17,6 +15,9 @@
   License along with NeoPixel.  If not, see
   <http://www.gnu.org/licenses/>.
   --------------------------------------------------------------------*/
+
+#ifndef ADAFRUIT_NEOPIXEL_H
+#define ADAFRUIT_NEOPIXEL_H
 
 #if (ARDUINO >= 100)
  #include <Arduino.h>
