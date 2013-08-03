@@ -16,20 +16,31 @@ of the second.  Or you can connect the inputs of both rings to the same
 Arduino pin if that's easier -- the rainbows will both twirl in the same
 direction in that case.
 
-Pixel #1 on both rings should be at the TOP of the goggles.  Looking at
-the BACK of the board, pixel #1 is immediately clockwise from the OUT
-connection.
+By default, pixel #0 (the first LED) on both rings should be at the TOP of
+the goggles.  Looking at the BACK of the board, pixel #0 is immediately
+clockwise from the OUT connection.  If a different pixel is at the top,
+that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
 */
 
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 4
+#define PIN            4
+
+#define TOP_LED_FIRST  0 // Change these if the first pixel is not
+#define TOP_LED_SECOND 0 // at the top of the first and/or second ring.
+
+#define EFFECT         RAINBOW // Choose a visual effect from the names below
+
+#define RAINBOW        0
+#define ECTO           1
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN, NEO_GRB + NEO_KHZ800);
 
-// Vertical coordinate of each pixel.  First pixel is at top.
-const int8_t PROGMEM yCoord[] = {
-  127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49,0,49,90,117 };
+const int8_t PROGMEM
+  yCoord[] = { // Vertical coordinate of each pixel.  First pixel is at top.
+    127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49,0,49,90,117 },
+  sine[] = { // Brightness table for ecto effect
+    0, 28, 96, 164, 192, 164, 96, 28, 0, 28, 96, 164, 192, 164, 96, 28 };
 
 // Eyelid vertical coordinates.  Eyes shut slightly below center.
 #define upperLidTop     130
@@ -86,33 +97,45 @@ void loop() {
   int     y1, y2, y3, y4, h;
   int8_t  y;
 
-  // Draw eye background colors (glotating rainbow)
+  // Draw eye background colors
+
+#if EFFECT == RAINBOW
+
+  // This renders a glotating rainbow...a WAY overdone LED effect but
+  // does show the color gamut nicely.
+
   for(h=hue, i=0; i<16; i++, h += 96) {
-    a = h >> 8;
-    b = h;
-    switch(a % 6) {
-     case 0: // Red to yellow
-      iColor[i][0] = 255; iColor[i][1] =   b; iColor[i][2] =   0;
-      break;
-     case 1: // Yellow to green
-      iColor[i][0] =  ~b; iColor[i][1] = 255; iColor[i][2] =   0;
-      break;
-     case 2: // Green to cyan
-      iColor[i][0] =   0; iColor[i][1] = 255; iColor[i][2] =   b;
-      break;
-     case 3: // Cyan to blue
-      iColor[i][0] =   0; iColor[i][1] =  ~b; iColor[i][2] = 255;
-      break;
-     case 4: // Blue to magenta
-      iColor[i][0] =   b; iColor[i][1] =   0; iColor[i][2] = 255;
-      break;
-     case 5: // Magenta to red
-      iColor[i][0] = 255; iColor[i][1] =   0; iColor[i][2] =  ~b;
-      break;
+    a = h;
+    switch((h >> 8) % 6) {
+     case 0: iColor[i][0] = 255; iColor[i][1] =   a; iColor[i][2] =   0; break;
+     case 1: iColor[i][0] =  ~a; iColor[i][1] = 255; iColor[i][2] =   0; break;
+     case 2: iColor[i][0] =   0; iColor[i][1] = 255; iColor[i][2] =   a; break;
+     case 3: iColor[i][0] =   0; iColor[i][1] =  ~a; iColor[i][2] = 255; break;
+     case 4: iColor[i][0] =   a; iColor[i][1] =   0; iColor[i][2] = 255; break;
+     case 5: iColor[i][0] = 255; iColor[i][1] =   0; iColor[i][2] =  ~a; break;
     }
   }
   hue += 7;
   if(hue >= 1536) hue -= 1536;
+
+#elif EFFECT == ECTO
+
+  // A steampunk aesthetic might fare better with this more subdued effect.
+  // Etherial green glow with just a little animation for visual spice.
+
+  a = (hue >> 4) & 15;
+  c =  hue       & 15;
+  for(i=0; i<16; i++) {
+    b = (a + 1) & 15;
+    iColor[i][1] = 255; // Predominantly green
+    iColor[i][0] = (pgm_read_byte(&sine[a]) * (16 - c) +
+                    pgm_read_byte(&sine[b]) *       c  ) >> 4;
+    iColor[i][2] = iColor[i][0] >> 1;
+    a = b;
+  }
+  hue -= 3;
+
+#endif
 
   // Render current blink (if any) into brightness map
   if(blinkCounter <= blinkFrames * 2) { // In mid-blink?
@@ -167,24 +190,24 @@ void loop() {
   b = (a + 1)  & 0x0F; // 1 pixel CCW of a
   c = (a + 2)  & 0x0F; // 2 pixels CCW of a
   i = ep & 0x0F;       // Fraction of 'c' covered (0-15)
-  iBrightness[a] = (iBrightness[a]  *       i ) >> 4;
+  iBrightness[a] = (iBrightness[a] *       i ) >> 4;
   iBrightness[b] = 0;
-  iBrightness[c] = (iBrightness[c]  * (16 - i)) >> 4;
+  iBrightness[c] = (iBrightness[c] * (16 - i)) >> 4;
 
   // Merge iColor with iBrightness, issue to NeoPixels
   for(i=0; i<16; i++) {
+    a = iBrightness[i] + 1;
     // First eye
     r = iColor[i][0];            // Initial background RGB color
     g = iColor[i][1];
     b = iColor[i][2];
-    a = iBrightness[i] + 1;
     if(a) {
       r = (r * a) >> 8;          // Scale by brightness map
       g = (g * a) >> 8;
       b = (b * a) >> 8;
     }
-    pixels.setPixelColor(i,      // Gamma correct and set pixel
-      pgm_read_byte(&gamma8[r]),
+    pixels.setPixelColor(((i + TOP_LED_FIRST) & 15),
+      pgm_read_byte(&gamma8[r]), // Gamma correct and set pixel
       pgm_read_byte(&gamma8[g]),
       pgm_read_byte(&gamma8[b]));
 
@@ -198,7 +221,7 @@ void loop() {
       g = (g * a) >> 8;
       b = (b * a) >> 8;
     }
-    pixels.setPixelColor(16 + i,
+    pixels.setPixelColor(16 + ((i + TOP_LED_SECOND) & 15),
       pgm_read_byte(&gamma8[r]),
       pgm_read_byte(&gamma8[g]),
       pgm_read_byte(&gamma8[b]));
