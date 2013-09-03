@@ -859,10 +859,10 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) {
-
+  uint32_t c = 0;
   if(n < numLEDs) {
     uint16_t ofs = n * 3;
-    return (uint32_t)(pixels[ofs + 2]) |
+    c = (uint32_t)(pixels[ofs + 2]) |
       (((type & NEO_COLMASK) == NEO_GRB) ?
         ((uint32_t)(pixels[ofs    ]) <<  8) |
         ((uint32_t)(pixels[ofs + 1]) << 16)
@@ -870,8 +870,16 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) {
         ((uint32_t)(pixels[ofs    ]) << 16) |
         ((uint32_t)(pixels[ofs + 1]) <<  8) );
   }
-
-  return 0; // Pixel # is out of bounds
+  // Adjust this back up to the true color, as setting a pixel color will
+  // scale it back down again.
+  if(brightness) { // See notes in setBrightness()
+    //Cast the color to a byte array
+    uint8_t * c_ptr =reinterpret_cast<uint8_t*>(&c);
+    c_ptr[0] = (c_ptr[0] << 8)/brightness;
+    c_ptr[1] = (c_ptr[1] << 8)/brightness;
+    c_ptr[2] = (c_ptr[2] << 8)/brightness;
+  }
+  return c; // Pixel # is out of bounds
 }
 
 uint16_t Adafruit_NeoPixel::numPixels(void) {
