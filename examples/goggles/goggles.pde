@@ -23,8 +23,12 @@ that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
 */
 
 #include <Adafruit_NeoPixel.h>
-
-#define PIN            4
+#ifdef __AVR_ATtiny85__ // Trinket, Gemma, etc.
+  #include <avr/power.h>
+  #define PIN          0
+#else
+  #define PIN          4
+#endif
 
 #define TOP_LED_FIRST  0 // Change these if the first pixel is not
 #define TOP_LED_SECOND 0 // at the top of the first and/or second ring.
@@ -86,10 +90,15 @@ int8_t
 
 
 void setup() {
-  pixels.begin();
-
+#ifdef __AVR_ATtiny85__ // Trinket, Gemma, etc.
+  if(F_CPU == 16000000) clock_prescale_set(clock_div_1);
   // Seed random number generator from an unused analog input:
+  randomSeed(analogRead(2));
+#else
   randomSeed(analogRead(A0));
+#endif
+
+  pixels.begin();
 }
 
 void loop() {
