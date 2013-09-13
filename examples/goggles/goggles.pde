@@ -25,10 +25,9 @@ that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR_ATtiny85__ // Trinket, Gemma, etc.
   #include <avr/power.h>
-  #define PIN          0
-#else
-  #define PIN          4
 #endif
+
+#define PIN            4
 
 #define TOP_LED_FIRST  0 // Change these if the first pixel is not
 #define TOP_LED_SECOND 0 // at the top of the first and/or second ring.
