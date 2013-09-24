@@ -44,6 +44,11 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs
   }
 }
 
+Adafruit_NeoPixel::~Adafruit_NeoPixel()
+{
+  if (pixels != NULL) free(pixels);
+}
+
 #ifdef __MK20DX128__ // Teensy 3.0
 static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
 static inline void delayShort(uint32_t num) {
