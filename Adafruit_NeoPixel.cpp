@@ -879,6 +879,10 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) {
   return 0; // Pixel # is out of bounds
 }
 
+uint8_t* Adafruit_NeoPixel::getPixels(void) {
+  return pixels;
+}
+
 uint16_t Adafruit_NeoPixel::numPixels(void) {
   return numLEDs;
 }
