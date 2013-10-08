@@ -863,7 +863,7 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
-uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) {
+uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
 
   if(n < numLEDs) {
     uint16_t ofs = n * 3;
