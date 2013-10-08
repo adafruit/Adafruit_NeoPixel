@@ -821,6 +821,15 @@ void Adafruit_NeoPixel::show(void) {
   endTime = micros(); // Save EOD time for latch on next call
 }
 
+// Set the output pin number
+void Adafruit_NeoPixel::setPin(uint8_t p) {
+	pin = p;
+	port = portOutputRegister(digitalPinToPort(p));
+	pinMask = digitalPinToBitMask(p);
+	pinMode(p, OUTPUT);
+	digitalWrite(p, LOW);
+}
+
 // Set pixel color from separate R,G,B components:
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
