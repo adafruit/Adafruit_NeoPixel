@@ -27,7 +27,7 @@ that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
   #include <avr/power.h>
 #endif
 
-#define PIN            4
+#define PIN            0
 
 #define TOP_LED_FIRST  0 // Change these if the first pixel is not
 #define TOP_LED_SECOND 0 // at the top of the first and/or second ring.
