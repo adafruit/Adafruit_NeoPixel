@@ -28,14 +28,15 @@
 
 // 'type' flags for LED pixels (third parameter to constructor):
 #define NEO_GRB     0x01 // Wired for GRB data order
-#define NEO_COLMASK 0x01
-#define NEO_KHZ800  0x02 // 800 KHz datastream
-#define NEO_SPDMASK 0x02
+#define NEO_COLMASK 0x03
+#define NEO_KHZ800  0x04 // 800 KHz datastream
+#define NEO_SPDMASK 0x04
 // Trinket flash space is tight, v1 NeoPixels aren't handled by default.
 // Remove the ifndef/endif to add support -- but code will be bigger.
 // Conversely, can comment out the #defines to save space on other MCUs.
 #ifndef __AVR_ATtiny85__
 #define NEO_RGB     0x00 // Wired for RGB data order
+#define NEO_BRG     0x02 // Wired for BRG data order
 #define NEO_KHZ400  0x00 // 400 KHz datastream
 #endif
 
@@ -70,7 +71,7 @@ class Adafruit_NeoPixel {
     numBytes;      // Size of 'pixels' buffer below
 #if defined(NEO_RGB) || defined(NEO_KHZ400)
   const uint8_t
-    type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
+    type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB vs BRG color)
 #endif
   uint8_t
     pin,           // Output pin number
