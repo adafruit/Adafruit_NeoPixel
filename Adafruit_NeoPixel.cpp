@@ -33,7 +33,7 @@
 
 #include "Adafruit_NeoPixel.h"
 
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs(n), numBytes(n * 3), pin(p), pixels(NULL)
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs(n), numBytes(n * 3), pin(p), pixels(NULL), brightness(0), endTime(0)
 #if defined(NEO_RGB) || defined(NEO_KHZ400)
   ,type(t)
 #endif
