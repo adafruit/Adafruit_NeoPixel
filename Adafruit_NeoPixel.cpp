@@ -56,23 +56,6 @@ void Adafruit_NeoPixel::begin(void) {
 }
 
 
-#ifdef __arm__
-static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
-static inline void delayShort(uint32_t num)
-{
-        asm volatile(
-                "L_%=_delayMicroseconds:"               "\n\t"
-                "subs   %0, #1"                         "\n\t"
-                "bne    L_%=_delayMicroseconds"         "\n"
-//#if F_CPU == 48000000
-                //"nop"					"\n\t"
-//#endif
-                : "+r" (num) :
-        );
-}
-#endif // __arm__
-
-
 void Adafruit_NeoPixel::show(void) {
 
   if(!numLEDs) return;
@@ -450,76 +433,63 @@ void Adafruit_NeoPixel::show(void) {
 #endif // __AVR__
 
 
-
-#ifdef __MK20DX128__ // Teensy 3.0
-
-// This implementation may not be quite perfect, but it seems to work
-// reasonably well with an actual 20 LED WS2811 strip.  The timing at
-// 48 MHz is off a bit, perhaps due to flash cache misses?  Ideally
-// this code should execute from RAM to eliminate slight timing
-// differences between flash caches hits and misses.  But it seems to
-// quite well.  More testing is needed with longer strips.
-#if F_CPU == 96000000
-        #define DELAY_800_T0H       2
-        #define DELAY_800_T0L       25
-        #define DELAY_800_T1H       16
-        #define DELAY_800_T1L       11
-        #define DELAY_400_T0H       8
-        #define DELAY_400_T0L       56
-        #define DELAY_400_T1H       33
-        #define DELAY_400_T1L       31
-#elif F_CPU == 48000000
-        #define DELAY_800_T0H       1
-        #define DELAY_800_T0L       13
-        #define DELAY_800_T1H       8
-        #define DELAY_800_T1L       6
-        #define DELAY_400_T0H       4
-        #define DELAY_400_T0L       29
-        #define DELAY_400_T1H       16
-        #define DELAY_400_T1L       17
-#elif F_CPU == 24000000
-        #error "24 MHz not supported, use Tools > CPU Speed at 48 or 96 MHz"
-#endif
+#if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
+	#define CYCLES_800_T0H  (F_CPU / 4000000)
+	#define CYCLES_800_T1H  (F_CPU / 1200000)
+	#define CYCLES_800      (F_CPU / 800000)
+	#define CYCLES_400_T0H  (F_CPU / 2000000)
+	#define CYCLES_400_T1H  (F_CPU / 600000)
+	#define CYCLES_400      (F_CPU / 400000)
 	uint8_t *p   = pixels;
 	uint8_t *end = pixels + numBytes;
 	volatile uint8_t *set = portSetRegister(pin);
 	volatile uint8_t *clr = portClearRegister(pin);
+	uint32_t cyc;
+	ARM_DEMCR |= ARM_DEMCR_TRCENA;
+	ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 	if ((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+		cyc = ARM_DWT_CYCCNT + CYCLES_800;
 		while (p < end) {
 			uint8_t pix = *p++;
 			for (int mask = 0x80; mask; mask >>= 1) {
 				if (pix & mask) {
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_800) ;
+					cyc = ARM_DWT_CYCCNT;
 					*set = 1;
-					delayShort(DELAY_800_T1H);
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_800_T1H) ;
 					*clr = 1;
-					delayShort(DELAY_800_T1L);
 				} else {
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_800) ;
+					cyc = ARM_DWT_CYCCNT;
 					*set = 1;
-					delayShort(DELAY_800_T0H);
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_800_T0H) ;
 					*clr = 1;
-					delayShort(DELAY_800_T0L);
 				}
 			}
 		}
+		while (ARM_DWT_CYCCNT - cyc < CYCLES_800) ;
 	} else { // 400 kHz bitstream
+		cyc = ARM_DWT_CYCCNT + CYCLES_400;
 		while (p < end) {
 			uint8_t pix = *p++;
 			for (int mask = 0x80; mask; mask >>= 1) {
 				if (pix & mask) {
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_400) ;
+					cyc = ARM_DWT_CYCCNT;
 					*set = 1;
-					delayShort(DELAY_400_T1H);
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_400_T1H) ;
 					*clr = 1;
-					delayShort(DELAY_400_T1L);
 				} else {
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_400) ;
+					cyc = ARM_DWT_CYCCNT;
 					*set = 1;
-					delayShort(DELAY_400_T0H);
+					while (ARM_DWT_CYCCNT - cyc < CYCLES_400_T0H) ;
 					*clr = 1;
-					delayShort(DELAY_400_T0L);
 				}
 			}
 		}
+		while (ARM_DWT_CYCCNT - cyc < CYCLES_400) ;
 	}
-
 #endif // __MK20DX128__ Teensy 3.0
 
   sei();              // Re-enable interrupts
