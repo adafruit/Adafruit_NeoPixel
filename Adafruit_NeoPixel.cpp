@@ -52,18 +52,6 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   pinMode(pin, INPUT);
 }
 
-#ifdef __MK20DX128__ // Teensy 3.0
-static inline void delayShort(uint32_t) __attribute__((always_inline, unused));
-static inline void delayShort(uint32_t num) {
-  asm volatile(
-    "L_%=_delay:"       "\n\t"
-    "subs   %0, #1"     "\n\t"
-    "bne    L_%=_delay" "\n"
-    : "+r" (num) :
-  );
-}
-#endif // __arm__
-
 void Adafruit_NeoPixel::begin(void) {
   pinMode(pin, OUTPUT);
   digitalWrite(pin, LOW);
@@ -676,100 +664,60 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined(__arm__)
 
-  // Paul Stoffregen: "This implementation may not be quite perfect, but
-  // it seems to work reasonably well with an actual 20 LED WS2811 strip.
-  // The timing at 48 MHz is off a bit, perhaps due to flash cache misses?
-  // Ideally this code should execute from RAM to eliminate slight timing
-  // differences between flash caches hits and misses.  But it seems to
-  // [run] quite well.  More testing is needed with longer strips."
+#if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
+#define CYCLES_800_T0H  (F_CPU / 2500000)
+#define CYCLES_800_T1H  (F_CPU / 1250000)
+#define CYCLES_800      (F_CPU /  800000)
+#define CYCLES_400_T0H  (F_CPU / 2000000)
+#define CYCLES_400_T1H  (F_CPU /  833333)
+#define CYCLES_400      (F_CPU /  400000)
 
-/* If timing can be stabilized, something like this should work:
- #define DELAY_800_T0H (0.40 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_800_T0L (0.85 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_800_T1H (0.80 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_800_T1L (0.45 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_400_T0H (0.50 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_400_T0L (2.00 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_400_T1H (1.20 * F_CPU / 1000000L / DCYC + 0.5)
- #define DELAY_400_T1L (1.30 * F_CPU / 1000000L / DCYC + 0.5)
-  But in the meantime, a fixed set of tables is used:
-*/
+  uint8_t          *p   = pixels,
+                   *end = p + numBytes, pix, mask;
+  volatile uint8_t *set = portSetRegister(pin),
+                   *clr = portClearRegister(pin);
+  uint32_t          cyc;
 
-#ifdef __MK20DX128__ // Teensy 3.0
-
-#if (F_CPU == 24000000)
- #define DELAY_800_T0H  2
- #define DELAY_800_T0L  4
- #define DELAY_800_T1H  5
- #define DELAY_800_T1L  1
- #define DELAY_400_T0H  3
- #define DELAY_400_T0L 10
- #define DELAY_400_T1H  9
- #define DELAY_400_T1L  5
-#elif (F_CPU == 48000000)
- #define DELAY_800_T0H  4
- #define DELAY_800_T0L  9
- #define DELAY_800_T1H 12
- #define DELAY_800_T1L  1
- #define DELAY_400_T0H  6
- #define DELAY_400_T0L 20
- #define DELAY_400_T1H 18
- #define DELAY_400_T1L 11
-#elif (F_CPU == 96000000)
- #define DELAY_800_T0H  7
- #define DELAY_800_T0L 17
- #define DELAY_800_T1H 22
- #define DELAY_800_T1L  2
- #define DELAY_400_T0H 12
- #define DELAY_400_T0L 40
- #define DELAY_400_T1H 36
- #define DELAY_400_T1L 22
-#else
- #error "CPU SPEED NOT SUPPORTED"
-#endif
-
-  volatile uint8_t *set = portSetRegister(pin);
-  volatile uint8_t *clr = portClearRegister(pin);
-  #define SET_HI   *set = 1;
-  #define SET_LO   *clr = 1;
-  uint8_t *p   = pixels,
-          *end = p + numBytes, pix, mask;
+  ARM_DEMCR    |= ARM_DEMCR_TRCENA;
+  ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 
 #ifdef NEO_KHZ400
   if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
 #endif
+    cyc = ARM_DWT_CYCCNT + CYCLES_800;
     while(p < end) {
       pix = *p++;
       for(mask = 0x80; mask; mask >>= 1) {
-        SET_HI
+        while(ARM_DWT_CYCCNT - cyc < CYCLES_800);
+        cyc  = ARM_DWT_CYCCNT;
+        *set = 1;
         if(pix & mask) {
-          delayShort(DELAY_800_T1H);
-          SET_LO
-          delayShort(DELAY_800_T1L);
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_800_T1H);
         } else {
-          delayShort(DELAY_800_T0H);
-          SET_LO
-          delayShort(DELAY_800_T0L);
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_800_T0H);
         }
+        *clr = 1;
       }
     }
+    while(ARM_DWT_CYCCNT - cyc < CYCLES_800);
 #ifdef NEO_KHZ400
   } else { // 400 kHz bitstream
+    cyc = ARM_DWT_CYCCNT + CYCLES_400;
     while(p < end) {
       pix = *p++;
       for(mask = 0x80; mask; mask >>= 1) {
-        SET_HI
+        while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
+        cyc  = ARM_DWT_CYCCNT;
+        *set = 1;
         if(pix & mask) {
-          delayShort(DELAY_400_T1H);
-          SET_LO
-          delayShort(DELAY_400_T1L);
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_400_T1H);
         } else {
-          delayShort(DELAY_400_T0H);
-          SET_LO
-          delayShort(DELAY_400_T0L);
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_400_T0H);
         }
+        *clr = 1;
       }
     }
+    while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
   }
 #endif
 
@@ -777,14 +725,14 @@ void Adafruit_NeoPixel::show(void) {
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
   #define INST       (2UL * F_CPU / VARIANT_MCK)
-  #define TIME_800_L ((int)(0.40 * SCALE + 0.5) - (5 * INST))
-  #define TIME_800_H ((int)(0.80 * SCALE + 0.5) - (5 * INST))
+  #define TIME_800_0 ((int)(0.40 * SCALE + 0.5) - (5 * INST))
+  #define TIME_800_1 ((int)(0.80 * SCALE + 0.5) - (5 * INST))
   #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_L ((int)(0.50 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_H ((int)(1.20 * SCALE + 0.5) - (5 * INST))
+  #define TIME_400_0 ((int)(0.50 * SCALE + 0.5) - (5 * INST))
+  #define TIME_400_1 ((int)(1.20 * SCALE + 0.5) - (5 * INST))
   #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) - (5 * INST))
 
-  int             pinMask, timeLo, timeHi, period, t;
+  int             pinMask, time0, time1, period, t;
   Pio            *port;
   volatile WoReg *portSet, *portClear, *timeValue, *timeReset;
   uint8_t        *p, *end, pix, mask;
@@ -809,19 +757,19 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef NEO_KHZ400
   if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
 #endif
-    timeLo = TIME_800_L;
-    timeHi = TIME_800_H;
+    time0 = TIME_800_0;
+    time1 = TIME_800_1;
     period = PERIOD_800;
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
-    timeLo = TIME_400_L;
-    timeHi = TIME_400_H;
+    time0 = TIME_400_0;
+    time1 = TIME_400_1;
     period = PERIOD_400;
   }
 #endif
 
-  for(t = timeLo;; t = timeLo) {
-    if(pix & mask) t = timeHi;
+  for(t = time0;; t = time0) {
+    if(pix & mask) t = time1;
     while(*timeValue < period);
     *portSet   = pinMask;
     *timeReset = TC_CCR_CLKEN | TC_CCR_SWTRG;
