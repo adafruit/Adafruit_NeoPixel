@@ -11,9 +11,10 @@
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, PIN, NEO_GRB + NEO_KHZ800);
 
-// IMPORTANT: add a 1000 uF capacitor across the NeoPixel power leads.
-// Add 300 to 500 Ohm resistor between Arduino and first pixel input.
-// Try to minimize distance between Arduino and first pixel.
+// IMPORTANT: To reduce NeoPixel burnout risk, add 1000 uF capacitor across
+// pixel power leads, add 300 - 500 Ohm resistor on first pixel's data input
+// and minimize distance between Arduino and first pixel.  Avoid connecting
+// on a live circuit...if you must, connect GND first.
 
 void setup() {
   strip.begin();

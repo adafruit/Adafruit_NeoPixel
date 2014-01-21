@@ -21,9 +21,10 @@ the goggles.  Looking at the BACK of the board, pixel #0 is immediately
 clockwise from the OUT connection.  If a different pixel is at the top,
 that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
 
-To minimize risk of NeoPixel burnout: add a 1000 uF capacitor across the
-NeoPixel power leads, add 300 to 500 Ohm resistor between Arduino and
-first pixel input, minimize distance between Arduino and first pixel.
+IMPORTANT: To reduce NeoPixel burnout risk, add 1000 uF capacitor across
+pixel power leads, add 300 - 500 Ohm resistor on first pixel's data input
+and minimize distance between Arduino and first pixel.  Avoid connecting
+on a live circuit...if you must, connect GND first.
 */
 
 #include <Adafruit_NeoPixel.h>
