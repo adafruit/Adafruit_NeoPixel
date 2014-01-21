@@ -20,6 +20,10 @@ By default, pixel #0 (the first LED) on both rings should be at the TOP of
 the goggles.  Looking at the BACK of the board, pixel #0 is immediately
 clockwise from the OUT connection.  If a different pixel is at the top,
 that's OK, the code can compensate (TOP_LED_FIRST and TOP_LED_SECOND below).
+
+To minimize risk of NeoPixel burnout: add a 1000 uF capacitor across the
+NeoPixel power leads, add 300 to 500 Ohm resistor between Arduino and
+first pixel input, minimize distance between Arduino and first pixel.
 */
 
 #include <Adafruit_NeoPixel.h>
