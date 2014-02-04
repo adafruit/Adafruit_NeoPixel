@@ -2,7 +2,7 @@
   Arduino library to control a wide variety of WS2811- and WS2812-based RGB
   LED devices such as Adafruit FLORA RGB Smart Pixels and NeoPixel strips.
   Currently handles 400 and 800 KHz bitstreams on 8, 12 and 16 MHz ATmega
-  MCUs, with LEDs wired for RGB or GRB color order.  8 MHz MCUs provide
+  MCUs, with LEDs wired for RGB, GRB or BRG color order.  8 MHz MCUs provide
   output on PORTB and PORTD, while 16 MHz chips can handle most output pins
   (possible exception with upper PORT registers on the Arduino Mega).
 
@@ -819,13 +819,18 @@ void Adafruit_NeoPixel::setPixelColor(
 #endif
       *p++ = g;
       *p++ = r;
+      *p = b;
 #ifdef NEO_RGB
+    } else if((type & NEO_COLMASK) == NEO_BRG) {
+      *p++ = b;
+      *p++ = r;
+      *p = g;
     } else {
       *p++ = r;
       *p++ = g;
+      *p = b;
     }
 #endif
-    *p = b;
   }
 }
 
@@ -845,15 +850,20 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
 #ifdef NEO_RGB
     if((type & NEO_COLMASK) == NEO_GRB) {
 #endif
-      *p++ = g;
+      *p++ = b;
       *p++ = r;
+      *p = g;
 #ifdef NEO_RGB
+    } else if((type & NEO_COLMASK) == NEO_BRG) {
+      *p++ = b;
+      *p++ = r;
+      *p = g;
     } else {
       *p++ = r;
       *p++ = g;
+      *p = b;
     }
 #endif
-    *p = b;
   }
 }
 
