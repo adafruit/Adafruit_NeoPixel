@@ -34,9 +34,7 @@
 #include "Adafruit_NeoPixel.h"
 
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs(n), numBytes(n * 3), pin(p), pixels(NULL)
-#if defined(NEO_RGB) || defined(NEO_KHZ400)
   ,type(t)
-#endif
 #ifdef __AVR__
   ,port(portOutputRegister(digitalPinToPort(p))),
    pinMask(digitalPinToBitMask(p))
@@ -45,6 +43,14 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs
   if((pixels = (uint8_t *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
   }
+  if(t & NEO_GRB) { // GRB vs RGB; might add others if needed
+    rOffset = 1;
+    gOffset = 0;
+  } else {
+    rOffset = 0;
+    gOffset = 1;
+  }
+  bOffset = 2;
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
@@ -814,18 +820,9 @@ void Adafruit_NeoPixel::setPixelColor(
       b = (b * brightness) >> 8;
     }
     uint8_t *p = &pixels[n * 3];
-#ifdef NEO_RGB
-    if((type & NEO_COLMASK) == NEO_GRB) {
-#endif
-      *p++ = g;
-      *p++ = r;
-#ifdef NEO_RGB
-    } else {
-      *p++ = r;
-      *p++ = g;
-    }
-#endif
-    *p = b;
+    p[rOffset] = r;
+    p[gOffset] = g;
+    p[bOffset] = b;
   }
 }
 
@@ -842,18 +839,9 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
       b = (b * brightness) >> 8;
     }
     uint8_t *p = &pixels[n * 3];
-#ifdef NEO_RGB
-    if((type & NEO_COLMASK) == NEO_GRB) {
-#endif
-      *p++ = g;
-      *p++ = r;
-#ifdef NEO_RGB
-    } else {
-      *p++ = r;
-      *p++ = g;
-    }
-#endif
-    *p = b;
+    p[rOffset] = r;
+    p[gOffset] = g;
+    p[bOffset] = b;
   }
 }
 
@@ -867,24 +855,18 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
 
   if(n < numLEDs) {
-    uint16_t ofs = n * 3;
-    return (uint32_t)(pixels[ofs + 2]) |
-#ifdef NEO_RGB
-      (((type & NEO_COLMASK) == NEO_GRB) ?
-#endif
-        ((uint32_t)(pixels[ofs    ]) <<  8) |
-        ((uint32_t)(pixels[ofs + 1]) << 16)
-#ifdef NEO_RGB
-      :
-        ((uint32_t)(pixels[ofs    ]) << 16) |
-        ((uint32_t)(pixels[ofs + 1]) <<  8) )
-#endif
-      ;
+    uint8_t *p = &pixels[n * 3];
+    return ((uint32_t)p[rOffset] << 16) |
+           ((uint32_t)p[gOffset] <<  8) |
+            (uint32_t)p[bOffset];
   }
 
   return 0; // Pixel # is out of bounds
 }
 
+// Returns pointer to pixels[] array.  Pixel data is stored in device-
+// native format and is not translated here.  Application will need to be
+// aware whether pixels are RGB vs. GRB and handle colors appropriately.
 uint8_t *Adafruit_NeoPixel::getPixels(void) const {
   return pixels;
 }
