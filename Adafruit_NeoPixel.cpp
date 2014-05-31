@@ -46,11 +46,17 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs
   if(t & NEO_GRB) { // GRB vs RGB; might add others if needed
     rOffset = 1;
     gOffset = 0;
+    bOffset = 2;
+  } else if (t & NEO_BRG) {
+    rOffset = 1;
+    gOffset = 2;
+    bOffset = 0;
   } else {
     rOffset = 0;
     gOffset = 1;
+    bOffset = 2;
   }
-  bOffset = 2;
+  
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
