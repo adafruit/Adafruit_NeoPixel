@@ -58,7 +58,7 @@ class Adafruit_NeoPixel {
     setBrightness(uint8_t);
   uint8_t
    *getPixels(void) const,
-    getBrightness(void);
+    getBrightness(void) const;
   uint16_t
     numPixels(void) const;
   static uint32_t
