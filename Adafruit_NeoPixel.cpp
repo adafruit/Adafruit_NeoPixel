@@ -859,15 +859,24 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
-
-  if(n < numLEDs) {
-    uint8_t *p = &pixels[n * 3];
-    return ((uint32_t)p[rOffset] << 16) |
-           ((uint32_t)p[gOffset] <<  8) |
-            (uint32_t)p[bOffset];
+  if(n >= numLEDs) {
+    // Out of bounds, return no color.
+    return 0;
   }
-
-  return 0; // Pixel # is out of bounds
+  uint8_t *p = &pixels[n * 3];
+  uint32_t c = ((uint32_t)p[rOffset] << 16) |
+               ((uint32_t)p[gOffset] <<  8) |
+                (uint32_t)p[bOffset];
+  // Adjust this back up to the true color, as setting a pixel color will
+  // scale it back down again.
+  if(brightness) { // See notes in setBrightness()
+    //Cast the color to a byte array
+    uint8_t * c_ptr =reinterpret_cast<uint8_t*>(&c);
+    c_ptr[0] = (c_ptr[0] << 8)/brightness;
+    c_ptr[1] = (c_ptr[1] << 8)/brightness;
+    c_ptr[2] = (c_ptr[2] << 8)/brightness;
+  }
+  return c; // Pixel # is out of bounds
 }
 
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
