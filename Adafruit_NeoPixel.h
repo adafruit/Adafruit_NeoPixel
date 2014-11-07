@@ -56,6 +56,7 @@ class Adafruit_NeoPixel {
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint32_t c),
     setBrightness(uint8_t),
+    setBrightness(uint8_t r, uint8_t g, uint8_t b),
     clear();
   uint8_t
    *getPixels(void) const,
@@ -76,7 +77,9 @@ class Adafruit_NeoPixel {
     numBytes;      // Size of 'pixels' buffer below
   uint8_t
     pin,           // Output pin number
-    brightness,
+    brightnessR,
+    brightnessG,
+    brightnessB,
    *pixels,        // Holds LED color values (3 bytes each)
     rOffset,       // Index of red byte within each 3-byte pixel
     gOffset,       // Index of green byte
