@@ -677,7 +677,7 @@ void Adafruit_NeoPixel::show(void) {
 #elif defined(__arm__)
 
 #if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
-#define CYCLES_800_T0H  (F_CPU / 2500000)
+#define CYCLES_800_T0H  (F_CPU / 4000000)
 #define CYCLES_800_T1H  (F_CPU / 1250000)
 #define CYCLES_800      (F_CPU /  800000)
 #define CYCLES_400_T0H  (F_CPU / 2000000)
@@ -732,6 +732,97 @@ void Adafruit_NeoPixel::show(void) {
     while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
   }
 #endif
+
+
+
+
+
+#elif defined(__MKL26Z64__) // Teensy-LC
+
+#if F_CPU == 48000000
+  uint8_t          *p   = pixels,
+		   pix, count, dly,
+                   bitmask = digitalPinToBitMask(pin);
+  volatile uint8_t *reg = portSetRegister(pin);
+  uint32_t         num = numBytes;
+  asm volatile(
+	"L%=_begin:"				"\n\t"
+	"ldrb	%[pix], [%[p], #0]"		"\n\t"
+	"lsl	%[pix], #24"			"\n\t"
+	"movs	%[count], #7"			"\n\t"
+	"L%=_loop:"				"\n\t"
+	"lsl	%[pix], #1"			"\n\t"
+	"bcs	L%=_loop_one"			"\n\t"
+	"L%=_loop_zero:"
+	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
+	"movs	%[dly], #4"			"\n\t"
+	"L%=_loop_delay_T0H:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_loop_delay_T0H"		"\n\t"
+	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
+	"movs	%[dly], #13"			"\n\t"
+	"L%=_loop_delay_T0L:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_loop_delay_T0L"		"\n\t"
+	"b	L%=_next"			"\n\t"
+	"L%=_loop_one:"
+	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
+	"movs	%[dly], #13"			"\n\t"
+	"L%=_loop_delay_T1H:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_loop_delay_T1H"		"\n\t"
+	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
+	"movs	%[dly], #4"			"\n\t"
+	"L%=_loop_delay_T1L:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_loop_delay_T1L"		"\n\t"
+	"nop"					"\n\t"
+	"L%=_next:"				"\n\t"
+	"sub	%[count], #1"			"\n\t"
+	"bne	L%=_loop"			"\n\t"
+	"lsl	%[pix], #1"			"\n\t"
+	"bcs	L%=_last_one"			"\n\t"
+	"L%=_last_zero:"
+	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
+	"movs	%[dly], #4"			"\n\t"
+	"L%=_last_delay_T0H:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_last_delay_T0H"		"\n\t"
+	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
+	"movs	%[dly], #10"			"\n\t"
+	"L%=_last_delay_T0L:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_last_delay_T0L"		"\n\t"
+	"b	L%=_repeat"			"\n\t"
+	"L%=_last_one:"
+	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
+	"movs	%[dly], #13"			"\n\t"
+	"L%=_last_delay_T1H:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_last_delay_T1H"		"\n\t"
+	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
+	"movs	%[dly], #1"			"\n\t"
+	"L%=_last_delay_T1L:"			"\n\t"
+	"sub	%[dly], #1"			"\n\t"
+	"bne	L%=_last_delay_T1L"		"\n\t"
+	"nop"					"\n\t"
+	"L%=_repeat:"				"\n\t"
+	"add	%[p], #1"			"\n\t"
+	"sub	%[num], #1"			"\n\t"
+	"bne	L%=_begin"			"\n\t"
+	"L%=_done:"				"\n\t"
+	: [p] "+r" (p),
+	  [pix] "=&r" (pix),
+	  [count] "=&r" (count),
+	  [dly] "=&r" (dly),
+	  [num] "+r" (num)
+	: [bitmask] "r" (bitmask),
+	  [reg] "r" (reg)
+  );
+#else
+#error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
+#endif
+
 
 #else // Arduino Due
 
