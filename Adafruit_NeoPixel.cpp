@@ -56,7 +56,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs
     gOffset = 1;
     bOffset = 2;
   }
-  
+
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
