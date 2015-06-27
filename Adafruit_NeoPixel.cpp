@@ -7,7 +7,8 @@
   (possible exception with upper PORT registers on the Arduino Mega).
 
   Written by Phil Burgess / Paint Your Dragon for Adafruit Industries,
-  contributions by PJRC and other members of the open source community.
+  contributions by PJRC, Michael Miller and other members of the open
+  source community.
 
   Adafruit invests time and resources providing this open source code,
   please support Adafruit and open-source hardware by purchasing products
@@ -70,6 +71,13 @@ void Adafruit_NeoPixel::begin(void) {
   digitalWrite(pin, LOW);
 }
 
+
+#ifdef ESP8266
+// ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
+extern "C" void ICACHE_RAM_ATTR espShow(
+  uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+#endif // ESP8266
+
 void Adafruit_NeoPixel::show(void) {
 
   if(!pixels) return;
@@ -97,7 +105,9 @@ void Adafruit_NeoPixel::show(void) {
 
   noInterrupts(); // Need 100% focus on instruction timing
 
+
 #ifdef __AVR__
+// AVR MCUs -- ATmega & ATtiny (no XMEGA) ---------------------------------
 
   volatile uint16_t
     i   = numBytes; // Loop counter
@@ -377,7 +387,7 @@ void Adafruit_NeoPixel::show(void) {
         [lo]    "r" (lo),
         [ptr]   "e" (ptr));
   }
-#endif
+#endif // NEO_KHZ400
 
 // 12 MHz(ish) AVR --------------------------------------------------------
 #elif (F_CPU >= 11100000UL) && (F_CPU <= 14300000UL)
@@ -557,7 +567,7 @@ void Adafruit_NeoPixel::show(void) {
         [lo]     "r" (lo),
         [ptr]    "e" (ptr));
   }
-#endif
+#endif // NEO_KHZ400
 
 // 16 MHz(ish) AVR --------------------------------------------------------
 #elif (F_CPU >= 15400000UL) && (F_CPU <= 19000000L)
@@ -669,13 +679,18 @@ void Adafruit_NeoPixel::show(void) {
         [hi]     "r" (hi),
         [lo]     "r" (lo));
   }
-#endif
+#endif // NEO_KHZ400
 
 #else
  #error "CPU SPEED NOT SUPPORTED"
-#endif
+#endif // end F_CPU ifdefs on __AVR__
+
+// END AVR ----------------------------------------------------------------
+
 
 #elif defined(__arm__)
+
+// ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due ---------------------------
 
 #if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
 #define CYCLES_800_T0H  (F_CPU / 4000000)
@@ -732,11 +747,7 @@ void Adafruit_NeoPixel::show(void) {
     }
     while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
   }
-#endif
-
-
-
-
+#endif // NEO_KHZ400
 
 #elif defined(__MKL26Z64__) // Teensy-LC
 
@@ -822,10 +833,9 @@ void Adafruit_NeoPixel::show(void) {
   );
 #else
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
-#endif
+#endif // F_CPU == 48000000
 
-
-#else // Arduino Due
+#else // Other ARM architecture -- Presumed Arduino Due
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
   #define INST       (2UL * F_CPU / VARIANT_MCK)
@@ -888,9 +898,23 @@ void Adafruit_NeoPixel::show(void) {
   while(*timeValue < period); // Wait for last bit
   TC_Stop(TC1, 0);
 
-#endif // end Arduino Due
+#endif // end Due
 
-#endif // end Architecture select
+// END ARM ----------------------------------------------------------------
+
+
+#elif defined(ESP8266)
+
+// ESP8266 ----------------------------------------------------------------
+
+  // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
+  espShow(pin, pixels, numBytes, type);
+
+#endif // ESP8266
+
+
+// END ARCHITECTURE SELECT ------------------------------------------------
+
 
   interrupts();
   endTime = micros(); // Save EOD time for latch on next call
