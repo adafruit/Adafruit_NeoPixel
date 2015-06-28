@@ -44,7 +44,7 @@ void ICACHE_RAM_ATTR espShow(
   } else { // 400 KHz bitstream
     time0  = CYCLES_400_T0H;
     time1  = CYCLES_400_T1H;
-    period = CYCLES_800;
+    period = CYCLES_400;
   }
 #endif
 

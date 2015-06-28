@@ -835,6 +835,83 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
+#elif defined(__SAMD21G18A__) // Arduino Zero
+
+  // Tried this with a timer/counter, couldn't quite get adequate
+  // resolution.  So yay, you get a load of goofball NOPs...
+
+  uint8_t  *ptr, *end, p, bitMask, portNum;
+  uint32_t  pinMask;
+
+  portNum =  g_APinDescription[pin].ulPort;
+  pinMask =  1ul << g_APinDescription[pin].ulPin;
+  ptr     =  pixels;
+  end     =  ptr + numBytes - 1;
+  p       = *ptr++;
+  bitMask =  0x80;
+
+  volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
+                    *clr = &(PORT->Group[portNum].OUTCLR.reg);
+
+#ifdef NEO_KHZ400
+  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#endif
+    for(;;) {
+      *set = pinMask;
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop;");
+        *clr = pinMask;
+      } else {
+        *clr = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop;");
+      }
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+#ifdef NEO_KHZ400
+  } else { // 400 KHz bitstream
+    for(;;) {
+      *set = pinMask;
+      asm("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop;");
+        *clr = pinMask;
+      } else {
+        *clr = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop;");
+      }
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+  }
+#endif
+
+
 #else // Other ARM architecture -- Presumed Arduino Due
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
@@ -871,13 +948,13 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef NEO_KHZ400
   if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
 #endif
-    time0 = TIME_800_0;
-    time1 = TIME_800_1;
+    time0  = TIME_800_0;
+    time1  = TIME_800_1;
     period = PERIOD_800;
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
-    time0 = TIME_400_0;
-    time1 = TIME_400_1;
+    time0  = TIME_400_0;
+    time1  = TIME_400_1;
     period = PERIOD_400;
   }
 #endif
