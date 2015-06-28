@@ -941,7 +941,7 @@ void Adafruit_NeoPixel::show(void) {
   timeValue = &(TC1->TC_CHANNEL[0].TC_CV);  // the initial 'while'.
   timeReset = &(TC1->TC_CHANNEL[0].TC_CCR);
   p         =  pixels;
-  end       =  p + numBytes;
+  end       =  p + numBytes - 1;
   pix       = *p++;
   mask      = 0x80;
 

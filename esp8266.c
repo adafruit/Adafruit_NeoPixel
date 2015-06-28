@@ -29,7 +29,7 @@ void ICACHE_RAM_ATTR espShow(
 
   pinMask   = _BV(pin);
   p         =  pixels;
-  end       =  p + numBytes;
+  end       =  p + numBytes - 1;
   pix       = *p++;
   mask      = 0x80;
   startTime = 0;
