@@ -58,7 +58,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) :
     gOffset = 1;
     bOffset = 2;
   }
-  
+
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
@@ -911,6 +911,77 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+#elif defined(NRF51) || defined(__RFduino__)
+
+#ifdef NRF51
+  int nRF51pin = Pin_nRF51822_to_Arduino(pin);
+#else
+  int nRF51pin = pin;
+#endif
+  uint8_t *p = pixels, *end = p + numBytes;
+
+  // based off of: http://forum.rfduino.com/index.php?topic=787.0
+  noInterrupts();
+  while(p < end) {
+    uint8_t pix = *p++;
+
+    if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+      for(int i = 7; i >= 0; i--) {
+        NRF_GPIO->OUTSET = (1UL << nRF51pin);
+
+        if(pix & (0x01 << i)) {
+          __ASM ( \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                );
+          NRF_GPIO->OUTCLR = (1UL << nRF51pin);
+
+        } else {
+          NRF_GPIO->OUTCLR = (1UL << nRF51pin);
+          __ASM ( \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                );
+        }
+      }
+    } else { // 400 KHz bitstream
+      for(int i = 7; i >= 0; i--) {
+        NRF_GPIO->OUTSET = (1UL << nRF51pin);
+
+        if(pix & (0x01 << i)) {
+          __ASM ( \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                );
+          NRF_GPIO->OUTCLR = (1UL << nRF51pin);
+        } else {
+          NRF_GPIO->OUTCLR = (1UL << nRF51pin);
+          __ASM ( \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                " NOP\n\t" \
+                );
+        }
+      }
+    }
+  }
+  delayMicroseconds(50); // latch and reset WS2812.
+  interrupts();
 
 #else // Other ARM architecture -- Presumed Arduino Due
 
