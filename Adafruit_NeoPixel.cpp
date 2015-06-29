@@ -846,7 +846,7 @@ void Adafruit_NeoPixel::show(void) {
   portNum =  g_APinDescription[pin].ulPort;
   pinMask =  1ul << g_APinDescription[pin].ulPin;
   ptr     =  pixels;
-  end     =  ptr + numBytes - 1;
+  end     =  ptr + numBytes;
   p       = *ptr++;
   bitMask =  0x80;
 
@@ -941,7 +941,7 @@ void Adafruit_NeoPixel::show(void) {
   timeValue = &(TC1->TC_CHANNEL[0].TC_CV);  // the initial 'while'.
   timeReset = &(TC1->TC_CHANNEL[0].TC_CCR);
   p         =  pixels;
-  end       =  p + numBytes - 1;
+  end       =  p + numBytes;
   pix       = *p++;
   mask      = 0x80;
 

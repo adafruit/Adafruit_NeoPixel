@@ -5,7 +5,6 @@
 #ifdef ESP8266
 
 #include <Arduino.h>
-#include <eagle_soc.h>
 
 static uint32_t _getCycleCount(void) __attribute__((always_inline));
 static inline uint32_t _getCycleCount(void) {
@@ -29,7 +28,7 @@ void ICACHE_RAM_ATTR espShow(
 
   pinMask   = _BV(pin);
   p         =  pixels;
-  end       =  p + numBytes - 1;
+  end       =  p + numBytes;
   pix       = *p++;
   mask      = 0x80;
   startTime = 0;
