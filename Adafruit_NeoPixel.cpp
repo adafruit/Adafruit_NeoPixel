@@ -34,17 +34,52 @@
 
 #include "Adafruit_NeoPixel.h"
 
+// Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) :
-   numLEDs(n), numBytes(n * 3), pin(p), brightness(0),
-   pixels(NULL), type(t), endTime(0)
-#ifdef __AVR__
-  ,port(portOutputRegister(digitalPinToPort(p))),
-   pinMask(digitalPinToBitMask(p))
-#endif
+  brightness(0), pixels(NULL), endTime(0), begun(false)
 {
+  updateLength(n);
+  setPin(p);
+  updateType(t);
+}
+
+// via Michael Vogt/neophob: empty constructor is used when strand length
+// isn't known at compile-time; situations where program config might be
+// read from internal flash memory or an SD card, or arrive via serial
+// command.  If using this constructor, MUST follow up with updateLength(),
+// etc. to establish the strand length, type and pin number!
+Adafruit_NeoPixel::Adafruit_NeoPixel() :
+  pin(-1), brightness(0), pixels(NULL), endTime(0), begun(false),
+  numLEDs(0), numBytes(0), type(NEO_GRB + NEO_KHZ800) { }
+
+Adafruit_NeoPixel::~Adafruit_NeoPixel() {
+  if(pixels)   free(pixels);
+  if(pin >= 0) pinMode(pin, INPUT);
+}
+
+void Adafruit_NeoPixel::begin(void) {
+  if(pin >= 0) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+  }
+  begun = true;
+}
+
+void Adafruit_NeoPixel::updateLength(uint16_t n) {
+  if(pixels) free(pixels); // Free existing data (if any)
+
+  // Allocate new data -- note: ALL PIXELS ARE CLEARED
+  numBytes = n * 3;
   if((pixels = (uint8_t *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
+    numLEDs = n;
+  } else {
+    numLEDs = numBytes = 0;
   }
+}
+
+void Adafruit_NeoPixel::updateType(uint8_t t) {
+  type = t;
   if(t & NEO_GRB) { // GRB vs RGB; might add others if needed
     rOffset = 1;
     gOffset = 0;
@@ -58,17 +93,6 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) :
     gOffset = 1;
     bOffset = 2;
   }
-  
-}
-
-Adafruit_NeoPixel::~Adafruit_NeoPixel() {
-  if(pixels) free(pixels);
-  pinMode(pin, INPUT);
-}
-
-void Adafruit_NeoPixel::begin(void) {
-  pinMode(pin, OUTPUT);
-  digitalWrite(pin, LOW);
 }
 
 
@@ -999,14 +1023,18 @@ void Adafruit_NeoPixel::show(void) {
 
 // Set the output pin number
 void Adafruit_NeoPixel::setPin(uint8_t p) {
-  pinMode(pin, INPUT);
-  pin = p;
-  pinMode(p, OUTPUT);
-  digitalWrite(p, LOW);
+  if(begun && (pin >= 0)) pinMode(pin, INPUT);
+  if(p >= 0) {
+    pin = p;
+    if(begun) {
+      pinMode(p, OUTPUT);
+      digitalWrite(p, LOW);
+    }
 #ifdef __AVR__
-  port    = portOutputRegister(digitalPinToPort(p));
-  pinMask = digitalPinToBitMask(p);
+    port    = portOutputRegister(digitalPinToPort(p));
+    pinMask = digitalPinToBitMask(p);
 #endif
+  }
 }
 
 // Set pixel color from separate R,G,B components:
