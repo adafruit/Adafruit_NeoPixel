@@ -88,6 +88,10 @@ void Adafruit_NeoPixel::updateType(uint8_t t) {
     rOffset = 1;
     gOffset = 2;
     bOffset = 0;
+  } else if (t & NEO_RBG) {
+    rOffset = 0;
+    gOffset = 2;
+    bOffset = 1;    
   } else {
     rOffset = 0;
     gOffset = 1;
