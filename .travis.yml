@@ -16,9 +16,9 @@ script:
   - arduino --verify --board arduino:avr:uno $PWD/examples/buttoncycler/buttoncycler.ino
   - arduino --verify --board arduino:avr:uno $PWD/examples/simple/simple.ino
   - arduino --verify --board arduino:avr:uno $PWD/examples/strandtest/strandtest.ino
-  - arduino --verify --board arduino:sam:due $PWD/examples/buttoncycler/buttoncycler.ino
-  - arduino --verify --board arduino:sam:due $PWD/examples/simple/simple.ino
-  - arduino --verify --board arduino:sam:due $PWD/examples/strandtest/strandtest.ino
+  - arduino --verify --board arduino:sam:arduino_due_x_dbg $PWD/examples/buttoncycler/buttoncycler.ino
+  - arduino --verify --board arduino:sam:arduino_due_x_dbg $PWD/examples/simple/simple.ino
+  - arduino --verify --board arduino:sam:arduino_due_x_dbg $PWD/examples/strandtest/strandtest.ino
   - arduino --verify --board esp8266:esp8266:generic $PWD/examples/buttoncycler/buttoncycler.ino
   - arduino --verify --board esp8266:esp8266:generic $PWD/examples/simple/simple.ino
   - arduino --verify --board esp8266:esp8266:generic $PWD/examples/strandtest/strandtest.ino
