@@ -10,8 +10,8 @@ before_install:
 install:
   - ln -s $PWD /usr/local/share/arduino/libraries/Adafruit_NeoPixel
   - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/package_esp8266com_index.json" --save-prefs
-  - arduino --install-boards arduino:sam
-  - arduino --install-boards esp8266:esp8266
+  - arduino --install-boards arduino:sam > /dev/null
+  - arduino --install-boards esp8266:esp8266 > /dev/null
 script:
   - arduino --verify --board arduino:avr:uno $PWD/examples/buttoncycler/buttoncycler.ino
   - arduino --verify --board arduino:avr:uno $PWD/examples/simple/simple.ino
