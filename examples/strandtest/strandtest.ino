@@ -1,5 +1,7 @@
 #include <Adafruit_NeoPixel.h>
-#include <avr/power.h> // Comment out this line for non-AVR boards (Arduino Due, etc.)
+#ifdef __AVR__
+  #include <avr/power.h>
+#endif
 
 #define PIN 6
 

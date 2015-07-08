@@ -2,7 +2,9 @@
 // released under the GPLv3 license to match the rest of the AdaFruit NeoPixel library
 
 #include <Adafruit_NeoPixel.h>
-#include <avr/power.h>
+#ifdef __AVR__
+  #include <avr/power.h>
+#endif
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
