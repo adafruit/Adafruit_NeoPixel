@@ -1082,6 +1082,39 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
   return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
 }
 
+// Convert Hue/Saturation/Brightness values to a packed 32-bit RBG color.
+// hue must be a float value between 0 and 360
+// saturation must be a float value between 0 and 1
+// brightness must be a float value between 0 and 1
+uint32_t Adafruit_NeoPixel::HSVColor(float h, float s, float v) {
+  int i, b, p, q, t;
+  float f;
+
+  h /= 60.0;  // sector 0 to 5
+  i = floor( h );
+  f = h - i;  // factorial part of h
+
+  b = v * 255;
+  p = v * ( 1 - s ) * 255;
+  q = v * ( 1 - s * f ) * 255;
+  t = v * ( 1 - s * ( 1 - f ) ) * 255;
+
+  switch( i ) {
+    case 0:
+      return Color(b, t, p);
+    case 1:
+      return Color(q, b, p);
+    case 2:
+      return Color(p, b, t);
+    case 3:
+      return Color(p, q, b);
+    case 4:
+      return Color(t, p, b);
+    default:
+      return Color(b, p, q);
+  }
+}
+
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   if(n >= numLEDs) {
