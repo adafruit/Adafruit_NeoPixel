@@ -1,9 +1,10 @@
 language: c
 sudo: false
 before_install:
-  - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
+  - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/automate/install.sh)
 script:
-  - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/automate/verify.sh)
+  - build_main_platforms
+  - build_examples trinket
 notifications:
   email:
     on_success: change
