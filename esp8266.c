@@ -5,6 +5,7 @@
 #ifdef ESP8266
 
 #include <Arduino.h>
+#include <eagle_soc.h>
 
 static uint32_t _getCycleCount(void) __attribute__((always_inline));
 static inline uint32_t _getCycleCount(void) {
