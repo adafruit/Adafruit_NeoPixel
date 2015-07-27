@@ -3,18 +3,8 @@ sudo: false
 before_install:
   - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
 script:
-  - arduino --board arduino:avr:uno --save-prefs
-  - arduino --verify $PWD/examples/buttoncycler/buttoncycler.ino
-  - arduino --verify $PWD/examples/simple/simple.ino
-  - arduino --verify $PWD/examples/strandtest/strandtest.ino
-  - arduino --board arduino:sam:arduino_due_x --save-prefs
-  - arduino --verify $PWD/examples/buttoncycler/buttoncycler.ino
-  - arduino --verify $PWD/examples/simple/simple.ino
-  - arduino --verify $PWD/examples/strandtest/strandtest.ino
-  - arduino --board esp8266:esp8266:generic --save-prefs
-  - arduino --verify $PWD/examples/buttoncycler/buttoncycler.ino
-  - arduino --verify $PWD/examples/simple/simple.ino
-  - arduino --verify $PWD/examples/strandtest/strandtest.ino
+  - build_main_platforms
+  - build_platform trinket
 notifications:
   email:
     on_success: change
