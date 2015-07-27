@@ -4,7 +4,7 @@ before_install:
   - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
 script:
   - build_main_platforms
-  - build_examples trinket
+  - build_platform trinket
 notifications:
   email:
     on_success: change
