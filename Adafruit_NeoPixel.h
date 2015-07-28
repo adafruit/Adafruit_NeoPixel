@@ -68,6 +68,8 @@ class Adafruit_NeoPixel {
     numPixels(void) const;
   static uint32_t
     Color(uint8_t r, uint8_t g, uint8_t b);
+  static uint32_t
+    HSVColor(float h, float s, float v);
   uint32_t
     getPixelColor(uint16_t n) const;
   inline bool
