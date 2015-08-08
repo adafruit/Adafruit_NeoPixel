@@ -1046,44 +1046,44 @@ void Adafruit_NeoPixel::setPixelColor(
  int16_t n, uint8_t r, uint8_t g, uint8_t b) {
 
   if(n < 0) {
-    n = numLEDs + n;
+    n = (numLEDs + n) % numLEDs;
+  } else {
+    n %= (numLEDs - 1);
   }
-
-  if(n < numLEDs  && n >= 0) {
-    if(brightness) { // See notes in setBrightness()
-      r = (r * brightness) >> 8;
-      g = (g * brightness) >> 8;
-      b = (b * brightness) >> 8;
-    }
-    uint8_t *p = &pixels[n * 3];
-    p[rOffset] = r;
-    p[gOffset] = g;
-    p[bOffset] = b;
+  
+  if(brightness) { // See notes in setBrightness()
+    r = (r * brightness) >> 8;
+    g = (g * brightness) >> 8;
+    b = (b * brightness) >> 8;
   }
+  uint8_t *p = &pixels[n * 3];
+  p[rOffset] = r;
+  p[gOffset] = g;
+  p[bOffset] = b;
 }
 
 // Set pixel color from 'packed' 32-bit RGB color:
 void Adafruit_NeoPixel::setPixelColor(int16_t n, uint32_t c) {
 
   if(n < 0) {
-    n = numLEDs + n;
+    n = (numLEDs + n) % numLEDs;
+  } else {
+    n %= (numLEDs - 1);
   }
 
-  if(n < numLEDs && n >= 0) {
-    uint8_t
-      r = (uint8_t)(c >> 16),
-      g = (uint8_t)(c >>  8),
-      b = (uint8_t)c;
-    if(brightness) { // See notes in setBrightness()
-      r = (r * brightness) >> 8;
-      g = (g * brightness) >> 8;
-      b = (b * brightness) >> 8;
-    }
-    uint8_t *p = &pixels[n * 3];
-    p[rOffset] = r;
-    p[gOffset] = g;
-    p[bOffset] = b;
+  uint8_t
+    r = (uint8_t)(c >> 16),
+    g = (uint8_t)(c >>  8),
+    b = (uint8_t)c;
+  if(brightness) { // See notes in setBrightness()
+    r = (r * brightness) >> 8;
+    g = (g * brightness) >> 8;
+    b = (b * brightness) >> 8;
   }
+  uint8_t *p = &pixels[n * 3];
+  p[rOffset] = r;
+  p[gOffset] = g;
+  p[bOffset] = b;
 }
 
 // Convert separate R,G,B into packed 32-bit RGB color.
