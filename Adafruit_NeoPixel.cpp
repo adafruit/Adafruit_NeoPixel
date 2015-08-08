@@ -91,7 +91,7 @@ void Adafruit_NeoPixel::updateType(uint8_t t) {
   } else if (t & NEO_RBG) {
     rOffset = 0;
     gOffset = 2;
-    bOffset = 1;    
+    bOffset = 1;
   } else {
     rOffset = 0;
     gOffset = 1;
@@ -1050,7 +1050,7 @@ void Adafruit_NeoPixel::setPixelColor(
   } else {
     n = (n % numLEDs) - 1;
   }
-  
+
   if(brightness) { // See notes in setBrightness()
     r = (r * brightness) >> 8;
     g = (g * brightness) >> 8;
