@@ -15,7 +15,7 @@ static inline uint32_t _getCycleCount(void) {
 }
 
 void ICACHE_RAM_ATTR espShow(
- uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type) {
+ uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
 
 #define CYCLES_800_T0H  (F_CPU / 2500000) // 0.4us
 #define CYCLES_800_T1H  (F_CPU / 1250000) // 0.8us
@@ -35,7 +35,7 @@ void ICACHE_RAM_ATTR espShow(
   startTime = 0;
 
 #ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+  if(is800KHz) {
 #endif
     time0  = CYCLES_800_T0H;
     time1  = CYCLES_800_T1H;
