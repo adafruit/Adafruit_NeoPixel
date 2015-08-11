@@ -2,7 +2,7 @@
   Arduino library to control a wide variety of WS2811- and WS2812-based RGB
   LED devices such as Adafruit FLORA RGB Smart Pixels and NeoPixel strips.
   Currently handles 400 and 800 KHz bitstreams on 8, 12 and 16 MHz ATmega
-  MCUs, with LEDs wired for RGB or GRB color order.  8 MHz MCUs provide
+  MCUs, with LEDs wired for various color orders.  8 MHz MCUs provide
   output on PORTB and PORTD, while 16 MHz chips can handle most output pins
   (possible exception with upper PORT registers on the Arduino Mega).
 
@@ -35,22 +35,27 @@
 #include "Adafruit_NeoPixel.h"
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
   brightness(0), pixels(NULL), endTime(0), begun(false)
 {
+  updateType(t);
   updateLength(n);
   setPin(p);
-  updateType(t);
 }
 
 // via Michael Vogt/neophob: empty constructor is used when strand length
 // isn't known at compile-time; situations where program config might be
 // read from internal flash memory or an SD card, or arrive via serial
-// command.  If using this constructor, MUST follow up with updateLength(),
-// etc. to establish the strand length, type and pin number!
+// command.  If using this constructor, MUST follow up with updateType(),
+// updateLength(), etc. to establish the strand type, length and pin number!
 Adafruit_NeoPixel::Adafruit_NeoPixel() :
   pin(-1), brightness(0), pixels(NULL), endTime(0), begun(false),
-  numLEDs(0), numBytes(0), type(NEO_GRB + NEO_KHZ800) { }
+  numLEDs(0), numBytes(0), rOffset(1), gOffset(0), bOffset(2), wOffset(1)
+#ifdef NEO_KHZ400
+  , is800KHz(true)
+#endif
+{
+}
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   if(pixels)   free(pixels);
@@ -69,7 +74,7 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   if(pixels) free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * 3;
+  numBytes = n * ((wOffset == rOffset) ? 3 : 4);
   if((pixels = (uint8_t *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
     numLEDs = n;
@@ -78,27 +83,24 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   }
 }
 
-void Adafruit_NeoPixel::updateType(uint8_t t) {
-  type = t;
-  if(t & NEO_GRB) { // GRB vs RGB; might add others if needed
-    rOffset = 1;
-    gOffset = 0;
-    bOffset = 2;
-  } else if (t & NEO_BRG) {
-    rOffset = 1;
-    gOffset = 2;
-    bOffset = 0;
-  } else if (t & NEO_RBG) {
-    rOffset = 0;
-    gOffset = 2;
-    bOffset = 1;    
-  } else {
-    rOffset = 0;
-    gOffset = 1;
-    bOffset = 2;
+void Adafruit_NeoPixel::updateType(neoPixelType t) {
+  boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
+
+  wOffset = (t >> 6) & 0b11; // See notes in header file
+  rOffset = (t >> 4) & 0b11; // regarding R/G/B/W offsets
+  gOffset = (t >> 2) & 0b11;
+  bOffset =  t       & 0b11;
+#ifdef NEO_KHZ400
+  is800KHz = (t < 256);      // 400 KHz flag is 1<<8
+#endif
+
+  // If bytes-per-pixel has changed (and pixel data was previously
+  // allocated), re-allocate to new size.  Will clear any data.
+  if(pixels) {
+    boolean newThreeBytesPerPixel = (wOffset == rOffset);
+    if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs);
   }
 }
-
 
 #ifdef ESP8266
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
@@ -162,8 +164,8 @@ void Adafruit_NeoPixel::show(void) {
 // 8 MHz(ish) AVR ---------------------------------------------------------
 #if (F_CPU >= 7400000UL) && (F_CPU <= 9500000UL)
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
 
     volatile uint8_t n1, n2 = 0;  // First, next bits out
@@ -420,8 +422,8 @@ void Adafruit_NeoPixel::show(void) {
 // 12 MHz(ish) AVR --------------------------------------------------------
 #elif (F_CPU >= 11100000UL) && (F_CPU <= 14300000UL)
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
 
     // In the 12 MHz case, an optimized 800 KHz datastream (no dead time
@@ -600,8 +602,8 @@ void Adafruit_NeoPixel::show(void) {
 // 16 MHz(ish) AVR --------------------------------------------------------
 #elif (F_CPU >= 15400000UL) && (F_CPU <= 19000000L)
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
 
     // WS2811 and WS2812 have different hi/lo duty cycles; this is
@@ -737,8 +739,8 @@ void Adafruit_NeoPixel::show(void) {
   ARM_DEMCR    |= ARM_DEMCR_TRCENA;
   ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
     cyc = ARM_DWT_CYCCNT + CYCLES_800;
     while(p < end) {
@@ -881,8 +883,8 @@ void Adafruit_NeoPixel::show(void) {
   volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
                     *clr = &(PORT->Group[portNum].OUTCLR.reg);
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
     for(;;) {
       *set = pinMask;
@@ -973,8 +975,8 @@ void Adafruit_NeoPixel::show(void) {
   pix       = *p++;
   mask      = 0x80;
 
-#ifdef NEO_KHZ400
-  if((type & NEO_SPDMASK) == NEO_KHZ800) { // 800 KHz bitstream
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
 #endif
     time0  = TIME_800_0;
     time1  = TIME_800_1;
@@ -1013,7 +1015,7 @@ void Adafruit_NeoPixel::show(void) {
 // ESP8266 ----------------------------------------------------------------
 
   // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
-  espShow(pin, pixels, numBytes, type);
+  espShow(pin, pixels, numBytes, is800KHz);
 
 #endif // ESP8266
 
@@ -1044,14 +1046,21 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
 // Set pixel color from separate R,G,B components:
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
+
   if(n < numLEDs) {
     if(brightness) { // See notes in setBrightness()
       r = (r * brightness) >> 8;
       g = (g * brightness) >> 8;
       b = (b * brightness) >> 8;
     }
-    uint8_t *p = &pixels[n * 3];
-    p[rOffset] = r;
+    uint8_t *p;
+    if(wOffset == rOffset) { // Is an RGB-type strip
+      p = &pixels[n * 3];    // 3 bytes per pixel
+    } else {                 // Is a WRGB-type strip
+      p = &pixels[n * 4];    // 4 bytes per pixel
+      p[wOffset] = 0;        // But only R,G,B passed -- set W to 0
+    }
+    p[rOffset] = r;          // R,G,B always stored
     p[gOffset] = g;
     p[bOffset] = b;
   }
@@ -1060,7 +1069,7 @@ void Adafruit_NeoPixel::setPixelColor(
 // Set pixel color from 'packed' 32-bit RGB color:
 void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   if(n < numLEDs) {
-    uint8_t
+    uint8_t *p,
       r = (uint8_t)(c >> 16),
       g = (uint8_t)(c >>  8),
       b = (uint8_t)c;
@@ -1069,7 +1078,13 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
       g = (g * brightness) >> 8;
       b = (b * brightness) >> 8;
     }
-    uint8_t *p = &pixels[n * 3];
+    if(wOffset == rOffset) {
+      p = &pixels[n * 3];
+    } else {
+      p = &pixels[n * 4];
+      uint8_t w = (uint8_t)(c >> 24);
+      p[wOffset] = brightness ? ((w * brightness) >> 8) : w;
+    }
     p[rOffset] = r;
     p[gOffset] = g;
     p[bOffset] = b;
@@ -1082,31 +1097,54 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
   return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
 }
 
+// Convert separate R,G,B,W into packed 32-bit WRGB color.
+// Packed format is always WRGB, regardless of LED strand color order.
+uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+}
+
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
-  if(n >= numLEDs) {
-    // Out of bounds, return no color.
-    return 0;
+  if(n >= numLEDs) return 0; // Out of bounds, return no color.
+
+  uint8_t *p;
+
+  if(wOffset == rOffset) { // Is RGB-type device
+    p = &pixels[n * 3];
+    if(brightness) {
+      // Stored color was decimated by setBrightness().  Returned value
+      // attempts to scale back to an approximation of the original 24-bit
+      // value used when setting the pixel color, but there will always be
+      // some error -- those bits are simply gone.  Issue is most
+      // pronounced at low brightness levels.
+      return (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
+             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
+             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+    } else {
+      // No brightness adjustment has been made -- return 'raw' color
+      return ((uint32_t)p[rOffset] << 16) |
+             ((uint32_t)p[gOffset] <<  8) |
+              (uint32_t)p[bOffset];
+    }
+  } else {                 // Is RGBW-type device
+    p = &pixels[n * 4];
+    if(brightness) { // Return scaled color
+      return (((uint32_t)(p[wOffset] << 8) / brightness) << 24) |
+             (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
+             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
+             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+    } else { // Return raw color
+      return ((uint32_t)p[wOffset] << 24) |
+             ((uint32_t)p[rOffset] << 16) |
+             ((uint32_t)p[gOffset] <<  8) |
+              (uint32_t)p[bOffset];
+    }
   }
-  uint8_t *p = &pixels[n * 3];
-  uint32_t c = ((uint32_t)p[rOffset] << 16) |
-               ((uint32_t)p[gOffset] <<  8) |
-                (uint32_t)p[bOffset];
-  // Adjust this back up to the true color, as setting a pixel color will
-  // scale it back down again.
-  if(brightness) { // See notes in setBrightness()
-    //Cast the color to a byte array
-    uint8_t * c_ptr =reinterpret_cast<uint8_t*>(&c);
-    c_ptr[0] = (c_ptr[0] << 8)/brightness;
-    c_ptr[1] = (c_ptr[1] << 8)/brightness;
-    c_ptr[2] = (c_ptr[2] << 8)/brightness;
-  }
-  return c; // Pixel # is out of bounds
 }
 
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
 // native format and is not translated here.  Application will need to be
-// aware whether pixels are RGB vs. GRB and handle colors appropriately.
+// aware of specific pixel data format and handle colors appropriately.
 uint8_t *Adafruit_NeoPixel::getPixels(void) const {
   return pixels;
 }
