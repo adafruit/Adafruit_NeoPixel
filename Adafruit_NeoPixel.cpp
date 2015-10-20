@@ -941,6 +941,88 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+#elif defined (ARDUINO_STM32F2_FEATHER) // FEATHER WICED (120MHz)
+
+  // Tried this with a timer/counter, couldn't quite get adequate
+  // resolution.  So yay, you get a load of goofball NOPs...
+
+  uint8_t  *ptr, *end, p, bitMask;
+  uint32_t  pinMask;
+
+  pinMask =  BIT(PIN_MAP[pin].gpio_bit);
+  ptr     =  pixels;
+  end     =  ptr + numBytes;
+  p       = *ptr++;
+  bitMask =  0x80;
+
+  volatile uint16_t *set = &(PIN_MAP[pin].gpio_device->regs->BSRRL);
+  volatile uint16_t *clr = &(PIN_MAP[pin].gpio_device->regs->BSRRH);
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    for(;;) {
+      if(p & bitMask) { // ONE
+        // High 800ns
+        *set = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop;");
+        // Low 450ns
+        *clr = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop;");
+      } else { // ZERO
+        // High 400ns
+        *set = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop;");
+        // Low 850ns
+        *clr = pinMask;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop;");
+      }
+      if(bitMask >>= 1) {
+        // Move on to the next pixel
+        asm("nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+#ifdef NEO_KHZ400
+  } else { // 400 KHz bitstream
+    // ToDo!
+  }
+#endif
+
 
 #else // Other ARM architecture -- Presumed Arduino Due
 
