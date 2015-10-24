@@ -1173,6 +1173,22 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
+// Convenience function:
+// Set entire strip color from separate R,G,B components:
+void Adafruit_NeoPixel::setAllPixels(uint8_t r, uint8_t g, uint8_t b) {
+  for(uint16_t i=0; i<numLEDs; i++) {
+    setPixelColor(i, r, g, b);
+  }
+}
+
+// Convenience function:
+// Set entire strip color from 'packed' 32-bit RGB color:
+void Adafruit_NeoPixel::setAllPixels(uint32_t c) {
+  for(uint16_t i=0; i<numLEDs; i++) {
+    setPixelColor(i, c);
+  }
+}
+
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
 uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
