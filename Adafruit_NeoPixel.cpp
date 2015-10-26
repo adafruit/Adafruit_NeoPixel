@@ -1148,6 +1148,14 @@ void Adafruit_NeoPixel::setPixelColor(
   }
 }
 
+// Set pixel color and brightness from RGB and Brightness components
+void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  if(n < numLEDs) {
+    this -> setBrightness(w);
+    this -> setPixelColor(n, r, g, b);
+  }
+}
+
 // Set pixel color from 'packed' 32-bit RGB color:
 void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   if(n < numLEDs) {
