@@ -1023,7 +1023,6 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
-
 #else // Other ARM architecture -- Presumed Arduino Due
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
@@ -1143,6 +1142,29 @@ void Adafruit_NeoPixel::setPixelColor(
       p[wOffset] = 0;        // But only R,G,B passed -- set W to 0
     }
     p[rOffset] = r;          // R,G,B always stored
+    p[gOffset] = g;
+    p[bOffset] = b;
+  }
+}
+
+void Adafruit_NeoPixel::setPixelColor(
+ uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+
+  if(n < numLEDs) {
+    if(brightness) { // See notes in setBrightness()
+      r = (r * brightness) >> 8;
+      g = (g * brightness) >> 8;
+      b = (b * brightness) >> 8;
+      w = (w * brightness) >> 8;
+    }
+    uint8_t *p;
+    if(wOffset == rOffset) { // Is an RGB-type strip
+      p = &pixels[n * 3];    // 3 bytes per pixel (ignore W)
+    } else {                 // Is a WRGB-type strip
+      p = &pixels[n * 4];    // 4 bytes per pixel
+      p[wOffset] = w;        // Store W
+    }
+    p[rOffset] = r;          // Store R,G,B
     p[gOffset] = g;
     p[bOffset] = b;
   }
