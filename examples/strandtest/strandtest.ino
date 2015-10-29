@@ -28,6 +28,7 @@ void setup() {
 
 
   strip.begin();
+  strip.setBrightness(50); // Ranges from 0 (off) to 255 (full power)
   strip.show(); // Initialize all pixels to 'off'
 }
 
