@@ -1224,6 +1224,53 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   }
 }
 
+//Returns color value of channel of a pixel - channel value is R,G,B,W passed as int
+uint8_t Adafruit_NeoPixel::getPixelColorChannel(uint16_t n, uint8_t channel) const {
+    if(n >= numLEDs) return 0; // Out of bounds, return no color.
+
+    uint8_t *p;
+
+    if(wOffset == rOffset) { // Is RGB-type device
+      if (channel > 3) return 0; //channel out of bonds
+
+      p = &pixels[n * 3];
+      if(brightness) {
+        // Stored color was decimated by setBrightness().  Returned value
+        // attempts to scale back to an approximation of the original 24-bit
+        // value used when setting the pixel color, but there will always be
+        // some error -- those bits are simply gone.  Issue is most
+        // pronounced at low brightness levels.
+
+        if (channel == 0) return ((p[rOffset] << 8) / brightness);
+        else if (channel == 1) return ((p[gOffset] << 8) / brightness);
+        else if (channel == 2) return ((p[bOffset] << 8) / brightness);
+
+      } else {
+        // No brightness adjustment has been made -- return 'raw' color
+        if (channel == 0) return p[rOffset];
+        else if (channel == 1) return p[gOffset];
+        else if (channel == 2) return p[bOffset];
+
+      }
+    } else {                 // Is RGBW-type device
+      p = &pixels[n * 4];
+      if (channel > 4) return 0; //channel out of bonds
+      if(brightness) { // Return scaled color
+
+        if (channel == 0) return ((p[rOffset] << 8) / brightness);
+        else if (channel == 1) return ((p[gOffset] << 8) / brightness);
+        else if (channel == 2) return ((p[bOffset] << 8) / brightness);
+        else if (channel == 3) return ((p[wOffset] << 8) / brightness);
+
+      } else { // Return raw color
+        if (channel == 0) return p[rOffset];
+        else if (channel == 1) return p[gOffset];
+        else if (channel == 2) return p[bOffset];
+        else if (channel == 3) return p[wOffset];
+      }
+    }
+}
+
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
 // native format and is not translated here.  Application will need to be
 // aware of specific pixel data format and handle colors appropriately.
