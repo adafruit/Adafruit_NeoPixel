@@ -1124,6 +1124,10 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
   }
 }
 
+uint8_t Adafruit_NeoPixel::getPin() const {
+  return pin;
+}
+
 // Set pixel color from separate R,G,B components:
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
