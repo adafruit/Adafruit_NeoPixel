@@ -36,7 +36,7 @@
 
 // Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
-  brightness(0), pixels(NULL), endTime(0), begun(false)
+  begun(false), brightness(0), pixels(NULL), endTime(0)
 {
   updateType(t);
   updateLength(n);
@@ -49,11 +49,11 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
 // command.  If using this constructor, MUST follow up with updateType(),
 // updateLength(), etc. to establish the strand type, length and pin number!
 Adafruit_NeoPixel::Adafruit_NeoPixel() :
-  pin(-1), brightness(0), pixels(NULL), endTime(0), begun(false),
-  numLEDs(0), numBytes(0), rOffset(1), gOffset(0), bOffset(2), wOffset(1)
 #ifdef NEO_KHZ400
-  , is800KHz(true)
+  is800KHz(true),
 #endif
+  begun(false), pin(-1), brightness(0), pixels(NULL), endTime(0),
+  numLEDs(0), numBytes(0), rOffset(1), gOffset(0), bOffset(2), wOffset(1)
 {
 }
 
