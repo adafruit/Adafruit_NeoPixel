@@ -52,8 +52,11 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 #ifdef NEO_KHZ400
   is800KHz(true),
 #endif
-  begun(false), pin(-1), brightness(0), pixels(NULL), endTime(0),
-  numLEDs(0), numBytes(0), rOffset(1), gOffset(0), bOffset(2), wOffset(1)
+  begun(false),
+  numLEDs(0), numBytes(0),
+  pin(-1), brightness(0), pixels(NULL),
+  rOffset(1), gOffset(0), bOffset(2), wOffset(1),
+  endTime(0),
 {
 }
 
