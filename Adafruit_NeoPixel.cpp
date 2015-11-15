@@ -35,7 +35,7 @@
 #include "Adafruit_NeoPixel.h"
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int8_t p, neoPixelType t) :
   begun(false), brightness(0), pixels(NULL), endTime(0)
 {
   updateType(t);
