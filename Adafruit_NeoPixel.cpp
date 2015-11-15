@@ -1112,7 +1112,7 @@ void Adafruit_NeoPixel::show(void) {
 }
 
 // Set the output pin number
-void Adafruit_NeoPixel::setPin(uint8_t p) {
+void Adafruit_NeoPixel::setPin(int8_t p) {
   if(begun && (pin >= 0)) pinMode(pin, INPUT);
   if(p >= 0) {
     pin = p;
@@ -1127,7 +1127,7 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
   }
 }
 
-uint8_t Adafruit_NeoPixel::getPin() const {
+int8_t Adafruit_NeoPixel::getPin() const {
   return pin;
 }
 
