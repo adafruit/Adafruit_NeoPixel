@@ -108,27 +108,29 @@
 // is sufficient to encode pixel color order, saving some space.
 
 #ifdef NEO_KHZ400
-typedef uint8_t  neoPixelType;
-#else
 typedef uint16_t neoPixelType;
+#else
+typedef uint8_t neoPixelType;
 #endif
+
+typedef uint32_t neoPixelColor;
 
 class Adafruit_NeoPixel {
 
  public:
 
   // Constructor: number of LEDs, pin number, LED type
-  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel(uint16_t n, int8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
   void
     begin(void),
     show(void),
-    setPin(uint8_t p),
+    setPin(int8_t p),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
-    setPixelColor(uint16_t n, uint32_t c),
+    setPixelColor(uint16_t n, neoPixelColor c),
     setBrightness(uint8_t),
     clear(),
     updateLength(uint16_t n),
@@ -136,12 +138,14 @@ class Adafruit_NeoPixel {
   uint8_t
    *getPixels(void) const,
     getBrightness(void) const;
+  int8_t
+    getPin(void) const;
   uint16_t
     numPixels(void) const;
-  static uint32_t
+  static neoPixelColor
     Color(uint8_t r, uint8_t g, uint8_t b),
     Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w);
-  uint32_t
+  neoPixelColor
     getPixelColor(uint16_t n) const;
   inline bool
     canShow(void) { return (micros() - endTime) >= 50L; }

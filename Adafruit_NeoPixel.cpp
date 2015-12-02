@@ -35,8 +35,8 @@
 #include "Adafruit_NeoPixel.h"
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
-  brightness(0), pixels(NULL), endTime(0), begun(false)
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int8_t p, neoPixelType t) :
+  begun(false), brightness(0), pixels(NULL), endTime(0)
 {
   updateType(t);
   updateLength(n);
@@ -49,11 +49,14 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
 // command.  If using this constructor, MUST follow up with updateType(),
 // updateLength(), etc. to establish the strand type, length and pin number!
 Adafruit_NeoPixel::Adafruit_NeoPixel() :
-  pin(-1), brightness(0), pixels(NULL), endTime(0), begun(false),
-  numLEDs(0), numBytes(0), rOffset(1), gOffset(0), bOffset(2), wOffset(1)
 #ifdef NEO_KHZ400
-  , is800KHz(true)
+  is800KHz(true),
 #endif
+  begun(false),
+  numLEDs(0), numBytes(0),
+  pin(-1), brightness(0), pixels(NULL),
+  rOffset(1), gOffset(0), bOffset(2), wOffset(1),
+  endTime(0)
 {
 }
 
@@ -1109,7 +1112,7 @@ void Adafruit_NeoPixel::show(void) {
 }
 
 // Set the output pin number
-void Adafruit_NeoPixel::setPin(uint8_t p) {
+void Adafruit_NeoPixel::setPin(int8_t p) {
   if(begun && (pin >= 0)) pinMode(pin, INPUT);
   if(p >= 0) {
     pin = p;
@@ -1122,6 +1125,10 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
     pinMask = digitalPinToBitMask(p);
 #endif
   }
+}
+
+int8_t Adafruit_NeoPixel::getPin() const {
+  return pin;
 }
 
 // Set pixel color from separate R,G,B components:
@@ -1171,7 +1178,7 @@ void Adafruit_NeoPixel::setPixelColor(
 }
 
 // Set pixel color from 'packed' 32-bit RGB color:
-void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
+void Adafruit_NeoPixel::setPixelColor(uint16_t n, neoPixelColor c) {
   if(n < numLEDs) {
     uint8_t *p,
       r = (uint8_t)(c >> 16),
@@ -1197,18 +1204,18 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
 
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
-uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
-  return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+neoPixelColor Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
+  return ((neoPixelColor)r << 16) | ((neoPixelColor)g <<  8) | b;
 }
 
 // Convert separate R,G,B,W into packed 32-bit WRGB color.
 // Packed format is always WRGB, regardless of LED strand color order.
-uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+neoPixelColor Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  return ((neoPixelColor)w << 24) | ((neoPixelColor)r << 16) | ((neoPixelColor)g <<  8) | b;
 }
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
-uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
+neoPixelColor Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   if(n >= numLEDs) return 0; // Out of bounds, return no color.
 
   uint8_t *p;
@@ -1221,27 +1228,27 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
       // value used when setting the pixel color, but there will always be
       // some error -- those bits are simply gone.  Issue is most
       // pronounced at low brightness levels.
-      return (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
-             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+      return (((neoPixelColor)(p[rOffset] << 8) / brightness) << 16) |
+             (((neoPixelColor)(p[gOffset] << 8) / brightness) <<  8) |
+             ( (neoPixelColor)(p[bOffset] << 8) / brightness       );
     } else {
       // No brightness adjustment has been made -- return 'raw' color
-      return ((uint32_t)p[rOffset] << 16) |
-             ((uint32_t)p[gOffset] <<  8) |
-              (uint32_t)p[bOffset];
+      return ((neoPixelColor)p[rOffset] << 16) |
+             ((neoPixelColor)p[gOffset] <<  8) |
+              (neoPixelColor)p[bOffset];
     }
   } else {                 // Is RGBW-type device
     p = &pixels[n * 4];
     if(brightness) { // Return scaled color
-      return (((uint32_t)(p[wOffset] << 8) / brightness) << 24) |
-             (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
-             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+      return (((neoPixelColor)(p[wOffset] << 8) / brightness) << 24) |
+             (((neoPixelColor)(p[rOffset] << 8) / brightness) << 16) |
+             (((neoPixelColor)(p[gOffset] << 8) / brightness) <<  8) |
+             ( (neoPixelColor)(p[bOffset] << 8) / brightness       );
     } else { // Return raw color
-      return ((uint32_t)p[wOffset] << 24) |
-             ((uint32_t)p[rOffset] << 16) |
-             ((uint32_t)p[gOffset] <<  8) |
-              (uint32_t)p[bOffset];
+      return ((neoPixelColor)p[wOffset] << 24) |
+             ((neoPixelColor)p[rOffset] << 16) |
+             ((neoPixelColor)p[gOffset] <<  8) |
+              (neoPixelColor)p[bOffset];
     }
   }
 }
