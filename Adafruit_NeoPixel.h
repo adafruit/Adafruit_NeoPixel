@@ -108,9 +108,9 @@
 // is sufficient to encode pixel color order, saving some space.
 
 #ifdef NEO_KHZ400
-typedef uint8_t  neoPixelType;
-#else
 typedef uint16_t neoPixelType;
+#else
+typedef uint8_t  neoPixelType;
 #endif
 
 class Adafruit_NeoPixel {
