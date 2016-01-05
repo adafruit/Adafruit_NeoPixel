@@ -941,7 +941,7 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
-#elif defined (ARDUINO_STM32F2_FEATHER) // FEATHER WICED (120MHz)
+#elif defined (ARDUINO_STM32_FEATHER) // FEATHER WICED (120MHz)
 
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution.  So yay, you get a load of goofball NOPs...
