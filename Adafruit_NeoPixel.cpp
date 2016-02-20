@@ -1098,7 +1098,151 @@ void Adafruit_NeoPixel::show(void) {
   // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
   espShow(pin, pixels, numBytes, is800KHz);
 
-#endif // ESP8266
+#elif defined(__ARDUINO_ARC__)
+
+// Arduino 101  -----------------------------------------------------------
+
+  PinDescription *pindesc = &g_APinDescription[pin];
+  uint8_t        *p = pixels, *end = p + numBytes;
+  register uint8_t pix, mask;
+
+  if (pindesc->ulGPIOType == SS_GPIO) {
+    register uint32_t reg = pindesc->ulGPIOBase + SS_GPIO_SWPORTA_DR;
+    register uint32_t reg_val = __builtin_arc_lr((volatile uint32_t)reg);
+    register uint32_t reg_bit_high = reg_val | (1 << pindesc->ulGPIOId);
+    register uint32_t reg_bit_low  = reg_val & ~(1 << pindesc->ulGPIOId);
+
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        __builtin_arc_sr(reg_bit_high, (volatile uint32_t)reg);
+        if(pix & mask) {
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_sr(reg_bit_low, (volatile uint32_t)reg);
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+        } else {
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_sr(reg_bit_low, (volatile uint32_t)reg);
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+        }
+      }
+    }
+  } else if(pindesc->ulGPIOType == SOC_GPIO) {
+    register uint32_t reg = pindesc->ulGPIOBase + SOC_GPIO_SWPORTA_DR;
+    register uint32_t reg_val = MMIO_REG_VAL(reg);
+    register uint32_t reg_bit_high = reg_val | (1 << pindesc->ulGPIOId);
+    register uint32_t reg_bit_low  = reg_val & ~(1 << pindesc->ulGPIOId);
+
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        MMIO_REG_VAL(reg) = reg_bit_high;
+        if(pix & mask) {
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          MMIO_REG_VAL(reg) = reg_bit_low;
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+        } else {
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          MMIO_REG_VAL(reg) = reg_bit_low;
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+          __builtin_arc_nop();
+        }
+      }
+    }
+  }
+
+#endif
 
 
 // END ARCHITECTURE SELECT ------------------------------------------------
