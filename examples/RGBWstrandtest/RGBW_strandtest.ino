@@ -9,7 +9,7 @@
 
 #define BRIGHTNESS 50
 
-Adafruit_NeoPixel strip = _NeoPixel(NUM_LEDS, PIN, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRBW + NEO_KHZ800);
 
 int gamma[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
