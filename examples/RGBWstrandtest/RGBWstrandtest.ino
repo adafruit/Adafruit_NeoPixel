@@ -11,7 +11,7 @@
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRBW + NEO_KHZ800);
 
-int gamma[] = {
+int NEO_gamma[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -73,7 +73,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
 void pulseWhite(uint8_t wait) {
   for(int j = 0; j < 256 ; j++){
       for(uint16_t i=0; i<strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(0,0,0, gamma[j] ) );
+          strip.setPixelColor(i, strip.Color(0,0,0, NEO_gamma[j] ) );
         }
         delay(wait);
         strip.show();
@@ -81,7 +81,7 @@ void pulseWhite(uint8_t wait) {
 
   for(int j = 255; j >= 0 ; j--){
       for(uint16_t i=0; i<strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(0,0,0, gamma[j] ) );
+          strip.setPixelColor(i, strip.Color(0,0,0, NEO_gamma[j] ) );
         }
         delay(wait);
         strip.show();
@@ -137,7 +137,7 @@ void rainbowFade2White(uint8_t wait, int rainbowLoops, int whiteLoops) {
     for(int j = 0; j < 256 ; j++){
 
         for(uint16_t i=0; i < strip.numPixels(); i++) {
-            strip.setPixelColor(i, strip.Color(0,0,0, gamma[j] ) );
+            strip.setPixelColor(i, strip.Color(0,0,0, NEO_gamma[j] ) );
           }
           strip.show();
         }
@@ -146,7 +146,7 @@ void rainbowFade2White(uint8_t wait, int rainbowLoops, int whiteLoops) {
     for(int j = 255; j >= 0 ; j--){
 
         for(uint16_t i=0; i < strip.numPixels(); i++) {
-            strip.setPixelColor(i, strip.Color(0,0,0, gamma[j] ) );
+            strip.setPixelColor(i, strip.Color(0,0,0, NEO_gamma[j] ) );
           }
           strip.show();
         }
