@@ -251,10 +251,10 @@ uint32_t Wheel(byte WheelPos) {
 }
 
 uint8_t red(uint32_t c) {
-  return (c >> 8);
+  return (c >> 16);
 }
 uint8_t green(uint32_t c) {
-  return (c >> 16);
+  return (c >> 8);
 }
 uint8_t blue(uint32_t c) {
   return (c);
