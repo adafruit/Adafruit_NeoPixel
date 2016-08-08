@@ -286,6 +286,13 @@ void Adafruit_NeoPixel::show(void) {
 
 #endif // PORTD
 
+// Case where PORTC is available but PORTD is not
+#ifndef PORTD
+#ifdef PORTC
+    if(port == &PORTB) {
+#endif // def PORTC
+#endif // ndef PORTD
+
       // Same as above, just switched to PORTB and stripped of comments.
       hi = PORTB |  pinMask;
       lo = PORTB & ~pinMask;
@@ -365,6 +372,93 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef PORTD
     }    // endif PORTB
 #endif
+
+// Case where PORTC is available but PORTD is not
+#ifndef PORTD
+#ifdef PORTC
+    }
+#endif //def PORTC
+#endif // ndef PORTD
+
+#ifdef PORTC
+    else if(port == &PORTC) {
+    // Same as above, just switched to PORTC and stripped of comments.
+      hi = PORTC |  pinMask;
+      lo = PORTC & ~pinMask;
+      n1 = lo;
+      if(b & 0x80) n1 = hi;
+
+      asm volatile(
+       "headC:"                   "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n2]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n1]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 6"        "\n\t"
+         "mov %[n2]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n1]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n2]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 5"        "\n\t"
+         "mov %[n1]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n2]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n1]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 4"        "\n\t"
+         "mov %[n2]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n1]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n2]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 3"        "\n\t"
+         "mov %[n1]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n2]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n1]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 2"        "\n\t"
+         "mov %[n2]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n1]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n2]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 1"        "\n\t"
+         "mov %[n1]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n2]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n1]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "sbrc %[byte] , 0"        "\n\t"
+         "mov %[n2]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "sbiw %[count], 1"        "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "mov  %[n1]   , %[lo]"    "\n\t"
+        "out  %[port] , %[n2]"    "\n\t"
+        "ld   %[byte] , %a[ptr]+" "\n\t"
+        "sbrc %[byte] , 7"        "\n\t"
+         "mov %[n1]   , %[hi]"    "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "brne headC"              "\n"
+      : [byte] "+r" (b), [n1] "+r" (n1), [n2] "+r" (n2), [count] "+w" (i)
+      : [port] "I" (_SFR_IO_ADDR(PORTC)), [ptr] "e" (ptr), [hi] "r" (hi),
+        [lo] "r" (lo));
+    }
+#endif // PORTC
 
 #ifdef NEO_KHZ400
   } else { // end 800 KHz, do 400 KHz
@@ -497,6 +591,13 @@ void Adafruit_NeoPixel::show(void) {
 
 #endif // PORTD
 
+// Case where PORTC is available but PORTD is not
+#ifndef PORTD
+#ifdef PORTC
+    if(port == &PORTB) {
+#endif // def PORTC
+#endif // ndef PORTD
+
       hi   = PORTB |  pinMask;
       lo   = PORTB & ~pinMask;
       next = lo;
@@ -548,6 +649,68 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef PORTD
     }
 #endif
+
+// Close the IF statement formed when PORTD is not
+// defined but PORTC is defined.
+#ifndef PORTD
+#ifdef PORTC
+    }
+#endif //def PORTC
+#endif // ndef PORTD
+
+#ifdef PORTC
+    else if(port == &PORTC) {
+
+      hi   = PORTC |  pinMask;
+      lo   = PORTC & ~pinMask;
+      next = lo;
+      if(b & 0x80) next = hi;
+
+      // Same as above, just set for PORTC & stripped of comments
+      asm volatile(
+       "headC:"                   "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out   %[port], %[hi]"    "\n\t"
+        "rcall bitTimeC"          "\n\t"
+        "out  %[port] , %[hi]"    "\n\t"
+        "rjmp .+0"                "\n\t"
+        "ld   %[byte] , %a[ptr]+" "\n\t"
+        "out  %[port] , %[next]"  "\n\t"
+        "mov  %[next] , %[lo]"    "\n\t"
+        "sbrc %[byte] , 7"        "\n\t"
+         "mov %[next] , %[hi]"    "\n\t"
+        "nop"                     "\n\t"
+        "out  %[port] , %[lo]"    "\n\t"
+        "sbiw %[count], 1"        "\n\t"
+        "brne headC"              "\n\t"
+         "rjmp doneC"             "\n\t"
+        "bitTimeC:"               "\n\t"
+         "out  %[port], %[next]"  "\n\t"
+         "mov  %[next], %[lo]"    "\n\t"
+         "rol  %[byte]"           "\n\t"
+         "sbrc %[byte], 7"        "\n\t"
+          "mov %[next], %[hi]"    "\n\t"
+         "nop"                    "\n\t"
+         "out  %[port], %[lo]"    "\n\t"
+         "ret"                    "\n\t"
+         "doneC:"                 "\n"
+        : [byte] "+r" (b), [next] "+r" (next), [count] "+w" (i)
+        : [port] "I" (_SFR_IO_ADDR(PORTC)), [ptr] "e" (ptr), [hi] "r" (hi),
+          [lo] "r" (lo));
+
+    }
+#endif // PORTC
 
 #ifdef NEO_KHZ400
   } else { // 400 KHz
