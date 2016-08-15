@@ -118,7 +118,7 @@ class Adafruit_NeoPixel {
  public:
 
   // Constructor: number of LEDs, pin number, LED type
-  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800, uint8_t *pix=NULL);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
@@ -131,8 +131,8 @@ class Adafruit_NeoPixel {
     setPixelColor(uint16_t n, uint32_t c),
     setBrightness(uint8_t),
     clear(),
-    updateLength(uint16_t n),
-    updateType(neoPixelType t);
+    updateLength(uint16_t n,uint8_t *pix=NULL),
+    updateType(neoPixelType t,uint8_t *pix=NULL);
   uint8_t
    *getPixels(void) const,
     getBrightness(void) const;
@@ -147,6 +147,8 @@ class Adafruit_NeoPixel {
     getPixelColor(uint16_t n) const;
   inline bool
     canShow(void) { return (micros() - endTime) >= 50L; }
+  uint8_t
+   *pixels;        // Holds LED color values (3 or 4 bytes each)
 
  private:
 
@@ -162,7 +164,6 @@ class Adafruit_NeoPixel {
     pin;           // Output pin number (-1 if not yet set)
   uint8_t
     brightness,
-   *pixels,        // Holds LED color values (3 or 4 bytes each)
     rOffset,       // Index of red byte within each 3- or 4-byte pixel
     gOffset,       // Index of green byte
     bOffset,       // Index of blue byte

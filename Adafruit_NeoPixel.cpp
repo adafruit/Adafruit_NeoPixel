@@ -34,11 +34,11 @@
 #include "Adafruit_NeoPixel.h"
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t, uint8_t *pix) :
   begun(false), brightness(0), pixels(NULL), endTime(0)
 {
-  updateType(t);
-  updateLength(n);
+  updateType(t,pix);
+  updateLength(n,pix);
   setPin(p);
 }
 
@@ -69,7 +69,14 @@ void Adafruit_NeoPixel::begin(void) {
   begun = true;
 }
 
-void Adafruit_NeoPixel::updateLength(uint16_t n) {
+void Adafruit_NeoPixel::updateLength(uint16_t n, uint8_t *pix) {
+  if(pix) {
+    pixels = pix;
+    numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+    memset(pixels, 0, numBytes);
+    numLEDs = n;
+    return;
+  }
   if(pixels) free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
@@ -82,7 +89,7 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   }
 }
 
-void Adafruit_NeoPixel::updateType(neoPixelType t) {
+void Adafruit_NeoPixel::updateType(neoPixelType t, uint8_t *pix) {
   boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
 
   wOffset = (t >> 6) & 0b11; // See notes in header file
@@ -97,7 +104,7 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   // allocated), re-allocate to new size.  Will clear any data.
   if(pixels) {
     boolean newThreeBytesPerPixel = (wOffset == rOffset);
-    if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs);
+    if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs,pix);
   }
 }
 
