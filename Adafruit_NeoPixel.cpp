@@ -1511,7 +1511,9 @@ void Adafruit_NeoPixel::show(void) {
       first = 0;
     }
   }
-
+#else
+// ESP32 and others not currently working
+#error Sorry your architecture is not supported
 #endif
 
 
