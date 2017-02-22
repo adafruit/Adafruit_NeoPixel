@@ -133,6 +133,8 @@ class Adafruit_NeoPixel {
     clear(),
     updateLength(uint16_t n),
     updateType(neoPixelType t);
+  bool
+  	isRGBType(void);
   uint8_t
    *getPixels(void) const,
     getBrightness(void) const;

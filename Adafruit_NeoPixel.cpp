@@ -73,7 +73,7 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   if(pixels) free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+  numBytes = n * ((isRGBType()) ? 3 : 4);
   if((pixels = (uint8_t *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
     numLEDs = n;
@@ -83,7 +83,7 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
 }
 
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
-  boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
+  boolean oldThreeBytesPerPixel = (isRGBType()); // false if RGBW
 
   wOffset = (t >> 6) & 0b11; // See notes in header file
   rOffset = (t >> 4) & 0b11; // regarding R/G/B/W offsets
@@ -96,7 +96,7 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   // If bytes-per-pixel has changed (and pixel data was previously
   // allocated), re-allocate to new size.  Will clear any data.
   if(pixels) {
-    boolean newThreeBytesPerPixel = (wOffset == rOffset);
+    boolean newThreeBytesPerPixel = (isRGBType());
     if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs);
   }
 }
@@ -1536,6 +1536,9 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
 #endif
 }
 
+// Is this RGB type pixel? Or RGBW type?
+bool Adafruit_NeoPixel::isRGBType(void) { return wOffset == rOffset; }
+
 // Set pixel color from separate R,G,B components:
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
@@ -1547,7 +1550,7 @@ void Adafruit_NeoPixel::setPixelColor(
       b = (b * brightness) >> 8;
     }
     uint8_t *p;
-    if(wOffset == rOffset) { // Is an RGB-type strip
+    if(isRGBType()) { // Is an RGB-type strip
       p = &pixels[n * 3];    // 3 bytes per pixel
     } else {                 // Is a WRGB-type strip
       p = &pixels[n * 4];    // 4 bytes per pixel
@@ -1570,7 +1573,7 @@ void Adafruit_NeoPixel::setPixelColor(
       w = (w * brightness) >> 8;
     }
     uint8_t *p;
-    if(wOffset == rOffset) { // Is an RGB-type strip
+    if(isRGBType()) { // Is an RGB-type strip
       p = &pixels[n * 3];    // 3 bytes per pixel (ignore W)
     } else {                 // Is a WRGB-type strip
       p = &pixels[n * 4];    // 4 bytes per pixel
@@ -1594,7 +1597,7 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
       g = (g * brightness) >> 8;
       b = (b * brightness) >> 8;
     }
-    if(wOffset == rOffset) {
+    if(isRGBType()) {
       p = &pixels[n * 3];
     } else {
       p = &pixels[n * 4];
@@ -1621,13 +1624,14 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
+  
   if(n >= numLEDs) return 0; // Out of bounds, return no color.
 
   uint8_t *p;
 
-  if(wOffset == rOffset) { // Is RGB-type device
-    p = &pixels[n * 3];
-    if(brightness) {
+  if(wOffset == rOffset) { // Is RGB-type device NOTE using isRGBType() here
+    p = &pixels[n * 3];		 // gave compiler warnings. I think its the "const"	
+    if(brightness) {			 // in the method def. So I reverted it back.
       // Stored color was decimated by setBrightness().  Returned value
       // attempts to scale back to an approximation of the original 24-bit
       // value used when setting the pixel color, but there will always be
