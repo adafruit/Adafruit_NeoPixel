@@ -101,9 +101,12 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   }
 }
 
-#ifdef ESP8266
+#if defined(ESP8266) 
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" void ICACHE_RAM_ATTR espShow(
+  uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+#elif defined(ESP32)
+extern "C" void espShow(
   uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #endif // ESP8266
 
@@ -1186,8 +1189,7 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-#elif defined(__SAMD21G18A__) // Arduino Zero
-
+#elif defined(__SAMD21G18A__)  || defined(__SAMD21E18A__) || defined(__SAMD21J18A__) // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo and others
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution.  So yay, you get a load of goofball NOPs...
 
@@ -1412,7 +1414,7 @@ void Adafruit_NeoPixel::show(void) {
 // END ARM ----------------------------------------------------------------
 
 
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(ESP32)
 
 // ESP8266 ----------------------------------------------------------------
 
@@ -1513,6 +1515,8 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
 
+#else 
+#error Architecture not supported
 #endif
 
 
