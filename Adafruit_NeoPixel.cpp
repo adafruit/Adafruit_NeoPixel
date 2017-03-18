@@ -101,9 +101,12 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   }
 }
 
-#ifdef ESP8266
+#if defined(ESP8266) 
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" void ICACHE_RAM_ATTR espShow(
+  uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+#elif defined(ESP32)
+extern "C" void espShow(
   uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #endif // ESP8266
 
@@ -1411,7 +1414,7 @@ void Adafruit_NeoPixel::show(void) {
 // END ARM ----------------------------------------------------------------
 
 
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(ESP32)
 
 // ESP8266 ----------------------------------------------------------------
 
@@ -1512,6 +1515,8 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
 
+#else 
+#error Architecture not supported
 #endif
 
 
