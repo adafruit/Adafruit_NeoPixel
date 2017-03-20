@@ -1058,9 +1058,9 @@ void Adafruit_NeoPixel::show(void) {
 
 // END AVR ----------------------------------------------------------------
 
-
 #elif defined(__arm__)
 
+// ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due ---------------------------
 
 #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
 #define CYCLES_800_T0H  (F_CPU / 4000000)
