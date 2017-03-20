@@ -32,6 +32,10 @@
   -------------------------------------------------------------------------*/
 
 #include "Adafruit_NeoPixel.h"
+#if defined(NRF5)
+#include "Arduino.h"
+#include "nrf.h"
+#endif
 
 // Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
@@ -135,7 +139,20 @@ void Adafruit_NeoPixel::show(void) {
   // state, computes 'pin high' and 'pin low' values, and writes these back
   // to the PORT register as needed.
 
+#if  defined(NRF5) 
+  // If you are using the Bluetooth SoftDevice we advise you to not disable
+  // the interrupts. Disabling the interrupts even for short periods of time
+  // causes the SoftDevice to stop working.
+  // Disable the interrupts only in cases where you need high performace for
+  // the LEDs. We are currently exploring other ways to generate the frames
+  // for the WS2811/12 using DMA and SPI.
+  // For more info please write to info _at- teubi.co
+#if defined(NRF5_DISABLE_INT)
+  __disable_irq();
+#endif
+#else
   noInterrupts(); // Need 100% focus on instruction timing
+#endif
 
 #ifdef __AVR__
 // AVR MCUs -- ATmega & ATtiny (no XMEGA) ---------------------------------
@@ -1044,9 +1061,8 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined(__arm__)
 
-// ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due ---------------------------
 
-#if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
 #define CYCLES_800_T0H  (F_CPU / 4000000)
 #define CYCLES_800_T1H  (F_CPU / 1250000)
 #define CYCLES_800      (F_CPU /  800000)
@@ -1189,7 +1205,83 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-#elif defined(__SAMD21G18A__)  || defined(__SAMD21E18A__) || defined(__SAMD21J18A__) // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo and others
+// Begin ofs upport for Sparkfun NRF52832 Breakout ------------------------------
+
+// Important: This is a partial implementation and is know to lose frames when
+// the Bluetooth SoftDevice is enabled. The only way to make it work
+// with full performance is to disable interrupts using:
+// #define NRF5_DISABLE_INT
+// However disabling the interrupts prevents the use of the Bluetooth stack.
+// We are currently exploring another implementation that doesn't requires
+// to disable the interrupts.
+// For more info write to info _at- teubi.co
+
+#elif defined(NRF5)
+// The nRF52832 runs with a fixed clock of 64Mhz
+// The rest of the implementation is the same as the
+// one used for the Teensy 3.0/1/2 but with the Nordic SDK
+// HAL & registers syntax.
+// The number of cycles was hand picked and is guaranteed to be 100% organic
+// to preserve freshness and high accuracy.
+#define CYCLES_800_T0H  22  // ~0.34uS
+#define CYCLES_800_T1H  45  // ~0.70uS
+#define CYCLES_800      83  // ~1.30uS
+#define CYCLES_400_T0H  32  // ~0.50uS
+#define CYCLES_400_T1H  77  // ~1.20uS
+#define CYCLES_400      160 // ~2.50uS
+
+  uint8_t          *p   = pixels,
+                   *end = p + numBytes,
+                   pix, mask;
+  uint32_t          cyc;
+  uint32_t          pinMask = 1UL<<g_ADigitalPinMap[pin]; 
+
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CTRL |=- DWT_CTRL_CYCCNTENA_Msk;
+  
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    cyc = DWT->CYCCNT + CYCLES_800;
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        while(DWT->CYCCNT - cyc < CYCLES_800);
+        cyc  = DWT->CYCCNT;
+        NRF_GPIO->OUTSET |= pinMask;
+        if(pix & mask) {
+          while(DWT->CYCCNT - cyc < CYCLES_800_T1H);
+        } else {
+          while(DWT->CYCCNT - cyc < CYCLES_800_T0H);
+        }
+        NRF_GPIO->OUTCLR |= pinMask;
+      }
+    }
+    while(DWT->CYCCNT - cyc < CYCLES_800);
+#ifdef NEO_KHZ400
+  } else { // 400 kHz bitstream
+    cyc = DWT->CYCCNT + CYCLES_400;
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        while(DWT->CYCCNT - cyc < CYCLES_400);
+        cyc  = DWT->CYCCNT;
+        NRF_GPIO->OUTSET |= pinMask;
+        if(pix & mask) {
+          while(DWT->CYCCNT - cyc < CYCLES_400_T1H);
+        } else {
+          while(DWT->CYCCNT - cyc < CYCLES_400_T0H);
+        }
+        NRF_GPIO->OUTCLR |= pinMask;
+      }
+    }
+    while(DWT->CYCCNT - cyc < CYCLES_400);
+  }
+#endif 
+// End of support for nRF52
+
+#elif defined(__SAMD21G18A__) // Arduino Zero
+
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution.  So yay, you get a load of goofball NOPs...
 
@@ -1523,7 +1615,14 @@ void Adafruit_NeoPixel::show(void) {
 // END ARCHITECTURE SELECT ------------------------------------------------
 
 
+#if defined(NRF5)
+  // TODO: Implement without disabling interrupts
+#if defined(NRF5_DISABLE_INT)
+  __enable_irq();
+#endif
+#else
   interrupts();
+#endif
   endTime = micros(); // Save EOD time for latch on next call
 }
 
