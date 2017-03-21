@@ -33,6 +33,7 @@
 
 #include "Adafruit_NeoPixel.h"
 #if defined(NRF5)
+#define NRF5_NEOPIXEL_USEDMA
 #include "Arduino.h"
 #include "nrf.h"
 #endif
@@ -1058,9 +1059,9 @@ void Adafruit_NeoPixel::show(void) {
 
 // END AVR ----------------------------------------------------------------
 
+
 #elif defined(__arm__)
 
-// ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due ---------------------------
 
 #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
 #define CYCLES_800_T0H  (F_CPU / 4000000)
@@ -1230,6 +1231,49 @@ void Adafruit_NeoPixel::show(void) {
 #define CYCLES_400_T1H  77  // ~1.20uS
 #define CYCLES_400      160 // ~2.50uS
 
+#if defined(NRF5_NEOPIXEL_USEDMA)
+
+#define MAGIC_T0H       6UL  | 1UL<<15
+#define MAGIC_T1H       11UL | 1UL<<15
+#define CTOPVAL         20UL
+
+  volatile uint32_t data[54];
+  
+  NRF_PWM0->PSEL.OUT[0] = g_ADigitalPinMap[pin] | 
+    (PWM_PSEL_OUT_CONNECT_Connected <<
+     PWM_PSEL_OUT_CONNECT_Pos);
+  NRF_PWM0->ENABLE = (PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
+  NRF_PWM0->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
+  NRF_PWM0->PRESCALER = (PWM_PRESCALER_PRESCALER_DIV_1 <<
+   PWM_PRESCALER_PRESCALER_Pos);
+  NRF_PWM0->COUNTERTOP = (19 << PWM_COUNTERTOP_COUNTERTOP_Pos); //1 msec
+  NRF_PWM0->LOOP = (0 << PWM_LOOP_CNT_Pos);
+  NRF_PWM0->DECODER = (PWM_DECODER_LOAD_Common << PWM_DECODER_LOAD_Pos) |
+   (PWM_DECODER_MODE_NextStep << PWM_DECODER_MODE_Pos);
+  NRF_PWM0->SEQ[0].PTR = ((uint32_t)(data) << PWM_SEQ_PTR_PTR_Pos);
+  NRF_PWM0->SEQ[0].CNT = ((sizeof(data) / sizeof(uint16_t)) <<
+   PWM_SEQ_CNT_CNT_Pos);
+
+  
+  // Generate frame data:
+  uint8_t *p = pixels, *start = pixels, pix, i, pos, mask;
+  while(p < (p+6)) {
+      pix = *p;
+      i = 0;
+      for(mask = 0x80; mask; mask >>= 1) {
+        pos = (p-start)*9+(i++); 
+        data[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
+      }
+      data[pos] = 19 | 1UL<<15;
+      p++;
+  }
+  
+  NRF_PWM0->INTENSET = 1<<1; // Enable the stoppped event
+  NRF_PWM0->TASKS_SEQSTART[0] = 1;
+  
+  while(!NRF_PWM0->EVENTS_STOPPED);
+
+#else
   uint8_t          *p   = pixels,
                    *end = p + numBytes,
                    pix, mask;
@@ -1277,8 +1321,9 @@ void Adafruit_NeoPixel::show(void) {
     }
     while(DWT->CYCCNT - cyc < CYCLES_400);
   }
-#endif 
-// End of support for nRF52
+#endif // End of support for nRF52
+#endif // endif when not using DMA
+
 
 #elif defined(__SAMD21G18A__) // Arduino Zero
 
