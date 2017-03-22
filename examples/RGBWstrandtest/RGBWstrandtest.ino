@@ -89,22 +89,22 @@ void pulseWhite(uint8_t wait) {
 
 
 void rainbowFade2White(uint8_t wait, int rainbowLoops, int whiteLoops) {
-  float fadeMax = 100.0;
-  int fadeVal = 0;
+  const unsigned fadeMax = 100;
+  unsigned fadeVal = 0;
   uint32_t wheelVal;
-  int redVal, greenVal, blueVal;
+  uint8_t redVal, greenVal, blueVal;
 
   for(int k = 0 ; k < rainbowLoops ; k ++){
     
-    for(int j=0; j<256; j++) { // 5 cycles of all colors on wheel
+    for(unsigned j=0; j<256; j++) { // 5 cycles of all colors on wheel
 
       for(unsigned i=0; i< strip.numPixels(); i++) {
 
         wheelVal = Wheel(((i * 256 / strip.numPixels()) + j) & 255);
 
-        redVal = red(wheelVal) * float(fadeVal/fadeMax);
-        greenVal = green(wheelVal) * float(fadeVal/fadeMax);
-        blueVal = blue(wheelVal) * float(fadeVal/fadeMax);
+        redVal = (uint16_t)red(wheelVal) * fadeVal / fadeMax;
+        greenVal = (uint16_t)green(wheelVal) * fadeVal / fadeMax;
+        blueVal = (uint16_t)blue(wheelVal) * fadeVal / fadeMax;
 
         strip.setPixelColor( i, strip.Color( redVal, greenVal, blueVal ) );
 
