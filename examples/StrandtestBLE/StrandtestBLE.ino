@@ -1,14 +1,19 @@
 /****************************************************************************
  * This example was developed by the Hackerspace San Salvador to demonstrate
  * the simultaneous use of the NeoPixel library and the Bluetooth SoftDevice.
- * To use it you'll need to install the BLEPeripheral library avaiable at:
+ * To compile this example you'll need to add support for the NRF52 based
+ * following the instructions at: 
+ *  https://github.com/sandeepmistry/arduino-nRF5
+ * Or adding the following URL to the board manager URLs on Arduino preferences:
+ *  https://sandeepmistry.github.io/arduino-nRF5/package_nRF5_boards_index.json
+ * Then you can install the BLEPeripheral library avaiable at:
  *  https://github.com/sandeepmistry/arduino-BLEPeripheral
  * To test it, compile this example and use the UART module from the nRF
  * Toolbox App for Android. Edit the interface and send the characters
  * 'a' to 'i' to switch the animation.
- * There is a delay because the animations block the change of the machine
- * state that controls the animation, just be sure to be connected and wait
- * a couple of seconds.
+ * There is a delay because this example blocks the thread of execution but
+ * the change will be shown after the current animation ends. (This might
+ * take a couple of seconds)
  * For more info write us at: info _at- teubi.co
  */
 #include <SPI.h>
