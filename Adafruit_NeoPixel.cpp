@@ -71,6 +71,10 @@ void Adafruit_NeoPixel::begin(void) {
     digitalWrite(pin, LOW);
   }
   begun = true;
+
+#ifdef ARDUINO_FEATHER52
+  dwt_enable(); // Enable DWT for delay_ns()
+#endif
 }
 
 void Adafruit_NeoPixel::updateLength(uint16_t n) {
@@ -150,6 +154,8 @@ void Adafruit_NeoPixel::show(void) {
 #if defined(NRF5_DISABLE_INT)
   __disable_irq();
 #endif
+#elif ARDUINO_FEATHER52
+  taskENTER_CRITICAL(); // Critical Section does not block SoftDevice execution
 #else
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
@@ -1205,7 +1211,7 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-// Begin ofs upport for Sparkfun NRF52832 Breakout ------------------------------
+// Begin of support for Sparkfun NRF52832 Breakout ------------------------------
 
 // Important: This is a partial implementation and is know to lose frames when
 // the Bluetooth SoftDevice is enabled. The only way to make it work
@@ -1438,6 +1444,55 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+#elif defined (ARDUINO_FEATHER52) // 64 MHz
+
+  // retry if total time > 1.5us for each bit
+  // possibly we are interrupt by SoftDevice
+  uint32_t start;
+
+  while(1)
+  {
+    uint8_t* ptr = pixels;
+    uint32_t pinMask = bit(pin);
+
+    start = DWT->CYCCNT;
+
+    for(uint16_t i=0; i<numBytes; i++)
+    {
+      uint8_t byte = *ptr++;
+
+      for(uint8_t bmask=bit(7); bmask > 0; bmask  >>= 1)
+      {
+        if ( byte & bmask )
+        { // ONE
+          NRF_GPIO->OUTSET = pinMask;
+          delay_ns(800);
+
+          NRF_GPIO->OUTCLR = pinMask;
+          delay_ns(450);
+        }
+        else
+        { // ZERO
+          NRF_GPIO->OUTSET = pinMask;
+          delay_ns(400);
+
+          NRF_GPIO->OUTCLR = pinMask;
+          delay_ns(850);
+        }
+      }
+    }
+
+    // If total time longer than 1.5 us for each bit (nominal value is 1.25us)
+    // Retry all over again since we are likely to be interrupted by SoftDevice
+    if (DWT->CYCCNT - start < (((F_CPU/1000000)*3)/2) * numBytes * 8)
+    {
+      break;
+    }
+
+    // 50 us before retry
+    delay_ns(50000);
+  }
+
 #else // Other ARM architecture -- Presumed Arduino Due
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
@@ -1614,15 +1669,16 @@ void Adafruit_NeoPixel::show(void) {
 
 // END ARCHITECTURE SELECT ------------------------------------------------
 
-
 #if defined(NRF5)
-  // TODO: Implement without disabling interrupts
 #if defined(NRF5_DISABLE_INT)
   __enable_irq();
 #endif
+#elif ARDUINO_FEATHER52
+  taskEXIT_CRITICAL();
 #else
   interrupts();
 #endif
+
   endTime = micros(); // Save EOD time for latch on next call
 }
 
