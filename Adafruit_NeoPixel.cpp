@@ -32,15 +32,20 @@
   -------------------------------------------------------------------------*/
 
 #include "Adafruit_NeoPixel.h"
-#if defined(NRF5)
-#define NRF5_NEOPIXEL_USEDMA
+
+#if defined(NRF52)
+#define NRF52_NEOPIXEL_USEDMA
+//#define NRF52_DISABLE_INT
 #include "Arduino.h"
 #include "nrf.h"
 #endif
 
 // Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
-  begun(false), brightness(0), pixels(NULL), endTime(0)
+  begun(false), brightness(0), pixels(NULL), endTime(0)  
+#if defined(NRF52)
+  ,pos(0),pattern_size(0),pixels_pattern(NULL)
+#endif
 {
   updateType(t);
   updateLength(n);
@@ -58,11 +63,17 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 #endif
   begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0), pixels(NULL),
   rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
+#if defined(NRF52)
+  ,pos(0),pattern_size(0),pixels_pattern(NULL)
+#endif
 {
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   if(pixels)   free(pixels);
+#if defined(NRF52)
+  if(pixels_pattern) free((uint16_t *)pixels_pattern);
+#endif
   if(pin >= 0) pinMode(pin, INPUT);
 }
 
@@ -76,6 +87,9 @@ void Adafruit_NeoPixel::begin(void) {
 
 void Adafruit_NeoPixel::updateLength(uint16_t n) {
   if(pixels) free(pixels); // Free existing data (if any)
+#if defined(NRF52) // Free the big buffer
+  if(pixels_pattern) free((uint16_t *)pixels_pattern);
+#endif
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
   numBytes = n * ((wOffset == rOffset) ? 3 : 4);
@@ -85,6 +99,21 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   } else {
     numLEDs = numBytes = 0;
   }
+#if defined(NRF52)
+  // To support both the SoftDevice + Neopixels we use the EasyDMA
+  // feature from the NRF25. However this technique implies to
+  // generate a pattern and store it on the memory. The actual 
+  // memory used in bytes corresponds to the following formula:
+  //              totalMem = numBytes*8*2+(2*2)
+  // The two additional bytes at the end are needed to reset the
+  // sequence.
+  // Take into consideration that this technique is memory intensive,
+  // and there is no memory protection mechanisms implemented yet.
+  pixels_pattern = (uint16_t *)malloc(numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t));
+  // We need to know the pattern size (in bytes) to count the number
+  // of bytes that we need to move on the sequence.
+  pattern_size = numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t);
+#endif
 }
 
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
@@ -140,15 +169,14 @@ void Adafruit_NeoPixel::show(void) {
   // state, computes 'pin high' and 'pin low' values, and writes these back
   // to the PORT register as needed.
 
-#if  defined(NRF5) 
+#if  defined(NRF52) 
   // If you are using the Bluetooth SoftDevice we advise you to not disable
   // the interrupts. Disabling the interrupts even for short periods of time
   // causes the SoftDevice to stop working.
   // Disable the interrupts only in cases where you need high performace for
-  // the LEDs. We are currently exploring other ways to generate the frames
-  // for the WS2811/12 using DMA and SPI.
+  // the LEDs and if you are not using the EasyDMA feature.
   // For more info please write to info _at- teubi.co
-#if defined(NRF5_DISABLE_INT)
+#if defined(NRF52_DISABLE_INT)
   __disable_irq();
 #endif
 #else
@@ -937,6 +965,7 @@ void Adafruit_NeoPixel::show(void) {
         [count] "+w" (i)
       : [hi]     "r" (hi),
         [lo]     "r" (lo),
+        [lo]     "r" (lo),
         [ptr]    "e" (ptr));
   }
 #endif // NEO_KHZ400
@@ -1206,74 +1235,126 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-// Begin ofs upport for Sparkfun NRF52832 Breakout ------------------------------
+// Begin of support for Sparkfun NRF52832 based boards  ------------------------
+#elif defined(NRF52)
+#if defined(NRF52_NEOPIXEL_USEDMA)
+// [[[Begin of the Neopixel NRF52 EasyDMA implementation
+//                       by the Hackerspace San Salvador]]]
+// This technique uses the PWM peripheral on the NRF52. The PWM uses the EasyDMA
+// feature included on the chip. This technique loads the duty cycle
+// configuration for each cycle when the PWM is enabled. For this to work we need
+// to store a 16 bit
+// Comparator values for the PWM were hand picked and are guaranteed to
+// be 100% organic to preserve freshness and high accuracy. Current parameters
+// are:
+//   PWM Clock: 16Mhz
+//   Minimum step time: 62.5ns
+//   Time for zero in high (T0H): 0.31ms
+//   Time for one in high (T1H): 0.75ms
+//   Cycle time:  1.25us
+//   Frequency: 800Khz
 
-// Important: This is a partial implementation and is know to lose frames when
-// the Bluetooth SoftDevice is enabled. The only way to make it work
-// with full performance is to disable interrupts using:
-// #define NRF5_DISABLE_INT
-// However disabling the interrupts prevents the use of the Bluetooth stack.
-// We are currently exploring another implementation that doesn't requires
-// to disable the interrupts.
-// For more info write to info _at- teubi.co
+#pragma message("Compiling with DMA support")
 
-#elif defined(NRF5)
-// The nRF52832 runs with a fixed clock of 64Mhz
-// The rest of the implementation is the same as the
-// one used for the Teensy 3.0/1/2 but with the Nordic SDK
-// HAL & registers syntax.
-// The number of cycles was hand picked and is guaranteed to be 100% organic
-// to preserve freshness and high accuracy.
-#define CYCLES_800_T0H  22  // ~0.34uS
-#define CYCLES_800_T1H  45  // ~0.70uS
-#define CYCLES_800      83  // ~1.30uS
-#define CYCLES_400_T0H  32  // ~0.50uS
-#define CYCLES_400_T1H  77  // ~1.20uS
-#define CYCLES_400      160 // ~2.50uS
-
-#if defined(NRF5_NEOPIXEL_USEDMA)
-
-#define MAGIC_T0H       6UL  | 1UL<<15
-#define MAGIC_T1H       11UL | 1UL<<15
-#define CTOPVAL         20UL
-
-  volatile uint32_t data[54];
+// Configuration constants
+// The PWM starts the duty cycle in LOW
+// To start in HIGH we need to set 1 the 15th bit
+// on each register.
+#define MAGIC_T0H               5UL | (0x8000) // 0.32us
+#define MAGIC_T1H              12UL | (0x8000) // 0.75us
+#define CTOPVAL                20UL // 1.25us
+// For 400Khz we just double the time or set the DIV to 8MHz
+// however keeping the faster clock allows for more granularity.
+#define MAGIC_T0H_400KHz       10UL | (0x8000)
+#define MAGIC_T1H_400KHz       24UL | (0x8000)
+#define CTOPVAL_400KHz         40UL 
   
-  NRF_PWM0->PSEL.OUT[0] = g_ADigitalPinMap[pin] | 
-    (PWM_PSEL_OUT_CONNECT_Connected <<
-     PWM_PSEL_OUT_CONNECT_Pos);
-  NRF_PWM0->ENABLE = (PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
-  NRF_PWM0->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
-  NRF_PWM0->PRESCALER = (PWM_PRESCALER_PRESCALER_DIV_1 <<
-   PWM_PRESCALER_PRESCALER_Pos);
-  NRF_PWM0->COUNTERTOP = (19 << PWM_COUNTERTOP_COUNTERTOP_Pos); //1 msec
-  NRF_PWM0->LOOP = (0 << PWM_LOOP_CNT_Pos);
-  NRF_PWM0->DECODER = (PWM_DECODER_LOAD_Common << PWM_DECODER_LOAD_Pos) |
-   (PWM_DECODER_MODE_NextStep << PWM_DECODER_MODE_Pos);
-  NRF_PWM0->SEQ[0].PTR = ((uint32_t)(data) << PWM_SEQ_PTR_PTR_Pos);
-  NRF_PWM0->SEQ[0].CNT = ((sizeof(data) / sizeof(uint16_t)) <<
-   PWM_SEQ_CNT_CNT_Pos);
-
-  
-  // Generate frame data:
-  uint8_t *p = pixels, *start = pixels, pix, i, pos, mask;
-  while(p < (p+6)) {
+  // Populate the memory using the "magic" values
+  // calculated previously.
+  uint8_t *p = pixels, *start = pixels, pix, i, mask;
+  for(p=pixels;p<(pixels+numBytes);p++) {
       pix = *p;
       i = 0;
       for(mask = 0x80; mask; mask >>= 1) {
-        pos = (p-start)*9+(i++); 
-        data[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
+        pos = (p-start)*8+(i++);
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+        if(is800KHz) {
+#endif
+          pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
+#ifdef NEO_KHZ400
+        } else {
+          pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
+        }
+#endif
       }
-      data[pos] = 19 | 1UL<<15;
-      p++;
   }
+
+  // Zero padding to indicate the end of que sequence
+  pixels_pattern[++pos] = 0 | (0x8000); // Seq end
+  pixels_pattern[++pos] = 0 | (0x8000); // Seq end
   
-  NRF_PWM0->INTENSET = 1<<1; // Enable the stoppped event
+  // Enable the PWM
+  NRF_PWM0->ENABLE = (PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
+  // Set the wave mode to count UP
+  NRF_PWM0->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
+  // Set the PWM to use the 16MHz clock
+  NRF_PWM0->PRESCALER = (PWM_PRESCALER_PRESCALER_DIV_1 <<
+   PWM_PRESCALER_PRESCALER_Pos);
+  // Setting of the maximum count
+  // but keeping it on 16Mhz allows for more granularity just
+  // in case someone wants to do more fine-tuning of the timing.
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    NRF_PWM0->COUNTERTOP = (CTOPVAL << PWM_COUNTERTOP_COUNTERTOP_Pos);
+#ifdef NEO_KHZ400
+  } else {
+    NRF_PWM0->COUNTERTOP = (CTOPVAL_400KHz << PWM_COUNTERTOP_COUNTERTOP_Pos);
+  }
+#endif
+  // Disable loops, we want the sequence to repeat once
+  NRF_PWM0->LOOP = (PWM_LOOP_CNT_Disabled << PWM_LOOP_CNT_Pos);
+  // On the "Common" setting the PWM uses the same pattern for the
+  // for supported sequences. The pattern is stored on half-word of 16bits
+  NRF_PWM0->DECODER = (PWM_DECODER_LOAD_Common << PWM_DECODER_LOAD_Pos) |
+   (PWM_DECODER_MODE_RefreshCount << PWM_DECODER_MODE_Pos);
+  // Pointer to the memory storing the patter
+  NRF_PWM0->SEQ[0].PTR = (uint32_t)(pixels_pattern) << PWM_SEQ_PTR_PTR_Pos;
+  // Calculation of the number of steps loaded from memory.
+  // Note: For some reason when we count the whole sequence size, the 
+  // pin is pulled high and this generates issues with the LEDs. To prevent
+  // this we only load up to the n-1 byte of the sequence.
+  // If you found a more elegant solution please write us to info _at- teubi.co
+  NRF_PWM0->SEQ[0].CNT = ((pattern_size/sizeof(uint16_t))-1) << PWM_SEQ_CNT_CNT_Pos;
+  // The following two values are not needed on this implementation
+  NRF_PWM0->SEQ[0].REFRESH = 0;
+  NRF_PWM0->SEQ[0].ENDDELAY = 0;
+    
+  // The Neopixel implementation is a blocking algorithm. DMA allows for non-blocking
+  // operation. To "simulate" a blocking operation we enable the interruption
+  // for the end of sequence and block the execution thread until the flag is set by
+  // the peripheral.
+  NRF_PWM0->INTEN |= (PWM_INTEN_SEQEND0_Enabled<<PWM_INTEN_SEQEND0_Pos);
+  NRF_PWM0->PSEL.OUT[0] = g_ADigitalPinMap[pin] | 
+    (PWM_PSEL_OUT_CONNECT_Connected <<
+     PWM_PSEL_OUT_CONNECT_Pos);
+     
+  // After all of this and many hours of reading the documentation
+  // we are ready to start the sequence...
   NRF_PWM0->TASKS_SEQSTART[0] = 1;
   
-  while(!NRF_PWM0->EVENTS_STOPPED);
+  // But we have to wait for the flag to be set.
+  while(!NRF_PWM0->EVENTS_SEQEND[0]);
 
-#else
+  // Before leave we clear the flag for the event.
+  NRF_PWM0->EVENTS_SEQEND[0] = 0;
+
+// End of DMA implementation
+#else // Begin of no-DMA implementation
+// Important: This was an experimental implementation and is know to lose frames when
+// the Bluetooth SoftDevice is enabled.
+
+#pragma message("Compiling without DMA support")
   uint8_t          *p   = pixels,
                    *end = p + numBytes,
                    pix, mask;
@@ -1287,7 +1368,7 @@ void Adafruit_NeoPixel::show(void) {
   if(is800KHz) {
 #endif
     cyc = DWT->CYCCNT + CYCLES_800;
-    while(p < end) {
+    while(p < (end+1)) {
       pix = *p++;
       for(mask = 0x80; mask; mask >>= 1) {
         while(DWT->CYCCNT - cyc < CYCLES_800);
@@ -1323,7 +1404,6 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif // End of support for nRF52
 #endif // endif when not using DMA
-
 
 #elif defined(__SAMD21G18A__) // Arduino Zero
 
@@ -1660,8 +1740,8 @@ void Adafruit_NeoPixel::show(void) {
 // END ARCHITECTURE SELECT ------------------------------------------------
 
 
-#if defined(NRF5)
-  // TODO: Implement without disabling interrupts
+#if defined(NRF52)
+  // Enable again interrupts
 #if defined(NRF5_DISABLE_INT)
   __enable_irq();
 #endif
