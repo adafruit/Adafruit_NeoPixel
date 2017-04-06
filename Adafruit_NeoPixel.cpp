@@ -44,9 +44,6 @@
 // Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
   begun(false), brightness(0), pixels(NULL), endTime(0)  
-#if defined(NRF52)
-  ,pattern_size(0),pixels_pattern(NULL)
-#endif
 {
   updateType(t);
   updateLength(n);
@@ -64,17 +61,11 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 #endif
   begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0), pixels(NULL),
   rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
-#if defined(NRF52)
-  ,pattern_size(0),pixels_pattern(NULL)
-#endif
 {
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   if(pixels)   free(pixels);
-#if defined(NRF52)
-  if(pixels_pattern) free((uint16_t *)pixels_pattern);
-#endif
   if(pin >= 0) pinMode(pin, INPUT);
 }
 
@@ -89,9 +80,6 @@ void Adafruit_NeoPixel::begin(void) {
 
 void Adafruit_NeoPixel::updateLength(uint16_t n) {
   if(pixels) free(pixels); // Free existing data (if any)
-#if defined(NRF52) // Free the big buffer
-  if(pixels_pattern) free((uint16_t *)pixels_pattern);
-#endif
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
   numBytes = n * ((wOffset == rOffset) ? 3 : 4);
@@ -101,22 +89,6 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   } else {
     numLEDs = numBytes = 0;
   }
-#if defined(NRF52)
-  // To support both the SoftDevice + Neopixels we use the EasyDMA
-  // feature from the NRF25. However this technique implies to
-  // generate a pattern and store it on the memory. The actual 
-  // memory used in bytes corresponds to the following formula:
-  //              totalMem = numBytes*8*2+(2*2)
-  // The two additional bytes at the end are needed to reset the
-  // sequence.
-  // Take into consideration that this technique is memory intensive,
-  // and there is no memory protection mechanisms implemented yet.
-  pixels_pattern =
-    (uint16_t *)malloc(numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t));
-  // We need to know the pattern size (in bytes) to count the number
-  // of bytes that we need to move on the sequence.
-  pattern_size = numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t);
-#endif
 }
 
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
@@ -1270,8 +1242,6 @@ void Adafruit_NeoPixel::show(void) {
 #define CTOPVAL                20UL            // 1.25us
 #define CTOPVAL_400KHz         40UL            // 2.5us
 
-
-
 // ---------- END Constants for the EasyDMA implementation -------------
 // 
 // If there is no device available an alternative cycle-counter
@@ -1291,6 +1261,19 @@ void Adafruit_NeoPixel::show(void) {
 #define CYCLES_400      160 // ~2.50uS
 // ---------- END of Constants for cycle counter implementation --------
 
+  // To support both the SoftDevice + Neopixels we use the EasyDMA
+  // feature from the NRF25. However this technique implies to
+  // generate a pattern and store it on the memory. The actual
+  // memory used in bytes corresponds to the following formula:
+  //              totalMem = numBytes*8*2+(2*2)
+  // The two additional bytes at the end are needed to reset the
+  // sequence.
+  //
+  // If there is not enough memory, we will fall back to cycle counter
+  // using DWT
+  uint32_t pattern_size    = numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t);
+  uint16_t* pixels_pattern = NULL;
+
   NRF_PWM_Type* pwm = NULL;
 
   // Try to find a free PWM device.
@@ -1307,9 +1290,14 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
   
+  // only malloc if there is PWM device available
+  if ( pwm != NULL ) {
+    pixels_pattern = (uint16_t *) malloc(pattern_size);
+  }
+
   // Use the identified device to choose the implementation
   // If a PWM device is available use DMA
-  if(pwm != NULL) {
+  if( (pixels_pattern != NULL) && (pwm != NULL) ) {
     uint16_t pos = 0; // bit position
 
     for(uint16_t n=0; n<numBytes; n++) {
@@ -1344,8 +1332,6 @@ void Adafruit_NeoPixel::show(void) {
     // Setting of the maximum count
     // but keeping it on 16Mhz allows for more granularity just
     // in case someone wants to do more fine-tuning of the timing.
-
-
 #ifdef NEO_KHZ400
     if( !is800KHz ) {
       pwm->COUNTERTOP = (CTOPVAL_400KHz << PWM_COUNTERTOP_COUNTERTOP_Pos);
@@ -1406,6 +1392,8 @@ void Adafruit_NeoPixel::show(void) {
     pwm->ENABLE &= ~(PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
 
     pwm->PSEL.OUT[0] &= ~(PWM_PSEL_OUT_CONNECT_Connected << PWM_PSEL_OUT_CONNECT_Pos);
+
+    free(pixels_pattern);
   }// End of DMA implementation
   // ---------------------------------------------------------------------
   else{
