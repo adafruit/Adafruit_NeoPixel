@@ -16,6 +16,7 @@ setBrightness	KEYWORD2
 numPixels		KEYWORD2
 getPixelColor	KEYWORD2
 Color			KEYWORD2
+show			KEYWORD2
 
 #######################################
 # Constants

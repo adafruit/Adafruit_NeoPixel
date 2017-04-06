@@ -176,7 +176,6 @@ class Adafruit_NeoPixel {
     pinMask;       // Output PORT bitmask
 #endif
 #if defined(NRF52)
-  uint16_t pos;
   volatile uint32_t pattern_size;
   volatile uint16_t* pixels_pattern; // We need a big buffer for this one.
 #endif
