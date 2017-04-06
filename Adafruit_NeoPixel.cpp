@@ -1253,9 +1253,25 @@ void Adafruit_NeoPixel::show(void) {
 // ---------- BEGIN Constants for the EasyDMA implementation -----------
 // The PWM starts the duty cycle in LOW. To start with HIGH we
 // need to set the 15th bit on each register.
-#define MAGIC_T0H               5UL | (0x8000) // 0.32us
-#define MAGIC_T1H              12UL | (0x8000) // 0.75us
+
+// WS2812 (rev A) timing is 0.35 and 0.7us
+//#define MAGIC_T0H               5UL | (0x8000) // 0.3125us
+//#define MAGIC_T1H              12UL | (0x8000) // 0.75us
+
+// WS2812B (rev B) timing is 0.4 and 0.8 us
+#define MAGIC_T0H               6UL | (0x8000) // 0.375us
+#define MAGIC_T1H              13UL | (0x8000) // 0.8125us
+
+// WS2811 (400 khz) timing is 0.5 and 1.2
+#define MAGIC_T0H_400KHz        8UL  | (0x8000) // 0.5us
+#define MAGIC_T1H_400KHz        19UL | (0x8000) // 1.1875us
+
+// For 400Khz, we double value of CTOPVAL
 #define CTOPVAL                20UL            // 1.25us
+#define CTOPVAL_400KHz         40UL            // 2.5us
+
+
+
 // ---------- END Constants for the EasyDMA implementation -------------
 // 
 // If there is no device available an alternative cycle-counter
@@ -1269,6 +1285,7 @@ void Adafruit_NeoPixel::show(void) {
 #define CYCLES_800_T0H  22  // ~0.34uS
 #define CYCLES_800_T1H  45  // ~0.70uS
 #define CYCLES_800      83  // ~1.30uS
+
 #define CYCLES_400_T0H  32  // ~0.50uS
 #define CYCLES_400_T1H  77  // ~1.20uS
 #define CYCLES_400      160 // ~2.50uS
@@ -1285,9 +1302,6 @@ void Adafruit_NeoPixel::show(void) {
         ~(PWM[device]->PSEL.OUT[2] & PWM_PSEL_OUT_CONNECT_Msk) &&
         ~(PWM[device]->PSEL.OUT[3] & PWM_PSEL_OUT_CONNECT_Msk)
     ) {
-      Serial.print("[Neopixel] PWM device: ");
-      Serial.println(device);
-
       pwm = PWM[device];
       break;
     }
@@ -1302,17 +1316,14 @@ void Adafruit_NeoPixel::show(void) {
       uint8_t pix = pixels[n];
 
       for(uint8_t mask=0x80, i=0; mask>0; mask >>= 1, i++) {
-
-        // default is 800Khz
-        pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
-
         #ifdef NEO_KHZ400
-        // For 400Khz we just double the calculated times.
         if( !is800KHz ) {
-          pixels_pattern[pos] <<= 1;
-        }
+          pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
+        }else
         #endif
-
+        {
+          pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
+        }
         pos++;
       }
     }
@@ -1333,14 +1344,16 @@ void Adafruit_NeoPixel::show(void) {
     // Setting of the maximum count
     // but keeping it on 16Mhz allows for more granularity just
     // in case someone wants to do more fine-tuning of the timing.
-    pwm->COUNTERTOP = (CTOPVAL << PWM_COUNTERTOP_COUNTERTOP_Pos);
+
 
 #ifdef NEO_KHZ400
-    // For 400Khz we just double the calculated times.
     if( !is800KHz ) {
-      pwm->COUNTERTOP <<= 1;
-    }
+      pwm->COUNTERTOP = (CTOPVAL_400KHz << PWM_COUNTERTOP_COUNTERTOP_Pos);
+    }else
 #endif
+    {
+      pwm->COUNTERTOP = (CTOPVAL << PWM_COUNTERTOP_COUNTERTOP_Pos);
+    }
 
     // Disable loops, we want the sequence to repeat only once
     pwm->LOOP = (PWM_LOOP_CNT_Disabled << PWM_LOOP_CNT_Pos);
@@ -1376,7 +1389,12 @@ void Adafruit_NeoPixel::show(void) {
     pwm->TASKS_SEQSTART[0] = 1;
 
     // But we have to wait for the flag to be set.
-    while(!pwm->EVENTS_SEQEND[0]);
+    while(!pwm->EVENTS_SEQEND[0])
+    {
+      #ifdef ARDUINO_FEATHER52
+      yield();
+      #endif
+    }
 
     // Before leave we clear the flag for the event.
     pwm->EVENTS_SEQEND[0] = 0;
@@ -1411,7 +1429,7 @@ void Adafruit_NeoPixel::show(void) {
             pinMask = 1UL<<g_ADigitalPinMap[pin],
             cycStart;
 
-    uint8_t *p   = pixels;
+
     uint8_t *end = pixels + numBytes;
 
     // Enable DWT in debug core
@@ -1421,34 +1439,48 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
     if(is800KHz) {
 #endif
-      while(1) { // Tries to re-send the frame if is interrupted
-        // by the SoftDevice.
+      // Tries to re-send the frame if is interrupted by the SoftDevice.
+      while(1) {
+        uint8_t *p = pixels;
+
         cycStart = DWT->CYCCNT;
         cyc = DWT->CYCCNT + CYCLES_800;
-        while(p < (end+1)) {
+
+        for(uint16_t n=0; n<numBytes; n++)
+        {
           uint8_t pix = *p++;
+
           for(uint8_t mask = 0x80; mask; mask >>= 1) {
             while(DWT->CYCCNT - cyc < CYCLES_800);
             cyc  = DWT->CYCCNT;
+
             NRF_GPIO->OUTSET |= pinMask;
+
             if(pix & mask) {
               while(DWT->CYCCNT - cyc < CYCLES_800_T1H);
             } else {
               while(DWT->CYCCNT - cyc < CYCLES_800_T0H);
             }
+
             NRF_GPIO->OUTCLR |= pinMask;
           }
         }
+
         while(DWT->CYCCNT - cyc < CYCLES_800);
+
         if ((DWT->CYCCNT - cycStart) <= (CYCLES_800*numBytes+CYCLES_800))
         {
           break;
         }
+
+        // re-send need 50us delay
       }
 #ifdef NEO_KHZ400
     } else { // 400 kHz bitstream
       while(1) { // Tries to re-send the frame if is interrupted
         // by the SoftDevice.
+        uint8_t *p = pixels;
+
         cycStart = DWT->CYCCNT;
         cyc = DWT->CYCCNT + CYCLES_400;
         while(p < end) {
