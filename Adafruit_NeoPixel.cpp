@@ -1252,9 +1252,9 @@ void Adafruit_NeoPixel::show(void) {
 // The number of cycles was hand picked and is guaranteed to be 100% 
 // organic to preserve freshness and high accuracy.
 // ---------- BEGIN Constants for cycle counter implementation ---------
-#define CYCLES_800_T0H  22  // ~0.34uS
-#define CYCLES_800_T1H  45  // ~0.70uS
-#define CYCLES_800      83  // ~1.30uS
+#define CYCLES_800_T0H  18  // ~0.36uS
+#define CYCLES_800_T1H  41  // ~0.76uS
+#define CYCLES_800      71  // ~1.25uS
 
 #define CYCLES_400_T0H  32  // ~0.50uS
 #define CYCLES_400_T1H  77  // ~1.20uS
