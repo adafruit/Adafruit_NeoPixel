@@ -1252,13 +1252,13 @@ void Adafruit_NeoPixel::show(void) {
 // The number of cycles was hand picked and is guaranteed to be 100% 
 // organic to preserve freshness and high accuracy.
 // ---------- BEGIN Constants for cycle counter implementation ---------
-#define CYCLES_800_T0H  18  // ~0.36uS
-#define CYCLES_800_T1H  41  // ~0.76uS
-#define CYCLES_800      71  // ~1.25uS
+#define CYCLES_800_T0H  18  // ~0.36 uS
+#define CYCLES_800_T1H  41  // ~0.76 uS
+#define CYCLES_800      71  // ~1.25 uS
 
-#define CYCLES_400_T0H  32  // ~0.50uS
-#define CYCLES_400_T1H  77  // ~1.20uS
-#define CYCLES_400      160 // ~2.50uS
+#define CYCLES_400_T0H  26  // ~0.50 uS
+#define CYCLES_400_T1H  70  // ~1.26 uS
+#define CYCLES_400      156 // ~2.50 uS
 // ---------- END of Constants for cycle counter implementation --------
 
   // To support both the SoftDevice + Neopixels we use the EasyDMA
@@ -1287,7 +1287,6 @@ void Adafruit_NeoPixel::show(void) {
         (PWM[device]->PSEL.OUT[3] & PWM_PSEL_OUT_CONNECT_Msk)
     ) {
       pwm = PWM[device];
-      cprintf("PWM %d\n", device);
       break;
     }
   }
