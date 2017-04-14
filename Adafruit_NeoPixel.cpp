@@ -1271,28 +1271,34 @@ void Adafruit_NeoPixel::show(void) {
   //
   // If there is not enough memory, we will fall back to cycle counter
   // using DWT
-  uint32_t pattern_size    = numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t);
+  uint32_t  pattern_size   = numBytes*8*sizeof(uint16_t)+2*sizeof(uint16_t);
   uint16_t* pixels_pattern = NULL;
 
   NRF_PWM_Type* pwm = NULL;
 
-  // Try to find a free PWM device.
+  // Try to find a free PWM device, which is not enabled
+  // and has no connected pins
   NRF_PWM_Type* PWM[3] = {NRF_PWM0, NRF_PWM1, NRF_PWM2};
   for(int device = 0; device<3; device++) {
-    if( PWM[device]->ENABLE == 0 &&
-        ~(PWM[device]->PSEL.OUT[0] & PWM_PSEL_OUT_CONNECT_Msk) &&
-        ~(PWM[device]->PSEL.OUT[1] & PWM_PSEL_OUT_CONNECT_Msk) &&
-        ~(PWM[device]->PSEL.OUT[2] & PWM_PSEL_OUT_CONNECT_Msk) &&
-        ~(PWM[device]->PSEL.OUT[3] & PWM_PSEL_OUT_CONNECT_Msk)
+    if( (PWM[device]->ENABLE == 0)                            &&
+        (PWM[device]->PSEL.OUT[0] & PWM_PSEL_OUT_CONNECT_Msk) &&
+        (PWM[device]->PSEL.OUT[1] & PWM_PSEL_OUT_CONNECT_Msk) &&
+        (PWM[device]->PSEL.OUT[2] & PWM_PSEL_OUT_CONNECT_Msk) &&
+        (PWM[device]->PSEL.OUT[3] & PWM_PSEL_OUT_CONNECT_Msk)
     ) {
       pwm = PWM[device];
+      cprintf("PWM %d\n", device);
       break;
     }
   }
   
   // only malloc if there is PWM device available
   if ( pwm != NULL ) {
-    pixels_pattern = (uint16_t *) malloc(pattern_size);
+    #ifdef ARDUINO_FEATHER52 // use thread-safe malloc
+      pixels_pattern = (uint16_t *) rtos_malloc(pattern_size);
+    #else
+      pixels_pattern = (uint16_t *) malloc(pattern_size);
+    #endif
   }
 
   // Use the identified device to choose the implementation
@@ -1312,6 +1318,7 @@ void Adafruit_NeoPixel::show(void) {
         {
           pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
         }
+
         pos++;
       }
     }
@@ -1319,9 +1326,6 @@ void Adafruit_NeoPixel::show(void) {
     // Zero padding to indicate the end of que sequence
     pixels_pattern[++pos] = 0 | (0x8000); // Seq end
     pixels_pattern[++pos] = 0 | (0x8000); // Seq end
-
-    // Enable the PWM
-    pwm->ENABLE = (PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
 
     // Set the wave mode to count UP
     pwm->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
@@ -1357,7 +1361,7 @@ void Adafruit_NeoPixel::show(void) {
     pwm->SEQ[0].CNT = (pattern_size/sizeof(uint16_t)) << PWM_SEQ_CNT_CNT_Pos;
 
     // The following settings are ignored with the current config.
-    pwm->SEQ[0].REFRESH = 0;
+    pwm->SEQ[0].REFRESH  = 0;
     pwm->SEQ[0].ENDDELAY = 0;
 
     // The Neopixel implementation is a blocking algorithm. DMA
@@ -1365,13 +1369,17 @@ void Adafruit_NeoPixel::show(void) {
     // operation we enable the interruption for the end of sequence
     // and block the execution thread until the event flag is set by
     // the peripheral.
-    pwm->INTEN |= (PWM_INTEN_SEQEND0_Enabled<<PWM_INTEN_SEQEND0_Pos);
+//    pwm->INTEN |= (PWM_INTEN_SEQEND0_Enabled<<PWM_INTEN_SEQEND0_Pos);
 
-    pwm->PSEL.OUT[0] = g_ADigitalPinMap[pin] |
-                       (PWM_PSEL_OUT_CONNECT_Connected << PWM_PSEL_OUT_CONNECT_Pos);
+    // PSEL must be configured before enabling PWM
+    pwm->PSEL.OUT[0] = g_ADigitalPinMap[pin];
+
+    // Enable the PWM
+    pwm->ENABLE = 1;
 
     // After all of this and many hours of reading the documentation
     // we are ready to start the sequence...
+    pwm->EVENTS_SEQEND[0]  = 0;
     pwm->TASKS_SEQSTART[0] = 1;
 
     // But we have to wait for the flag to be set.
@@ -1389,14 +1397,19 @@ void Adafruit_NeoPixel::show(void) {
     // all the outputs before leave or the device will not
     // be selected on the next call.
     // TODO: Check if disabling the device causes performance issues.
-    pwm->ENABLE &= ~(PWM_ENABLE_ENABLE_Enabled << PWM_ENABLE_ENABLE_Pos);
+    pwm->ENABLE = 0;
 
-    pwm->PSEL.OUT[0] &= ~(PWM_PSEL_OUT_CONNECT_Connected << PWM_PSEL_OUT_CONNECT_Pos);
+    pwm->PSEL.OUT[0] = 0xFFFFFFFFUL;
 
-    free(pixels_pattern);
+    #ifdef ARDUINO_FEATHER52  // use thread-safe free
+      rtos_free(pixels_pattern);
+    #else
+      free(pixels_pattern);
+    #endif
   }// End of DMA implementation
   // ---------------------------------------------------------------------
   else{
+    // Fall back to DWT
     #ifdef ARDUINO_FEATHER52
       // Bluefruit Feather 52 uses freeRTOS
       // Critical Section is used since it does not block SoftDevice execution
@@ -1410,89 +1423,62 @@ void Adafruit_NeoPixel::show(void) {
       __disable_irq();
     #endif
 
-    Serial.println("[Neopixel] DWT");
+    uint32_t pinMask = 1UL << g_ADigitalPinMap[pin];
 
-    // Fall back to DWT
-    uint32_t  cyc,
-            pinMask = 1UL<<g_ADigitalPinMap[pin],
-            cycStart;
+    uint32_t CYCLES_X00     = CYCLES_800;
+    uint32_t CYCLES_X00_T1H = CYCLES_800_T1H;
+    uint32_t CYCLES_X00_T0H = CYCLES_800_T0H;
 
-
-    uint8_t *end = pixels + numBytes;
+#ifdef NEO_KHZ400
+    if( !is800KHz )
+    {
+      CYCLES_X00     = CYCLES_400;
+      CYCLES_X00_T1H = CYCLES_400_T1H;
+      CYCLES_X00_T0H = CYCLES_400_T0H;
+    }
+#endif
 
     // Enable DWT in debug core
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
-    if(is800KHz) {
-#endif
-      // Tries to re-send the frame if is interrupted by the SoftDevice.
-      while(1) {
-        uint8_t *p = pixels;
+    // Tries to re-send the frame if is interrupted by the SoftDevice.
+    while(1) {
+      uint8_t *p = pixels;
 
-        cycStart = DWT->CYCCNT;
-        cyc = DWT->CYCCNT + CYCLES_800;
+      uint32_t cycStart = DWT->CYCCNT;
+      uint32_t cyc = 0;
 
-        for(uint16_t n=0; n<numBytes; n++)
-        {
-          uint8_t pix = *p++;
+      for(uint16_t n=0; n<numBytes; n++) {
+        uint8_t pix = *p++;
 
-          for(uint8_t mask = 0x80; mask; mask >>= 1) {
-            while(DWT->CYCCNT - cyc < CYCLES_800);
-            cyc  = DWT->CYCCNT;
+        for(uint8_t mask = 0x80; mask; mask >>= 1) {
+          while(DWT->CYCCNT - cyc < CYCLES_X00);
+          cyc  = DWT->CYCCNT;
 
-            NRF_GPIO->OUTSET |= pinMask;
+          NRF_GPIO->OUTSET |= pinMask;
 
-            if(pix & mask) {
-              while(DWT->CYCCNT - cyc < CYCLES_800_T1H);
-            } else {
-              while(DWT->CYCCNT - cyc < CYCLES_800_T0H);
-            }
-
-            NRF_GPIO->OUTCLR |= pinMask;
+          if(pix & mask) {
+            while(DWT->CYCCNT - cyc < CYCLES_X00_T1H);
+          } else {
+            while(DWT->CYCCNT - cyc < CYCLES_X00_T0H);
           }
-        }
 
-        while(DWT->CYCCNT - cyc < CYCLES_800);
-
-        if ((DWT->CYCCNT - cycStart) <= (CYCLES_800*numBytes+CYCLES_800))
-        {
-          break;
-        }
-
-        // re-send need 50us delay
-      }
-#ifdef NEO_KHZ400
-    } else { // 400 kHz bitstream
-      while(1) { // Tries to re-send the frame if is interrupted
-        // by the SoftDevice.
-        uint8_t *p = pixels;
-
-        cycStart = DWT->CYCCNT;
-        cyc = DWT->CYCCNT + CYCLES_400;
-        while(p < end) {
-          uint8_t pix = *p++;
-          for(uint8_t mask = 0x80; mask; mask >>= 1) {
-            while(DWT->CYCCNT - cyc < CYCLES_400);
-            cyc  = DWT->CYCCNT;
-            NRF_GPIO->OUTSET |= pinMask;
-            if(pix & mask) {
-              while(DWT->CYCCNT - cyc < CYCLES_400_T1H);
-            } else {
-              while(DWT->CYCCNT - cyc < CYCLES_400_T0H);
-            }
-            NRF_GPIO->OUTCLR |= pinMask;
-          }
-        }
-        while(DWT->CYCCNT - cyc < CYCLES_400);
-        if ((DWT->CYCCNT - cycStart) <= (CYCLES_400*numBytes+CYCLES_400))
-        {
-          break;
+          NRF_GPIO->OUTCLR |= pinMask;
         }
       }
+      while(DWT->CYCCNT - cyc < CYCLES_X00);
+
+
+      // If total time longer than 25%, resend the whole data.
+      // Since we are likely to be interrupted by SoftDevice
+      if ( (DWT->CYCCNT - cycStart) < ( 8*numBytes*((CYCLES_X00*5)/4) ) ) {
+        break;
+      }
+
+      // re-send need 50us delay
+      delayMicroseconds(50);
     }
-#endif // End of support for 400KHz
 
     // Enable interrupts again
     #ifdef ARDUINO_FEATHER52
