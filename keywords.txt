@@ -18,6 +18,15 @@ getPixelColor	KEYWORD2
 Color			KEYWORD2
 show			KEYWORD2
 
+clear			KEYWORD2
+updateLength			KEYWORD2
+updateType			KEYWORD2
+getPixels			KEYWORD2
+getBrightness			KEYWORD2
+getPin			KEYWORD2
+canShow			KEYWORD2
+
+
 #######################################
 # Constants
 #######################################
