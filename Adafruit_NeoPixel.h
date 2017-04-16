@@ -137,7 +137,7 @@ class Adafruit_NeoPixel {
    *getPixels(void) const,
     getBrightness(void) const;
   int8_t
-    getPin(void) { return pin; };
+    getPin(void) const { return pin; };
   uint16_t
     numPixels(void) const;
   static uint32_t
@@ -146,7 +146,7 @@ class Adafruit_NeoPixel {
   uint32_t
     getPixelColor(uint16_t n) const;
   inline bool
-    canShow(void) { return (micros() - endTime) >= 50L; }
+    canShow(void) const { return (micros() - endTime) >= 50L; }
 
  private:
 
