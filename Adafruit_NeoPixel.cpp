@@ -123,7 +123,7 @@ void Adafruit_NeoPixel::show(void) {
 
   if(!pixels) return;
 
-  // Data latch = 50+ microsecond pause in the output stream.  Rather than
+  // Data latch = 300+ microsecond pause in the output stream.  Rather than
   // put a delay at the end of the function, the ending time is noted and
   // the function will simply hold off (if needed) on issuing the
   // subsequent round of data until the latch time has elapsed.  This
@@ -1475,8 +1475,8 @@ void Adafruit_NeoPixel::show(void) {
         break;
       }
 
-      // re-send need 50us delay
-      delayMicroseconds(50);
+      // re-send need 300us delay
+      delayMicroseconds(300);
     }
 
     // Enable interrupts again
@@ -2020,16 +2020,3 @@ uint8_t Adafruit_NeoPixel::getBrightness(void) const {
 void Adafruit_NeoPixel::clear() {
   memset(pixels, 0, numBytes);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
