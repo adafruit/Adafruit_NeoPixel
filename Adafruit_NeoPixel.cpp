@@ -2008,7 +2008,7 @@ void Adafruit_NeoPixel::setBrightness(uint8_t b) {
       c      = *ptr;
       *ptr++ = (c * scale) >> 8;
     }
-    brightness = newBrightness;
+    brightness = newBrightness == 1 ? 0 : newBrightness;
   }
 }
 
