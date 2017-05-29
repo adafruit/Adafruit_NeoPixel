@@ -1059,7 +1059,8 @@ void Adafruit_NeoPixel::show(void) {
 
 // ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due ---------------------------
 
-#if defined(__MK20DX128__) || defined(__MK20DX256__) // Teensy 3.0 & 3.1
+// Teensy 3.0, 3.1, 3.5, 3.6
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 #define CYCLES_800_T0H  (F_CPU / 4000000)
 #define CYCLES_800_T1H  (F_CPU / 1250000)
 #define CYCLES_800      (F_CPU /  800000)
@@ -1247,7 +1248,7 @@ void Adafruit_NeoPixel::show(void) {
 // If there is no device available an alternative cycle-counter
 // implementation is tried.
 // The nRF52832 runs with a fixed clock of 64Mhz. The alternative
-// implementation is the same as the one used for the Teensy 3.0/1/2 but
+// implementation is the same as the one used for the Teensy 3.0/1/2/5/6 but
 // with the Nordic SDK HAL & registers syntax.
 // The number of cycles was hand picked and is guaranteed to be 100% 
 // organic to preserve freshness and high accuracy.
