@@ -931,7 +931,6 @@ void Adafruit_NeoPixel::show(void) {
         [count] "+w" (i)
       : [hi]     "r" (hi),
         [lo]     "r" (lo),
-        [lo]     "r" (lo),
         [ptr]    "e" (ptr));
   }
 #endif // NEO_KHZ400
