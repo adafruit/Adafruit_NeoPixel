@@ -962,6 +962,9 @@ void Adafruit_NeoPixel::show(void) {
     bit  = 8;
 
     while (reps--) { // repeat for the number of strings wired in series
+      ptr = pixels; // reset pointer to beginning of array
+      b   = *ptr++;   // reset Current byte value
+      i   = numBytes; // reset Loop counter
     asm volatile(
      "head20:"                   "\n\t" // Clk  Pseudocode    (T =  0)
       "st   %a[port],  %[hi]"    "\n\t" // 2    PORT = hi     (T =  2)
