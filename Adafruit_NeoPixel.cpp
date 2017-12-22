@@ -163,7 +163,8 @@ void Adafruit_NeoPixel::show(void) {
    *ptr = pixels,   // Pointer to next byte
     b   = *ptr++,   // Current byte value
     hi,             // PORT w/output bit set high
-    lo;             // PORT w/output bit set low
+    lo,             // PORT w/output bit set low
+    reps = repeats; // how many times to repeat
 
   // Hand-tuned assembly code issues data to the LED drivers at a specific
   // rate.  There's separate code for different CPU speeds (8, 12, 16 MHz)
@@ -960,6 +961,7 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     bit  = 8;
 
+    while (reps--) { // repeat for the number of strings wired in series
     asm volatile(
      "head20:"                   "\n\t" // Clk  Pseudocode    (T =  0)
       "st   %a[port],  %[hi]"    "\n\t" // 2    PORT = hi     (T =  2)
@@ -991,6 +993,7 @@ void Adafruit_NeoPixel::show(void) {
       : [ptr]    "e" (ptr),
         [hi]     "r" (hi),
         [lo]     "r" (lo));
+    } // while (reps--)
 
 #ifdef NEO_KHZ400
   } else { // 400 KHz
