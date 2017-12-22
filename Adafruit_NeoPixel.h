@@ -118,7 +118,7 @@ class Adafruit_NeoPixel {
  public:
 
   // Constructor: number of LEDs, pin number, LED type
-  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel(uint16_t n, uint8_t p=6, neoPixelType t=NEO_GRB + NEO_KHZ800, uint8_t r=0);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
@@ -132,6 +132,7 @@ class Adafruit_NeoPixel {
     setBrightness(uint8_t),
     clear(),
     updateLength(uint16_t n),
+    updateRepeats(uint8_t r),
     updateType(neoPixelType t);
   uint8_t
    *getPixels(void) const,
@@ -166,7 +167,8 @@ class Adafruit_NeoPixel {
     rOffset,       // Index of red byte within each 3- or 4-byte pixel
     gOffset,       // Index of green byte
     bOffset,       // Index of blue byte
-    wOffset;       // Index of white byte (same as rOffset if no white)
+    wOffset,       // Index of white byte (same as rOffset if no white)
+    repeats;       // how many copies of this string are wired in series to the same data path
   uint32_t
     endTime;       // Latch timing reference
 #ifdef __AVR__

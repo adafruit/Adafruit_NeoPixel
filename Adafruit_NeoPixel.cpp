@@ -42,12 +42,13 @@
 #endif
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t, uint8_t r) :
   begun(false), brightness(0), pixels(NULL), endTime(0)  
 {
   updateType(t);
   updateLength(n);
   setPin(p);
+  updateRepeats(r);
 }
 
 // via Michael Vogt/neophob: empty constructor is used when strand length
@@ -60,7 +61,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
   is800KHz(true),
 #endif
   begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0), pixels(NULL),
-  rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
+  rOffset(1), gOffset(0), bOffset(2), wOffset(1), repeats(1), endTime(0)
 {
 }
 
@@ -89,6 +90,10 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   } else {
     numLEDs = numBytes = 0;
   }
+}
+
+void Adafruit_NeoPixel::updateRepeats(uint8_t r) {
+  repeats = r; // set how many sets of LEDs are wired in series data-wise (see ::show(void))
 }
 
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
