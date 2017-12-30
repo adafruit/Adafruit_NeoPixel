@@ -113,6 +113,17 @@ typedef uint16_t neoPixelType;
 typedef uint8_t  neoPixelType;
 #endif
 
+// HSV colorspace defines delimiting the values in the call
+// to setPixelColorHsv().
+#define NEO_HSV_HUE_SEXTANT 256
+#define NEO_HSV_HUE_STEPS   (6 * NEO_HSV_HUE_SEXTANT)
+#define NEO_HSV_HUE_MIN     0
+#define NEO_HSV_HUE_MAX     (NEO_HSV_HUE_STEPS - 1)
+#define NEO_HSV_SAT_MIN     0
+#define NEO_HSV_SAT_MAX     255
+#define NEO_HSV_VAL_MIN     0
+#define NEO_HSV_VAL_MAX     255
+
 class Adafruit_NeoPixel {
 
  public:
@@ -129,6 +140,7 @@ class Adafruit_NeoPixel {
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
     setPixelColor(uint16_t n, uint32_t c),
+    setPixelColorHsv(uint16_t n, uint16_t h, uint8_t s, uint8_t v),
     setBrightness(uint8_t),
     clear(),
     updateLength(uint16_t n),
