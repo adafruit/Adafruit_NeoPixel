@@ -2096,3 +2096,29 @@ uint8_t Adafruit_NeoPixel::getBrightness(void) const {
 void Adafruit_NeoPixel::clear() {
   memset(pixels, 0, numBytes);
 }
+
+// This bizarre construct isn't Arduino code in the conventional sense.
+// It exploits features of GCC's preprocessor to generate a PROGMEM
+// table (in flash memory) holding an 8-bit unsigned sine wave (0-255).
+static const int _SBASE_ = __COUNTER__ + 1; // Index of 1st __COUNTER__ below
+#define _S1_ (sin((__COUNTER__ - _SBASE_) / 128.0 * M_PI) + 1.0) * 127.5 + 0.5,
+#define _S2_ _S1_ _S1_ _S1_ _S1_ _S1_ _S1_ _S1_ _S1_ // Expands to 8 items
+#define _S3_ _S2_ _S2_ _S2_ _S2_ _S2_ _S2_ _S2_ _S2_ // Expands to 64 items
+static const uint8_t PROGMEM _sineTable[] = { _S3_ _S3_ _S3_ _S3_ }; // 256
+ 
+// Similar to above, but for an 8-bit gamma-correction table.
+#define _GAMMA_ 2.6
+static const int _GBASE_ = __COUNTER__ + 1; // Index of 1st __COUNTER__ below
+#define _G1_ pow((__COUNTER__ - _GBASE_) / 255.0, _GAMMA_) * 255.0 + 0.5,
+#define _G2_ _G1_ _G1_ _G1_ _G1_ _G1_ _G1_ _G1_ _G1_ // Expands to 8 items
+#define _G3_ _G2_ _G2_ _G2_ _G2_ _G2_ _G2_ _G2_ _G2_ // Expands to 64 items
+static const uint8_t PROGMEM _gammaTable[] = { _G3_ _G3_ _G3_ _G3_ }; // 256
+
+uint8_t Adafruit_NeoPixel::sine8(uint8_t x) const {
+  return pgm_read_byte(&_sineTable[x]); // 0-255 in, 0-255 out
+}
+
+uint8_t Adafruit_NeoPixel::gamma8(uint8_t x) const {
+  return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
+}
+
