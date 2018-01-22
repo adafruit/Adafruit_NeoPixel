@@ -14,6 +14,25 @@ Compatibility notes: Port A is not supported on any AVR processors at this time
 
 ---
 
+## Supported chipsets
+
+We have included code for the following chips - *sometimes these break for exciting reasons that we can't control* in which case please open an issue!
+
+ * AVR ATmega and ATtiny (any 8-bit) - 8 MHz, 12 MHz and 16 MHz
+ * Teensy 3.x and LC
+ * Arduino Due
+ * Arduino 101
+ * ATSAMD21 (Arduino Zero/M0 and other SAMD21 boards) @ 48 MHz
+ * ATSAMD51 @ 120 MHz
+ * Adafruit STM32 Feather @ 120 MHz
+ * ESP8266 any speed
+ * ESP32 any speed
+ * Nordic nRF52 (Adafruit Feather nRF52), nRF51 (micro:bit)
+
+Check forks for other architectures not listed here!
+
+---
+
 ### Roadmap
 
 The PRIME DIRECTIVE is to maintain backward compatibility with existing Arduino sketches -- many are hosted elsewhere and don't track changes here, some are in print and can never be changed!
