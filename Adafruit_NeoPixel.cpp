@@ -1721,25 +1721,18 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
-
-
-#elif defined (_VARIANT_BBC_MICROBIT_)
+#elif defined (NRF51)
   uint8_t          *p   = pixels,
                     pix, count, mask;
   int32_t         num = numBytes;
   unsigned int bitmask = ( 1 << g_ADigitalPinMap[pin] );
 // https://github.com/sandeepmistry/arduino-nRF5/blob/dc53980c8bac27898fca90d8ecb268e11111edc1/variants/BBCmicrobit/variant.cpp
 
-
   volatile unsigned int *reg = (unsigned int *) (0x50000000UL + 0x508);
 
 // https://github.com/sandeepmistry/arduino-nRF5/blob/dc53980c8bac27898fca90d8ecb268e11111edc1/cores/nRF5/SDK/components/device/nrf51.h
 // http://www.iot-programmer.com/index.php/books/27-micro-bit-iot-in-c/chapters-micro-bit-iot-in-c/47-micro-bit-iot-in-c-fast-memory-mapped-gpio?showall=1
-
 // https://github.com/Microsoft/pxt-neopixel/blob/master/sendbuffer.asm
-
-
-
 
   asm volatile(
     // "cpsid i" ; disable irq
@@ -1808,9 +1801,7 @@ void Adafruit_NeoPixel::show(void) {
     [reg] "r" (reg)
   );
 
-
-
-#else // Other ARM architecture -- Presumed Arduino Due
+#elif defined(__SAM3X8E__) // Arduino Due
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
   #define INST       (2UL * F_CPU / VARIANT_MCK)
