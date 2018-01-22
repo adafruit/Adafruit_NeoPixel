@@ -1989,6 +1989,36 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
+// Set the r, g or b value of a single pixel
+void Adafruit_NeoPixel::setPixelChannel(uint16_t n, uint8_t v, uint8_t c) {
+  // set channel (red, green or blue) 'c' of pixel n to value v
+  if(n < numLEDs) {
+    uint8_t *p;
+    uint8_t offset;
+    if(c == 0) {
+      offset = rOffset;
+    } else if(c == 1) {
+      offset = gOffset;
+    } else if(c == 2) {
+      offset = bOffset;
+    } else {
+      return;
+    }
+
+    if(wOffset == rOffset) {
+      p = &pixels[n * 3];
+    } else {
+      p = &pixels[n * 4];
+    }
+    if(brightness) {
+       v = (v * brightness) >> 8; 
+    }
+
+    p[offset] = v;
+    
+  }
+}
+
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
 uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
