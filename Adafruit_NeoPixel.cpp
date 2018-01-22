@@ -42,12 +42,13 @@
 #endif
 
 // Constructor when length, pin and type are known at compile-time:
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t, uint8_t r) :
   begun(false), brightness(0), pixels(NULL), endTime(0)  
 {
   updateType(t);
   updateLength(n);
   setPin(p);
+  updateRepeats(r);
 }
 
 // via Michael Vogt/neophob: empty constructor is used when strand length
@@ -60,7 +61,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
   is800KHz(true),
 #endif
   begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0), pixels(NULL),
-  rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
+  rOffset(1), gOffset(0), bOffset(2), wOffset(1), repeats(1), endTime(0)
 {
 }
 
@@ -89,6 +90,10 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   } else {
     numLEDs = numBytes = 0;
   }
+}
+
+void Adafruit_NeoPixel::updateRepeats(uint8_t r) {
+  repeats = r; // set how many sets of LEDs are wired in series data-wise (see ::show(void))
 }
 
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
@@ -158,7 +163,8 @@ void Adafruit_NeoPixel::show(void) {
    *ptr = pixels,   // Pointer to next byte
     b   = *ptr++,   // Current byte value
     hi,             // PORT w/output bit set high
-    lo;             // PORT w/output bit set low
+    lo,             // PORT w/output bit set low
+    reps = repeats; // how many times to repeat
 
   // Hand-tuned assembly code issues data to the LED drivers at a specific
   // rate.  There's separate code for different CPU speeds (8, 12, 16 MHz)
@@ -955,6 +961,10 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     bit  = 8;
 
+    while (reps--) { // repeat for the number of strings wired in series
+      ptr = pixels; // reset pointer to beginning of array
+      b   = *ptr++;   // reset Current byte value
+      i   = numBytes; // reset Loop counter
     asm volatile(
      "head20:"                   "\n\t" // Clk  Pseudocode    (T =  0)
       "st   %a[port],  %[hi]"    "\n\t" // 2    PORT = hi     (T =  2)
@@ -986,6 +996,7 @@ void Adafruit_NeoPixel::show(void) {
       : [ptr]    "e" (ptr),
         [hi]     "r" (hi),
         [lo]     "r" (lo));
+    } // while (reps--)
 
 #ifdef NEO_KHZ400
   } else { // 400 KHz
