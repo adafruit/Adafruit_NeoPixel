@@ -32,6 +32,7 @@
   -------------------------------------------------------------------------*/
 
 #include "Adafruit_NeoPixel.h"
+#include "hexadecimal_colors_to_strings.h"
 
 #if defined(NRF52)
 #include "nrf.h"
@@ -43,7 +44,7 @@
 
 // Constructor when length, pin and type are known at compile-time:
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
-  begun(false), brightness(0), pixels(NULL), endTime(0)  
+  begun(false), brightness(0), pixels(NULL), endTime(0)
 {
   updateType(t);
   updateLength(n);
@@ -110,7 +111,7 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   }
 }
 
-#if defined(ESP8266) 
+#if defined(ESP8266)
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" void ICACHE_RAM_ATTR espShow(
   uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
@@ -1207,12 +1208,12 @@ void Adafruit_NeoPixel::show(void) {
 // [[[Begin of the Neopixel NRF52 EasyDMA implementation
 //                                    by the Hackerspace San Salvador]]]
 // This technique uses the PWM peripheral on the NRF52. The PWM uses the
-// EasyDMA feature included on the chip. This technique loads the duty 
-// cycle configuration for each cycle when the PWM is enabled. For this 
+// EasyDMA feature included on the chip. This technique loads the duty
+// cycle configuration for each cycle when the PWM is enabled. For this
 // to work we need to store a 16 bit configuration for each bit of the
 // RGB(W) values in the pixel buffer.
 // Comparator values for the PWM were hand picked and are guaranteed to
-// be 100% organic to preserve freshness and high accuracy. Current 
+// be 100% organic to preserve freshness and high accuracy. Current
 // parameters are:
 //   * PWM Clock: 16Mhz
 //   * Minimum step time: 62.5ns
@@ -1242,13 +1243,13 @@ void Adafruit_NeoPixel::show(void) {
 #define CTOPVAL_400KHz         40UL            // 2.5us
 
 // ---------- END Constants for the EasyDMA implementation -------------
-// 
+//
 // If there is no device available an alternative cycle-counter
 // implementation is tried.
 // The nRF52832 runs with a fixed clock of 64Mhz. The alternative
 // implementation is the same as the one used for the Teensy 3.0/1/2 but
 // with the Nordic SDK HAL & registers syntax.
-// The number of cycles was hand picked and is guaranteed to be 100% 
+// The number of cycles was hand picked and is guaranteed to be 100%
 // organic to preserve freshness and high accuracy.
 // ---------- BEGIN Constants for cycle counter implementation ---------
 #define CYCLES_800_T0H  18  // ~0.36 uS
@@ -1289,7 +1290,7 @@ void Adafruit_NeoPixel::show(void) {
       break;
     }
   }
-  
+
   // only malloc if there is PWM device available
   if ( pwm != NULL ) {
     #ifdef ARDUINO_FEATHER52 // use thread-safe malloc
@@ -1970,7 +1971,7 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
 
-#else 
+#else
 #error Architecture not supported
 #endif
 
@@ -2235,4 +2236,3 @@ uint8_t Adafruit_NeoPixel::sine8(uint8_t x) const {
 uint8_t Adafruit_NeoPixel::gamma8(uint8_t x) const {
   return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
 }
-
