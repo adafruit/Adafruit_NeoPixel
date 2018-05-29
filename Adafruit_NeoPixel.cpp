@@ -35,7 +35,6 @@
 
 #if defined(NRF52)
 #include "nrf.h"
-
 // Interrupt is only disabled if there is no PWM device available
 // Note: Adafruit Bluefruit nrf52 does not use this option
 //#define NRF52_DISABLE_INT
