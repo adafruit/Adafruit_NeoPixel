@@ -32,7 +32,6 @@
   -------------------------------------------------------------------------*/
 
 #include "Adafruit_NeoPixel.h"
-#include "hexadecimal_colors_to_strings.h"
 
 #if defined(NRF52)
 #include "nrf.h"

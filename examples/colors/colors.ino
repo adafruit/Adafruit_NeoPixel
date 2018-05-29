@@ -5,17 +5,17 @@
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
-#define PIN            6
+#define PIN            13
 
 // How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      16
+#define NUMPIXELS      60
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
 // example for more information on possible values.
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
-int delayval = 500; // delay for half a second
+int delayval = 50; // delay for half a second
 
 void setup() {
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
@@ -27,13 +27,14 @@ void setup() {
   pixels.begin(); // This initializes the NeoPixel library.
 }
 void loop() {
-  colorWipe(TEAL, 50);
-  colorWipe(MAROON, 50);
-  colorWipe(pixels.Color(0, 0, 255), 50); // blue
+  pixels.setBrightness(50);
+  colorWipe(TEAL, delayval);
+  colorWipe(YELLOW, delayval);
+  colorWipe(pixels.Color(0, 0, 255), delayval); // blue
 
-  theaterChase(pixels.Color(255, 0, 0), 50); // red
-  theaterChase(pixels.Color(0, 255, 0), 50); // green
-  theaterChase(ROYALBLUE, 50);
+  theaterChase(pixels.Color(255, 0, 0), delayval); // red
+  theaterChase(pixels.Color(0, 255, 0), delayval); // green
+  theaterChase(MAROON, delayval);
 }
 
 // Fill the dots one after the other with a color
@@ -46,7 +47,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
 }
 
 //Theatre-style crawling lights.
-void Adafruit_NeoPixel_simplified::theaterChase(uint32_t c, uint8_t wait) {
+void theaterChase(uint32_t c, uint8_t wait) {
   for (int j = 0; j < 10; j++) {  //do 10 cycles of chasing
     for (int q = 0; q < 3; q++) {
       for (uint16_t i = 0; i < pixels.numPixels(); i += 3) {
