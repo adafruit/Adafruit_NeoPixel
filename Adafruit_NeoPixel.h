@@ -19,8 +19,6 @@
 #ifndef ADAFRUIT_NEOPIXEL_H
 #define ADAFRUIT_NEOPIXEL_H
 
-#include "hexadecimal_colors_to_strings.h"
-
 #if (ARDUINO >= 100)
  #include <Arduino.h>
 #else
