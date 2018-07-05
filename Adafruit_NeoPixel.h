@@ -177,6 +177,12 @@ class Adafruit_NeoPixel {
   uint8_t
     pinMask;       // Output PORT bitmask
 #endif
+
+  private:
+   // Disallow copy and assign, since the default operators do not
+   // correctly handle our pixels buffer.
+   Adafruit_NeoPixel(Adafruit_NeoPixel const&);
+   Adafruit_NeoPixel& operator=(Adafruit_NeoPixel const&);
 };
 
 #endif // ADAFRUIT_NEOPIXEL_H
