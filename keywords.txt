@@ -11,30 +11,30 @@ Adafruit_NeoPixel	KEYWORD1
 #######################################	
 
 setPixelColor	KEYWORD2
-setPin			KEYWORD2
+setPin	KEYWORD2
 setBrightness	KEYWORD2
-numPixels		KEYWORD2
+numPixels	KEYWORD2
 getPixelColor	KEYWORD2
-Color			KEYWORD2
-show			KEYWORD2
+Color	KEYWORD2
+show	KEYWORD2
 
-clear			KEYWORD2
-updateLength			KEYWORD2
-updateType			KEYWORD2
-getPixels			KEYWORD2
-getBrightness			KEYWORD2
-getPin			KEYWORD2
-canShow			KEYWORD2
+clear	KEYWORD2
+updateLength	KEYWORD2
+updateType	KEYWORD2
+getPixels	KEYWORD2
+getBrightness	KEYWORD2
+getPin	KEYWORD2
+canShow	KEYWORD2
 
 
 #######################################
 # Constants
 #######################################
 
-NEO_COLMASK		LITERAL1
-NEO_SPDMASK		LITERAL1
-NEO_KHZ800		LITERAL1
-NEO_KHZ400		LITERAL1
-NEO_GRB			LITERAL1
-NEO_RGB			LITERAL1
-NEO_RGBW			LITERAL1
+NEO_COLMASK	LITERAL1
+NEO_SPDMASK	LITERAL1
+NEO_KHZ800	LITERAL1
+NEO_KHZ400	LITERAL1
+NEO_GRB	LITERAL1
+NEO_RGB	LITERAL1
+NEO_RGBW	LITERAL1
