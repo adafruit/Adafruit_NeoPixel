@@ -3,6 +3,8 @@
   #include <avr/power.h>
 #endif
 
+using namespace NeoColors;    // used for Adafruit default color values like MAROON, TEAL, YELLOW
+
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
 #define PIN            13
