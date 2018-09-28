@@ -1562,6 +1562,89 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+//#elif defined (_XMC_)
+#elif 1
+  // Tried this with a timer/counter, couldn't quite get adequate
+  // resolution.  So yay, you get a load of goofball NOPs...
+
+  uint8_t  *ptr, *end, p, bitMask, portNum;
+  uint32_t  pinMask;
+
+  //portNum =  g_APinDescription[pin].ulPort;
+  //pinMask =  1ul << g_APinDescription[pin].ulPin;
+  ptr     =  pixels;
+  end     =  ptr + numBytes;
+  p       = *ptr++;
+  bitMask =  0x80;
+
+  //volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
+  //                  *clr = &(PORT->Group[portNum].OUTCLR.reg);
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    for(;;) {
+      //*set = pinMask;
+	  digitalWrite(pin, HIGH);
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop;");
+        //*clr = pinMask;
+		digitalWrite(pin, LOW);
+      } else {
+        //*clr = pinMask;
+		digitalWrite(pin, LOW);
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop;");
+      }
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+#ifdef NEO_KHZ400
+  } else { // 400 KHz bitstream
+    for(;;) {
+      //*set = pinMask;
+	  digitalWrite(pin, HIGH);
+      asm("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop;");
+        //*clr = pinMask;
+		digitalWrite(pin, LOW);
+      } else {
+        //*clr = pinMask;
+		digitalWrite(pin, LOW);
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop;");
+      }
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+  }
+
+#endif
+
 #elif defined (__SAMD51__) // M4 @ 120mhz
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution.  So yay, you get a load of goofball NOPs...
