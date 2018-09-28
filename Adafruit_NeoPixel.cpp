@@ -1591,27 +1591,25 @@ void Adafruit_NeoPixel::show(void) {
       //*set = pinMask;
       //digitalWrite(pin, HIGH);
       //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_HIGH );
-      XMC_port->OMR = omrhigh;
-      asm("nop; nop; nop; nop; nop; nop; nop; nop;");
+			XMC_port->OMR = omrhigh;
+      asm("nop; nop; nop; nop;");
       if(p & bitMask) {
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop;");
+            "nop; nop;");
         //*clr = pinMask;
         //digitalWrite(pin, LOW);
         //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
-        XMC_port->OMR = omrlow;
+				XMC_port->OMR = omrlow;
       } else {
         //*clr = pinMask;
         //digitalWrite(pin, LOW);
         //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
-        XMC_port->OMR = omrlow;
+				XMC_port->OMR = omrlow;
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop;");
+            "nop; nop;");
       }
       if(bitMask >>= 1) {
-        asm("nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+        asm("nop; nop; nop; nop; nop;");
       } else {
         if(ptr >= end) break;
         p       = *ptr++;
