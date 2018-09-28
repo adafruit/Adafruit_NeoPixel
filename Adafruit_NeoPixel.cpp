@@ -1579,23 +1579,28 @@ void Adafruit_NeoPixel::show(void) {
 
   //volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
   //                  *clr = &(PORT->Group[portNum].OUTCLR.reg);
+  XMC_GPIO_PORT_t*  XMC_port = mapping_port_pin[ pin ].port;
+  uint8_t  XMC_pin  = mapping_port_pin[ pin ].pin;
 
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
     for(;;) {
       //*set = pinMask;
-	  digitalWrite(pin, HIGH);
+      //digitalWrite(pin, HIGH);
+      XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_HIGH );
       asm("nop; nop; nop; nop; nop; nop; nop; nop;");
       if(p & bitMask) {
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop; nop; nop;");
         //*clr = pinMask;
-		digitalWrite(pin, LOW);
+        //digitalWrite(pin, LOW);
+        XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
       } else {
         //*clr = pinMask;
-		digitalWrite(pin, LOW);
+        //digitalWrite(pin, LOW);
+        XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop; nop; nop;");
