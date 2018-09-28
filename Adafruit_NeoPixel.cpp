@@ -1562,8 +1562,8 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
-//#elif defined (_XMC_)
-#elif 1
+#elif defined (XMC1)
+
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution.  So yay, you get a load of goofball NOPs...
 
