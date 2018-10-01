@@ -5,6 +5,7 @@
 #ifdef __AVR__
   #include <avr/power.h>
 #endif
+#include <sbrk.h> //For use with XMC1.
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
@@ -12,13 +13,6 @@
 
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS      16
-
-extern "C" void *_sbrk(int incr);
-void dummy_sbrk_caller() __attribute__((__used__));
-void dummy_sbrk_caller()
-{
-  _sbrk(0);
-} 
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
