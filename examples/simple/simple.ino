@@ -5,6 +5,7 @@
 #ifdef __AVR__
   #include <avr/power.h>
 #endif
+#include <sbrk.h> //For use with XMC1.
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
