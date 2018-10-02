@@ -1562,6 +1562,7 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+//----
 #elif defined (XMC1)
 
   // Tried this with a timer/counter, couldn't quite get adequate
@@ -1570,40 +1571,28 @@ void Adafruit_NeoPixel::show(void) {
   uint8_t  *ptr, *end, p, bitMask, portNum;
   uint32_t  pinMask;
 
-  //portNum =  g_APinDescription[pin].ulPort;
-  //pinMask =  1ul << g_APinDescription[pin].ulPin;
   ptr     =  pixels;
   end     =  ptr + numBytes;
   p       = *ptr++;
   bitMask =  0x80;
 
-  //volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
-  //                  *clr = &(PORT->Group[portNum].OUTCLR.reg);
   XMC_GPIO_PORT_t*  XMC_port = mapping_port_pin[ pin ].port;
-  uint8_t  XMC_pin  = mapping_port_pin[ pin ].pin;
+  uint8_t  XMC_pin           = mapping_port_pin[ pin ].pin;
+
 	uint32_t omrhigh = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_HIGH << XMC_pin;
-	uint32_t omrlow = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
+	uint32_t omrlow  = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
 
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
     for(;;) {
-      //*set = pinMask;
-      //digitalWrite(pin, HIGH);
-      //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_HIGH );
 			XMC_port->OMR = omrhigh;
       asm("nop; nop; nop; nop;");
       if(p & bitMask) {
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop;");
-        //*clr = pinMask;
-        //digitalWrite(pin, LOW);
-        //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
-				XMC_port->OMR = omrlow;
+			  XMC_port->OMR = omrlow;
       } else {
-        //*clr = pinMask;
-        //digitalWrite(pin, LOW);
-        //XMC_GPIO_SetOutputLevel( XMC_port, XMC_pin, XMC_GPIO_OUTPUT_LEVEL_LOW);
 				XMC_port->OMR = omrlow;
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop;");
@@ -1616,33 +1605,24 @@ void Adafruit_NeoPixel::show(void) {
         bitMask = 0x80;
       }
     }
-#ifdef NEO_KHZ400
+#ifdef NEO_KHZ400 // untested code
   } else { // 400 KHz bitstream
     for(;;) {
-      //*set = pinMask;
-	  digitalWrite(pin, HIGH);
-      asm("nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      XMC_port->OMR = omrhigh;
+      asm("nop; nop; nop; nop; nop;");
       if(p & bitMask) {
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop;");
-        //*clr = pinMask;
-		digitalWrite(pin, LOW);
+            "nop; nop; nop; nop; nop;");
+        XMC_port->OMR = omrlow;
       } else {
-        //*clr = pinMask;
-		digitalWrite(pin, LOW);
+        XMC_port->OMR = omrlow;
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop;");
+            "nop; nop; nop; nop; nop;");
       }
       asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-          "nop; nop; nop; nop; nop; nop; nop; nop;"
-          "nop; nop; nop; nop; nop; nop; nop; nop;"
           "nop; nop; nop; nop; nop; nop; nop; nop;");
       if(bitMask >>= 1) {
-        asm("nop; nop; nop; nop; nop; nop; nop;");
+        asm("nop; nop; nop;");
       } else {
         if(ptr >= end) break;
         p       = *ptr++;
@@ -1652,6 +1632,7 @@ void Adafruit_NeoPixel::show(void) {
   }
 
 #endif
+//----
 
 #elif defined (__SAMD51__) // M4 @ 120mhz
   // Tried this with a timer/counter, couldn't quite get adequate
