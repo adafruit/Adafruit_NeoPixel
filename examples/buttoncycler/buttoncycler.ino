@@ -4,6 +4,7 @@
 // button once to start the first animation!
 
 #include <Adafruit_NeoPixel.h>
+#include <sbrk.h> //For use with XMC1.
 
 #define BUTTON_PIN   2    // Digital IO pin connected to the button.  This will be
                           // driven with a pull-up resistor so the switch should
@@ -12,7 +13,7 @@
 
 #define PIXEL_PIN    6    // Digital IO pin connected to the NeoPixels.
 
-#define PIXEL_COUNT 16
+#define PIXEL_COUNT 36
 
 // Parameter 1 = number of pixels in strip,  neopixel stick has 8
 // Parameter 2 = pin number (most are valid)

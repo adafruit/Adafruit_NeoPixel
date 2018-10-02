@@ -20,6 +20,7 @@
 #include <BLEPeripheral.h>
 #include "BLESerial.h"
 #include <Adafruit_NeoPixel.h>
+#include <sbrk.h> //For use with XMC1.
 
 #define PIN 15
 
