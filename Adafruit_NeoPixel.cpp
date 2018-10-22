@@ -2069,6 +2069,41 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
+// Set pixel range color from separate R,G,B components:
+void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint8_t r, uint8_t g, uint8_t b)
+{
+  if ((start <= end) && (end < numLEDs))
+  {
+    for (uint16_t i=start, i<=end; i++)
+    {
+      this->setPixelColor(i, r, g, b);
+    }
+  }
+}
+
+// Set pixel range color from separate R,G,B,W components:
+void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+{
+  if ((start <= end) && (end < numLEDs))
+  {
+    for (uint16_t i=start, i<=end; i++)
+    {
+      this->setPixelColor(i, r, g, b, w);
+    }
+  }
+}
+
+// Set pixel range color from packed color:
+void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint16_t n, uint32_t c)
+{
+  if ((start <= end) && (end < numLEDs))
+  {
+    for (uint16_t i=start, i<=end; i++)
+    {
+      this->setPixelColor(i, c);
+    }
+  }
+}
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
 uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
