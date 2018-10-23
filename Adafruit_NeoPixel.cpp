@@ -2069,41 +2069,39 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
-// Set pixel range color from separate R,G,B components:
-void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint8_t r, uint8_t g, uint8_t b)
+// Fills strip from given pixel to end. Arguments:
+// Color, if unspecified, is zero (effectively a strip clear operation).
+// First, if unspecified, is zero. 
+// Count, if unspecified, fills to end of strip.
+void Adafruit_NeoPixel::fill(uint32_t c, uint16_t first, uint16_t count)
 {
-  if ((start <= end) && (end < numLEDs))
+  uint16_t i;
+  uint16_t last_pixel_index;
+
+  if (first > (numLEDs - 1))
   {
-    for (uint16_t i=start, i<=end; i++)
-    {
-      this->setPixelColor(i, r, g, b);
-    }
+    return; // If first LED is past end of strip, nothing to do
+  }
+
+  // Calculate the index of the last pixel to fill
+  if (count == 0)
+  {
+    // Fill the strip to the end
+    last_pixel_index = numLEDs - 1;
+  }
+  else
+  {
+    // Ensure that the loop won't go past the last pixel
+    last_pixel_index = first + count - 1;
+    last_pixel_index = min(last_pixel_index, numLEDs - 1);
+  }
+
+  for(i = first; i <= last_pixel_index; i++)
+  {
+    this->setPixelColor(i, c);
   }
 }
 
-// Set pixel range color from separate R,G,B,W components:
-void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
-{
-  if ((start <= end) && (end < numLEDs))
-  {
-    for (uint16_t i=start, i<=end; i++)
-    {
-      this->setPixelColor(i, r, g, b, w);
-    }
-  }
-}
-
-// Set pixel range color from packed color:
-void Adafruit_NeoPixel::setPixels(uint16_t start, uint16_t end, uint16_t n, uint32_t c)
-{
-  if ((start <= end) && (end < numLEDs))
-  {
-    for (uint16_t i=start, i<=end; i++)
-    {
-      this->setPixelColor(i, c);
-    }
-  }
-}
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
 uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
