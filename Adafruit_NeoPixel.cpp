@@ -2120,6 +2120,28 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   }
 }
 
+// Returns the for the aproximate relitive lumanance of the selected pixel. 
+float Adafruit_NeoPixel::getPixelLuminance(uint16_t n) const {
+	if (n >= numLEDs) return 0; // Out of bounds, return no luminance.
+
+	if (wOffset != rOffset) return 0; // Not sure how to deal with RGBW yet.
+	
+	// Grab the brightness adjusted pixel color
+	uint32_t c = getPixelColor(n);
+
+	uint8_t r = (uint8_t)(c >> 16),
+			g = (uint8_t)(c >> 8),
+			b = (uint8_t)c;
+
+	// Calculate our pixel Luminance https://en.wikipedia.org/wiki/Relative_luminance
+	float rL = (r / 255.0) * 0.2126;
+	float gL = (g / 255.0) * 0.7152;
+	float bL = (b / 255.0) * 0.0722;
+
+	// add up all of our values and return them.
+	return (rL + gL + bL);
+}
+
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
 // native format and is not translated here.  Application will need to be
 // aware of specific pixel data format and handle colors appropriately.

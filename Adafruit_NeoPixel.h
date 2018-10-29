@@ -147,6 +147,8 @@ class Adafruit_NeoPixel {
     Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w);
   uint32_t
     getPixelColor(uint16_t n) const;
+  float
+    getPixelLuminance(uint16t n) const;
   inline bool
     canShow(void) { return (micros() - endTime) >= 300L; }
 
