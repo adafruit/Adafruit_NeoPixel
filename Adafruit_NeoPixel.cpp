@@ -2130,8 +2130,8 @@ float Adafruit_NeoPixel::getPixelLuminance(uint16_t n) const {
 	uint32_t c = getPixelColor(n);
 
 	uint8_t r = (uint8_t)(c >> 16),
-			g = (uint8_t)(c >> 8),
-			b = (uint8_t)c;
+		g = (uint8_t)(c >> 8),
+		b = (uint8_t)c;
 
 	// Calculate our pixel Luminance https://en.wikipedia.org/wiki/Relative_luminance
 	float rL = (r / 255.0) * 0.2126;
