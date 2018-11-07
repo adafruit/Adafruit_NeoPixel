@@ -33,7 +33,7 @@
 
 #include "Adafruit_NeoPixel.h"
 
-#if defined(NRF52)
+#if defined(NRF52) || defined(NRF52_SERIES)
 #include "nrf.h"
 
 // Interrupt is only disabled if there is no PWM device available
@@ -145,7 +145,7 @@ void Adafruit_NeoPixel::show(void) {
   // to the PORT register as needed.
 
   // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
-#ifndef NRF52
+#if !( defined(NRF52) || defined(NRF52_SERIES) )
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
 
@@ -1201,9 +1201,9 @@ void Adafruit_NeoPixel::show(void) {
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-// Begin of support for NRF52832 based boards  -------------------------
+// Begin of support for nRF52 based boards  -------------------------
 
-#elif defined(NRF52)
+#elif defined(NRF52) || defined(NRF52_SERIES)
 // [[[Begin of the Neopixel NRF52 EasyDMA implementation
 //                                    by the Hackerspace San Salvador]]]
 // This technique uses the PWM peripheral on the NRF52. The PWM uses the
@@ -1245,7 +1245,7 @@ void Adafruit_NeoPixel::show(void) {
 //
 // If there is no device available an alternative cycle-counter
 // implementation is tried.
-// The nRF52832 runs with a fixed clock of 64Mhz. The alternative
+// The nRF52 runs with a fixed clock of 64Mhz. The alternative
 // implementation is the same as the one used for the Teensy 3.0/1/2 but
 // with the Nordic SDK HAL & registers syntax.
 // The number of cycles was hand picked and is guaranteed to be 100%
@@ -1277,8 +1277,14 @@ void Adafruit_NeoPixel::show(void) {
 
   // Try to find a free PWM device, which is not enabled
   // and has no connected pins
-  NRF_PWM_Type* PWM[3] = {NRF_PWM0, NRF_PWM1, NRF_PWM2};
-  for(int device = 0; device<3; device++) {
+  NRF_PWM_Type* PWM[] = {
+    NRF_PWM0, NRF_PWM1, NRF_PWM2
+#ifdef NRF_PWM3
+    ,NRF_PWM3
+#endif
+  };
+
+  for(int device = 0; device < (sizeof(PWM)/sizeof(PWM[0])); device++) {
     if( (PWM[device]->ENABLE == 0)                            &&
         (PWM[device]->PSEL.OUT[0] & PWM_PSEL_OUT_CONNECT_Msk) &&
         (PWM[device]->PSEL.OUT[1] & PWM_PSEL_OUT_CONNECT_Msk) &&
@@ -1292,7 +1298,7 @@ void Adafruit_NeoPixel::show(void) {
 
   // only malloc if there is PWM device available
   if ( pwm != NULL ) {
-    #ifdef ARDUINO_FEATHER52 // use thread-safe malloc
+    #ifdef ARDUINO_NRF52_ADAFRUIT // use thread-safe malloc
       pixels_pattern = (uint16_t *) rtos_malloc(pattern_size);
     #else
       pixels_pattern = (uint16_t *) malloc(pattern_size);
@@ -1383,7 +1389,7 @@ void Adafruit_NeoPixel::show(void) {
     // But we have to wait for the flag to be set.
     while(!pwm->EVENTS_SEQEND[0])
     {
-      #ifdef ARDUINO_FEATHER52
+      #ifdef ARDUINO_NRF52_ADAFRUIT
       yield();
       #endif
     }
@@ -1399,7 +1405,7 @@ void Adafruit_NeoPixel::show(void) {
 
     pwm->PSEL.OUT[0] = 0xFFFFFFFFUL;
 
-    #ifdef ARDUINO_FEATHER52  // use thread-safe free
+    #ifdef ARDUINO_NRF52_ADAFRUIT  // use thread-safe free
       rtos_free(pixels_pattern);
     #else
       free(pixels_pattern);
@@ -1408,7 +1414,7 @@ void Adafruit_NeoPixel::show(void) {
   // ---------------------------------------------------------------------
   else{
     // Fall back to DWT
-    #ifdef ARDUINO_FEATHER52
+    #ifdef ARDUINO_NRF52_ADAFRUIT
       // Bluefruit Feather 52 uses freeRTOS
       // Critical Section is used since it does not block SoftDevice execution
       taskENTER_CRITICAL();
@@ -1421,7 +1427,8 @@ void Adafruit_NeoPixel::show(void) {
       __disable_irq();
     #endif
 
-    uint32_t pinMask = 1UL << g_ADigitalPinMap[pin];
+    NRF_GPIO_Type* nrf_port = (NRF_GPIO_Type*) digitalPinToPort(pin);
+    uint32_t pinMask = digitalPinToBitMask(pin);
 
     uint32_t CYCLES_X00     = CYCLES_800;
     uint32_t CYCLES_X00_T1H = CYCLES_800_T1H;
@@ -1454,7 +1461,7 @@ void Adafruit_NeoPixel::show(void) {
           while(DWT->CYCCNT - cyc < CYCLES_X00);
           cyc  = DWT->CYCCNT;
 
-          NRF_GPIO->OUTSET |= pinMask;
+          nrf_port->OUTSET |= pinMask;
 
           if(pix & mask) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T1H);
@@ -1462,7 +1469,7 @@ void Adafruit_NeoPixel::show(void) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T0H);
           }
 
-          NRF_GPIO->OUTCLR |= pinMask;
+          nrf_port->OUTCLR |= pinMask;
         }
       }
       while(DWT->CYCCNT - cyc < CYCLES_X00);
@@ -1479,7 +1486,7 @@ void Adafruit_NeoPixel::show(void) {
     }
 
     // Enable interrupts again
-    #ifdef ARDUINO_FEATHER52
+    #ifdef ARDUINO_NRF52_ADAFRUIT
       taskEXIT_CRITICAL();
     #elif defined(NRF52_DISABLE_INT)
       __enable_irq();
@@ -1977,7 +1984,7 @@ void Adafruit_NeoPixel::show(void) {
 
 // END ARCHITECTURE SELECT ------------------------------------------------
 
-#ifndef NRF52
+#if !( defined(NRF52) || defined(NRF52_SERIES) )
   interrupts();
 #endif
 
