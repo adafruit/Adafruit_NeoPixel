@@ -1427,7 +1427,8 @@ void Adafruit_NeoPixel::show(void) {
       __disable_irq();
     #endif
 
-    uint32_t pinMask = 1UL << g_ADigitalPinMap[pin];
+    NRF_GPIO_Type* nrf_port = (NRF_GPIO_Type*) digitalPinToPort(pin);
+    uint32_t pinMask = digitalPinToBitMask(pin);
 
     uint32_t CYCLES_X00     = CYCLES_800;
     uint32_t CYCLES_X00_T1H = CYCLES_800_T1H;
@@ -1460,7 +1461,7 @@ void Adafruit_NeoPixel::show(void) {
           while(DWT->CYCCNT - cyc < CYCLES_X00);
           cyc  = DWT->CYCCNT;
 
-          NRF_GPIO->OUTSET |= pinMask;
+          nrf_port->OUTSET |= pinMask;
 
           if(pix & mask) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T1H);
@@ -1468,7 +1469,7 @@ void Adafruit_NeoPixel::show(void) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T0H);
           }
 
-          NRF_GPIO->OUTCLR |= pinMask;
+          nrf_port->OUTCLR |= pinMask;
         }
       }
       while(DWT->CYCCNT - cyc < CYCLES_X00);
