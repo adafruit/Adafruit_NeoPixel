@@ -27,8 +27,8 @@ void setup() {
   #endif
   // End of trinket special code
 
-
   strip.begin();
+  strip.setBrightness(50);
   strip.show(); // Initialize all pixels to 'off'
 }
 
