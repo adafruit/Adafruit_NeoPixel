@@ -28,7 +28,8 @@ We have included code for the following chips - *sometimes these break for excit
  * ESP8266 any speed
  * ESP32 any speed
  * Nordic nRF52 (Adafruit Feather nRF52), nRF51 (micro:bit)
- * Infineon XMC1100 BootKit and 2Go
+ * Infineon XMC1100 BootKit
+ * Infineon XMC1100 2Go
 
 Check forks for other architectures not listed here!
 
