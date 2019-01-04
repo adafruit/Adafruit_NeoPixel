@@ -1328,8 +1328,8 @@ void Adafruit_NeoPixel::show(void) {
     }
 
     // Zero padding to indicate the end of que sequence
-    pixels_pattern[pos] = 0 | (0x8000); // Seq end
-    pixels_pattern[pos] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos++] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos++] = 0 | (0x8000); // Seq end
 
     // Set the wave mode to count UP
     pwm->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
