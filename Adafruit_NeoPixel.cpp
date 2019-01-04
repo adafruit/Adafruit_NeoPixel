@@ -1313,7 +1313,7 @@ void Adafruit_NeoPixel::show(void) {
     for(uint16_t n=0; n<numBytes; n++) {
       uint8_t pix = pixels[n];
 
-      for(uint8_t mask=0x80, i=0; mask>0; mask >>= 1, i++) {
+      for(uint8_t mask=0x80; mask>0; mask >>= 1) {
         #ifdef NEO_KHZ400
         if( !is800KHz ) {
           pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
@@ -1328,8 +1328,8 @@ void Adafruit_NeoPixel::show(void) {
     }
 
     // Zero padding to indicate the end of que sequence
-    pixels_pattern[++pos] = 0 | (0x8000); // Seq end
-    pixels_pattern[++pos] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos] = 0 | (0x8000); // Seq end
 
     // Set the wave mode to count UP
     pwm->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
