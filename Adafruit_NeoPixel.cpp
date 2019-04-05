@@ -65,7 +65,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 }
 
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
-  if(pixels)   free(pixels);
+  free(pixels);
   if(pin >= 0) pinMode(pin, INPUT);
 }
 
@@ -79,7 +79,7 @@ void Adafruit_NeoPixel::begin(void) {
 }
 
 void Adafruit_NeoPixel::updateLength(uint16_t n) {
-  if(pixels) free(pixels); // Free existing data (if any)
+  free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
   numBytes = n * ((wOffset == rOffset) ? 3 : 4);
