@@ -2288,7 +2288,7 @@ uint32_t Adafruit_NeoPixel::gamma32(uint32_t x) {
   // properly handling different endianisms (and each byte is a fairly
   // trivial operation, so it might not even be wasting cycles vs a check
   // and branch for the RGB case). In theory this might cause trouble *if*
-  // *if* someone's storing information in the unused most significant byte
+  // someone's storing information in the unused most significant byte
   // of an RGB value, but this seems exceedingly rare and if it's
   // encountered in reality they can mask values going in or coming out.
   for(uint8_t i=0; i<4; i++) y[i] = gamma8(y[i]);

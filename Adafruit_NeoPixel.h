@@ -216,7 +216,7 @@ class Adafruit_NeoPixel {
     return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
   }
   static uint32_t   ColorHSV(uint16_t hue, uint8_t sat=255, uint8_t val=255);
-  static uint32_t   gamma32(uint32_t);
+  static uint32_t   gamma32(uint32_t x);
 
  protected:
 
