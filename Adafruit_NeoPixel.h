@@ -178,72 +178,65 @@ class Adafruit_NeoPixel {
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
-  void            begin(void);
-  void            show(void);
-  void            setPin(uint8_t p);
-  void            setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
-  void            setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b,
-                    uint8_t w);
-  void            setPixelColor(uint16_t n, uint32_t c);
-  void            fill(uint32_t c=0, uint16_t first=0, uint16_t count=0);
-  void            setBrightness(uint8_t);
-  void            clear(void);
-  void            updateLength(uint16_t n);
-  void            updateType(neoPixelType t);
-  boolean         canShow(void) { return (micros() - endTime) >= 300L; }
+  void              begin(void);
+  void              show(void);
+  void              setPin(uint8_t p);
+  void              setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
+  void              setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b,
+                      uint8_t w);
+  void              setPixelColor(uint16_t n, uint32_t c);
+  void              fill(uint32_t c=0, uint16_t first=0, uint16_t count=0);
+  void              setBrightness(uint8_t);
+  void              clear(void);
+  void              updateLength(uint16_t n);
+  void              updateType(neoPixelType t);
+  boolean           canShow(void) { return (micros() - endTime) >= 300L; }
   // Returns pointer to pixels[] array.  Pixel data is stored in device-
   // native format and is not translated here.  Application will need to be
   // aware of specific pixel data format and handle colors appropriately.
-  uint8_t        *getPixels(void) const { return pixels; };
-  uint8_t         getBrightness(void) const;
-  int8_t          getPin(void) const { return pin; };
-  uint16_t        numPixels(void) const { return numLEDs; }
-  uint32_t        getPixelColor(uint16_t n) const;
-  static uint8_t  sine8(uint8_t x) {
+  uint8_t          *getPixels(void) const { return pixels; };
+  uint8_t           getBrightness(void) const;
+  int8_t            getPin(void) const { return pin; };
+  uint16_t          numPixels(void) const { return numLEDs; }
+  uint32_t          getPixelColor(uint16_t n) const;
+  static uint8_t    sine8(uint8_t x) {
     return pgm_read_byte(&_NeoPixelSineTable[x]); // 0-255 in, 0-255 out
   }
-  static uint8_t  gamma8(uint8_t x) {
+  static uint8_t    gamma8(uint8_t x) {
     return pgm_read_byte(&_NeoPixelGammaTable[x]); // 0-255 in, 0-255 out
   }
   // Convert separate R,G,B into packed 32-bit RGB color.
   // Packed format is always RGB, regardless of LED strand color order.
-  static uint32_t Color(uint8_t r, uint8_t g, uint8_t b) {
+  static uint32_t   Color(uint8_t r, uint8_t g, uint8_t b) {
     return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
   }
   // Convert separate R,G,B,W into packed 32-bit WRGB color.
   // Packed format is always WRGB, regardless of LED strand color order.
-  static uint32_t Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  static uint32_t   Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
     return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
   }
-  static uint32_t ColorHSV(uint16_t hue, uint8_t sat=255, uint8_t val=255);
-  static uint32_t gamma32(uint32_t);
+  static uint32_t   ColorHSV(uint16_t hue, uint8_t sat=255, uint8_t val=255);
+  static uint32_t   gamma32(uint32_t);
 
  protected:
 
-  boolean
 #ifdef NEO_KHZ400  // If 400 KHz NeoPixel support enabled...
-    is800KHz,      // ...true if 800 KHz pixels
+  boolean           is800KHz;   // ...true if 800 KHz pixels
 #endif
-    begun;         // true if begin() previously called
-  uint16_t
-    numLEDs,       // Number of RGB LEDs in strip
-    numBytes;      // Size of 'pixels' buffer below (3 or 4 bytes/pixel)
-  int8_t
-    pin;           // Output pin number (-1 if not yet set)
-  uint8_t
-    brightness,
-   *pixels,        // Holds LED color values (3 or 4 bytes each)
-    rOffset,       // Index of red byte within each 3- or 4-byte pixel
-    gOffset,       // Index of green byte
-    bOffset,       // Index of blue byte
-    wOffset;       // Index of white byte (same as rOffset if no white)
-  uint32_t
-    endTime;       // Latch timing reference
+  boolean           begun;      // true if begin() previously called
+  uint16_t          numLEDs;    // Number of RGB LEDs in strip
+  uint16_t          numBytes;   // Size of 'pixels' buffer below
+  int8_t            pin;        // Output pin number (-1 if not yet set)
+  uint8_t           brightness;
+  uint8_t          *pixels;     // Holds LED color values (3 or 4 bytes each)
+  uint8_t           rOffset;    // Red index within each 3- or 4-byte pixel
+  uint8_t           gOffset;    // Index of green byte
+  uint8_t           bOffset;    // Index of blue byte
+  uint8_t           wOffset;    // Index of white (equals rOffset if no white)
+  uint32_t          endTime;    // Latch timing reference
 #ifdef __AVR__
-  volatile uint8_t
-    *port;         // Output PORT register
-  uint8_t
-    pinMask;       // Output PORT bitmask
+  volatile uint8_t *port;       // Output PORT register
+  uint8_t           pinMask;    // Output PORT bitmask
 #endif
 };
 
