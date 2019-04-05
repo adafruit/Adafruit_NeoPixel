@@ -1,13 +1,13 @@
 #######################################
 # Syntax Coloring Map For Adafruit_NeoPixel
-####################################### 
+#######################################
 # Class
 #######################################
 
 Adafruit_NeoPixel	KEYWORD1
 
 #######################################
-# Methods and Functions 
+# Methods and Functions
 #######################################	
 
 begin			KEYWORD2
