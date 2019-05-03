@@ -1638,11 +1638,9 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
-#elif defined (__SAMD51__) // M4 @ 120mhz
-  // Tried this with a timer/counter, couldn't quite get adequate
-  // resolution. So yay, you get a load of goofball NOPs...
+#elif defined (__SAMD51__) // M4
 
-  uint8_t  *ptr, *end, p, bitMask, portNum;
+  uint8_t  *ptr, *end, p, bitMask, portNum, bit;
   uint32_t  pinMask;
 
   portNum =  g_APinDescription[pin].ulPort;
@@ -1655,65 +1653,57 @@ void Adafruit_NeoPixel::show(void) {
   volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
                     *clr = &(PORT->Group[portNum].OUTCLR.reg);
 
+  // SAMD51 overclock-compatible timing is only a mild abomination.
+  // It uses SysTick for a consistent clock reference regardless of
+  // optimization / cache settings.  That's the good news.  The bad news,
+  // since SysTick->VAL is a volatile type it's slow to access...and then,
+  // with the SysTick interval that Arduino sets up (1 ms), this would
+  // require a subtract and MOD operation for gauging elapsed time, and
+  // all taken in combination that lacks adequate temporal resolution
+  // for NeoPixel timing.  So a kind of horrible thing is done here...
+  // since interrupts are turned off anyway and it's generally accepted
+  // by now that we're gonna lose track of time in the NeoPixel lib,
+  // the SysTick timer is reconfigured for a period matching the NeoPixel
+  // bit timing (either 800 or 400 KHz) and we watch SysTick->VAL very
+  // closely (just a threshold, no subtract or MOD or anything) and that
+  // seems to work just well enough.  When finished, the SysTick
+  // peripheral is set back to its original state.
+
+  uint32_t t0, t1, top, ticks,
+           saveLoad = SysTick->LOAD, saveVal = SysTick->VAL;
+
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
-    for(;;) {
-      if(p & bitMask) { // ONE
-        // High 800ns
-        *set = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;");
-        // Low 450ns
-        *clr = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop;");
-      } else { // ZERO
-        // High 400ns
-        *set = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop;");
-        // Low 850ns
-        *clr = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;");
-      }
-      if(bitMask >>= 1) {
-        // Move on to the next pixel
-        asm("nop;");
-      } else {
-        if(ptr >= end) break;
-        p       = *ptr++;
-        bitMask = 0x80;
-      }
-    }
+    top =       (uint32_t)(F_CPU * 0.00000125); // Bit hi + lo = 1.25 uS
+    t0  = top - (uint32_t)(F_CPU * 0.00000040); // 0 = 0.4 uS hi
+    t1  = top - (uint32_t)(F_CPU * 0.00000080); // 1 = 0.8 uS hi
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
-    // ToDo!
+    top =       (uint32_t)(F_CPU * 0.00000250); // Bit hi + lo = 2.5 uS
+    t0  = top - (uint32_t)(F_CPU * 0.00000050); // 0 = 0.5 uS hi
+    t1  = top - (uint32_t)(F_CPU * 0.00000120); // 1 = 1.2 uS hi
   }
 #endif
+
+  SysTick->LOAD = top;               // Config SysTick for NeoPixel bit freq
+  SysTick->VAL  = top;               // Set to start value (counts down)
+
+  for(;;) {
+    *set  = pinMask;                 // Set output high
+    ticks = (p & bitMask) ? t1 : t0; // SysTick threshold,
+    while(SysTick->VAL > ticks);     // wait for it
+    *clr  = pinMask;                 // Set output low
+    if(!(bitMask >>= 1)) {           // Next bit for this byte...done?
+      if(ptr >= end) break;          // If last byte sent, exit loop
+      p       = *ptr++;              // Fetch next byte
+      bitMask = 0x80;                // Reset bitmask
+    }
+    while(SysTick->VAL <= ticks);    // Wait for rollover to 'top'
+  }
+
+  SysTick->LOAD = saveLoad;          // Restore SysTick rollover to 1 ms
+  SysTick->VAL  = saveVal;           // Restore SysTick value
 
 #elif defined (ARDUINO_STM32_FEATHER) // FEATHER WICED (120MHz)
 
