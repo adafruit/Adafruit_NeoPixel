@@ -1871,12 +1871,12 @@ void Adafruit_NeoPixel::show(void) {
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
   #define INST       (2UL * F_CPU / VARIANT_MCK)
-  #define TIME_800_0 ((int)(0.40 * SCALE + 0.5) - (5 * INST))
-  #define TIME_800_1 ((int)(0.80 * SCALE + 0.5) - (5 * INST))
-  #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_0 ((int)(0.50 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_1 ((int)(1.20 * SCALE + 0.5) - (5 * INST))
-  #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) - (5 * INST))
+  #define TIME_800_0 ((int)(0.40 * SCALE + 0.5) + (2 * INST))
+  #define TIME_800_1 ((int)(0.80 * SCALE + 0.5) + (2 * INST))
+  #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) + (2 * INST))
+  #define TIME_400_0 ((int)(0.50 * SCALE + 0.5) + (2 * INST))
+  #define TIME_400_1 ((int)(1.20 * SCALE + 0.5) + (2 * INST))
+  #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) + (2 * INST))
 
   int             pinMask, time0, time1, period, t;
   Pio            *port;
@@ -1903,15 +1903,9 @@ void Adafruit_NeoPixel::show(void) {
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
-#if (F_CPU == 84000000ull) // empirically derived
-    time0  = 25;   //  .35  uS
-    time1  = 41;   //  .70  uS
-    period = 80;   //   must be long enough for end of byte code to finish or next will be runt pulse
-#else  
-    time0  = TIME_800_0;   // evaluates to  7 with F_CPU = VARIANT_MCK = 84MHz
-    time1  = TIME_800_1;   // evaluates to 24 with F_CPU = VARIANT_MCK = 84MHz
-    period = PERIOD_800;   // evaluates to 43 with F_CPU = VARIANT_MCK = 84MHz
- #endif   
+    time0  = TIME_800_0;
+    time1  = TIME_800_1;
+    period = PERIOD_800;
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
     time0  = TIME_400_0;
