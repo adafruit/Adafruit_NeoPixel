@@ -1688,6 +1688,7 @@ void Adafruit_NeoPixel::show(void) {
 
   SysTick->LOAD = top;               // Config SysTick for NeoPixel bit freq
   SysTick->VAL  = top;               // Set to start value (counts down)
+  (void)SysTick->VAL;                // Dummy read helps sync up 1st bit
 
   for(;;) {
     *set  = pinMask;                 // Set output high
