@@ -9,13 +9,12 @@
   #include <avr/power.h>
 #endif
 
-
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
 #define PIN            6
 
 // How many NeoPixels are attached to the Arduino?
-int numPixel = 36;
+int numPixel = 16;
 
 // Color order, for more information see https://github.com/adafruit/Adafruit_NeoPixel/blob/master/Adafruit_NeoPixel.h
 uint8_t colorOrder = 0x52; //or just use NEO_GBR

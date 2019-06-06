@@ -12,7 +12,7 @@
 
 #define PIXEL_PIN    6    // Digital IO pin connected to the NeoPixels.
 
-#define PIXEL_COUNT 36
+#define PIXEL_COUNT 16
 
 // Parameter 1 = number of pixels in strip,  neopixel stick has 8
 // Parameter 2 = pin number (most are valid)
