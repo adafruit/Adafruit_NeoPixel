@@ -2,7 +2,6 @@
 #ifdef __AVR__
   #include <avr/power.h>
 #endif
-#include <sbrk.h> //For use with XMC1.
 
 #define PIN 6
 

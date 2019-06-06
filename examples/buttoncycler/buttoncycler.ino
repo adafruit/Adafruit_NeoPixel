@@ -4,7 +4,6 @@
 // button once to start the first animation!
 
 #include <Adafruit_NeoPixel.h>
-#include <sbrk.h> //For use with XMC1.
 
 #define BUTTON_PIN   2    // Digital IO pin connected to the button.  This will be
                           // driven with a pull-up resistor so the switch should
