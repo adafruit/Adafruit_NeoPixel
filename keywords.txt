@@ -1,31 +1,35 @@
 #######################################
 # Syntax Coloring Map For Adafruit_NeoPixel
-####################################### 
+#######################################
 # Class
 #######################################
 
 Adafruit_NeoPixel	KEYWORD1
 
 #######################################
-# Methods and Functions 
+# Methods and Functions
 #######################################	
 
-setPixelColor	KEYWORD2
-setPin			KEYWORD2
-setBrightness	KEYWORD2
-numPixels		KEYWORD2
-getPixelColor	KEYWORD2
-Color			KEYWORD2
+begin			KEYWORD2
 show			KEYWORD2
-
+setPin			KEYWORD2
+setPixelColor		KEYWORD2
+fill			KEYWORD2
+setBrightness		KEYWORD2
 clear			KEYWORD2
-updateLength	KEYWORD2
+updateLength		KEYWORD2
 updateType		KEYWORD2
-getPixels		KEYWORD2
-getBrightness	KEYWORD2
-getPin			KEYWORD2
 canShow			KEYWORD2
-
+getPixels		KEYWORD2
+getBrightness		KEYWORD2
+getPin			KEYWORD2
+numPixels		KEYWORD2
+getPixelColor		KEYWORD2
+sine8			KEYWORD2
+gamma8			KEYWORD2
+Color			KEYWORD2
+ColorHSV		KEYWORD2
+gamma32			KEYWORD2
 
 #######################################
 # Constants

@@ -1,39 +1,51 @@
-/*-------------------------------------------------------------------------
-  Arduino library to control a wide variety of WS2811- and WS2812-based RGB
-  LED devices such as Adafruit FLORA RGB Smart Pixels and NeoPixel strips.
-  Currently handles 400 and 800 KHz bitstreams on 8, 12 and 16 MHz ATmega
-  MCUs, with LEDs wired for various color orders.  Handles most output pins
-  (possible exception with upper PORT registers on the Arduino Mega).
-
-  Written by Phil Burgess / Paint Your Dragon for Adafruit Industries,
-  contributions by PJRC, Michael Miller and other members of the open
-  source community.
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing products
-  from Adafruit!
-
-  -------------------------------------------------------------------------
-  This file is part of the Adafruit NeoPixel library.
-
-  NeoPixel is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation, either version 3 of
-  the License, or (at your option) any later version.
-
-  NeoPixel is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with NeoPixel.  If not, see
-  <http://www.gnu.org/licenses/>.
-  -------------------------------------------------------------------------*/
+/*!
+ * @file Adafruit_NeoPixel.cpp
+ *
+ * @mainpage Arduino Library for driving Adafruit NeoPixel addressable LEDs,
+ * FLORA RGB Smart Pixels and compatible devicess -- WS2811, WS2812, WS2812B,
+ * SK6812, etc.
+ *
+ * @section intro_sec Introduction
+ *
+ * This is the documentation for Adafruit's NeoPixel library for the
+ * Arduino platform, allowing a broad range of microcontroller boards
+ * (most AVR boards, many ARM devices, ESP8266 and ESP32, among others)
+ * to control Adafruit NeoPixels, FLORA RGB Smart Pixels and compatible
+ * devices -- WS2811, WS2812, WS2812B, SK6812, etc.
+ *
+ * Adafruit invests time and resources providing this open source code,
+ * please support Adafruit and open-source hardware by purchasing products
+ * from Adafruit!
+ *
+ * @section author Author
+ *
+ * Written by Phil "Paint Your Dragon" Burgess for Adafruit Industries,
+ * with contributions by PJRC, Michael Miller and other members of the
+ * open source community.
+ *
+ * @section license License
+ *
+ * This file is part of the Adafruit_NeoPixel library.
+ *
+ * Adafruit_NeoPixel is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * Adafruit_NeoPixel is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with NeoPixel. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include "Adafruit_NeoPixel.h"
 
-#if defined(NRF52)
+#if defined(NRF52) || defined(NRF52_SERIES)
 #include "nrf.h"
 
 // Interrupt is only disabled if there is no PWM device available
@@ -41,45 +53,74 @@
 //#define NRF52_DISABLE_INT
 #endif
 
-// Constructor when length, pin and type are known at compile-time:
+/*!
+  @brief   NeoPixel constructor when length, pin and pixel type are known
+           at compile-time.
+  @param   n  Number of NeoPixels in strand.
+  @param   p  Arduino pin number which will drive the NeoPixel data in.
+  @param   t  Pixel type -- add together NEO_* constants defined in
+              Adafruit_NeoPixel.h, for example NEO_GRB+NEO_KHZ800 for
+              NeoPixels expecting an 800 KHz (vs 400 KHz) data stream
+              with color bytes expressed in green, red, blue order per
+              pixel.
+  @return  Adafruit_NeoPixel object. Call the begin() function before use.
+*/
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
-  begun(false), brightness(0), pixels(NULL), endTime(0)  
-{
+  begun(false), brightness(0), pixels(NULL), endTime(0) {
   updateType(t);
   updateLength(n);
   setPin(p);
 }
 
-// via Michael Vogt/neophob: empty constructor is used when strand length
-// isn't known at compile-time; situations where program config might be
-// read from internal flash memory or an SD card, or arrive via serial
-// command.  If using this constructor, MUST follow up with updateType(),
-// updateLength(), etc. to establish the strand type, length and pin number!
+/*!
+  @brief   "Empty" NeoPixel constructor when length, pin and/or pixel type
+           are not known at compile-time, and must be initialized later with
+           updateType(), updateLength() and setPin().
+  @return  Adafruit_NeoPixel object. Call the begin() function before use.
+  @note    This function is deprecated, here only for old projects that
+           may still be calling it. New projects should instead use the
+           'new' keyword with the first constructor syntax (length, pin,
+           type).
+*/
 Adafruit_NeoPixel::Adafruit_NeoPixel() :
 #ifdef NEO_KHZ400
   is800KHz(true),
 #endif
   begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0), pixels(NULL),
-  rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
-{
+  rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0) {
 }
 
+/*!
+  @brief   Deallocate Adafruit_NeoPixel object, set data pin back to INPUT.
+*/
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
-  if(pixels)   free(pixels);
+  free(pixels);
   if(pin >= 0) pinMode(pin, INPUT);
 }
 
+/*!
+  @brief   Configure NeoPixel pin for output.
+*/
 void Adafruit_NeoPixel::begin(void) {
   if(pin >= 0) {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
   }
   begun = true;
-
 }
 
+/*!
+  @brief   Change the length of a previously-declared Adafruit_NeoPixel
+           strip object. Old data is deallocated and new data is cleared.
+           Pin number and pixel format are unchanged.
+  @param   n  New length of strip, in pixels.
+  @note    This function is deprecated, here only for old projects that
+           may still be calling it. New projects should instead use the
+           'new' keyword with the first constructor syntax (length, pin,
+           type).
+*/
 void Adafruit_NeoPixel::updateLength(uint16_t n) {
-  if(pixels) free(pixels); // Free existing data (if any)
+  free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
   numBytes = n * ((wOffset == rOffset) ? 3 : 4);
@@ -91,6 +132,23 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   }
 }
 
+/*!
+  @brief   Change the pixel format of a previously-declared
+           Adafruit_NeoPixel strip object. If format changes from one of
+           the RGB variants to an RGBW variant (or RGBW to RGB), the old
+           data will be deallocated and new data is cleared. Otherwise,
+           the old data will remain in RAM and is not reordered to the
+           new format, so it's advisable to follow up with clear().
+  @param   t  Pixel type -- add together NEO_* constants defined in
+              Adafruit_NeoPixel.h, for example NEO_GRB+NEO_KHZ800 for
+              NeoPixels expecting an 800 KHz (vs 400 KHz) data stream
+              with color bytes expressed in green, red, blue order per
+              pixel.
+  @note    This function is deprecated, here only for old projects that
+           may still be calling it. New projects should instead use the
+           'new' keyword with the first constructor syntax
+           (length, pin, type).
+*/
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
   boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
 
@@ -103,14 +161,14 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 #endif
 
   // If bytes-per-pixel has changed (and pixel data was previously
-  // allocated), re-allocate to new size.  Will clear any data.
+  // allocated), re-allocate to new size. Will clear any data.
   if(pixels) {
     boolean newThreeBytesPerPixel = (wOffset == rOffset);
     if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs);
   }
 }
 
-#if defined(ESP8266) 
+#if defined(ESP8266)
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" void ICACHE_RAM_ATTR espShow(
   uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
@@ -119,14 +177,25 @@ extern "C" void espShow(
   uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #endif // ESP8266
 
+/*!
+  @brief   Transmit pixel data in RAM to NeoPixels.
+  @note    On most architectures, interrupts are temporarily disabled in
+           order to achieve the correct NeoPixel signal timing. This means
+           that the Arduino millis() and micros() functions, which require
+           interrupts, will lose small intervals of time whenever this
+           function is called (about 30 microseconds per RGB pixel, 40 for
+           RGBW pixels). There's no easy fix for this, but a few
+           specialized alternative or companion libraries exist that use
+           very device-specific peripherals to work around it.
+*/
 void Adafruit_NeoPixel::show(void) {
 
   if(!pixels) return;
 
-  // Data latch = 300+ microsecond pause in the output stream.  Rather than
+  // Data latch = 300+ microsecond pause in the output stream. Rather than
   // put a delay at the end of the function, the ending time is noted and
   // the function will simply hold off (if needed) on issuing the
-  // subsequent round of data until the latch time has elapsed.  This
+  // subsequent round of data until the latch time has elapsed. This
   // allows the mainline code to start generating the next frame of data
   // rather than stalling for the latch.
   while(!canShow());
@@ -136,16 +205,16 @@ void Adafruit_NeoPixel::show(void) {
 
   // In order to make this code runtime-configurable to work with any pin,
   // SBI/CBI instructions are eschewed in favor of full PORT writes via the
-  // OUT or ST instructions.  It relies on two facts: that peripheral
+  // OUT or ST instructions. It relies on two facts: that peripheral
   // functions (such as PWM) take precedence on output pins, so our PORT-
   // wide writes won't interfere, and that interrupts are globally disabled
   // while data is being issued to the LEDs, so no other code will be
-  // accessing the PORT.  The code takes an initial 'snapshot' of the PORT
+  // accessing the PORT. The code takes an initial 'snapshot' of the PORT
   // state, computes 'pin high' and 'pin low' values, and writes these back
   // to the PORT register as needed.
 
   // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
-#ifndef NRF52
+#if !( defined(NRF52) || defined(NRF52_SERIES) )
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
 
@@ -161,13 +230,13 @@ void Adafruit_NeoPixel::show(void) {
     lo;             // PORT w/output bit set low
 
   // Hand-tuned assembly code issues data to the LED drivers at a specific
-  // rate.  There's separate code for different CPU speeds (8, 12, 16 MHz)
-  // for both the WS2811 (400 KHz) and WS2812 (800 KHz) drivers.  The
+  // rate. There's separate code for different CPU speeds (8, 12, 16 MHz)
+  // for both the WS2811 (400 KHz) and WS2812 (800 KHz) drivers. The
   // datastream timing for the LED drivers allows a little wiggle room each
   // way (listed in the datasheets), so the conditions for compiling each
   // case are set up for a range of frequencies rather than just the exact
   // 8, 12 or 16 MHz values, permitting use with some close-but-not-spot-on
-  // devices (e.g. 16.5 MHz DigiSpark).  The ranges were arrived at based
+  // devices (e.g. 16.5 MHz DigiSpark). The ranges were arrived at based
   // on the datasheet figures and have not been extensively tested outside
   // the canonical 8/12/16 MHz speeds; there's no guarantee these will work
   // close to the extremes (or possibly they could be pushed further).
@@ -203,7 +272,7 @@ void Adafruit_NeoPixel::show(void) {
 
       // Dirty trick: RJMPs proceeding to the next instruction are used
       // to delay two clock cycles in one instruction word (rather than
-      // using two NOPs).  This was necessary in order to squeeze the
+      // using two NOPs). This was necessary in order to squeeze the
       // loop down to exactly 64 words -- the maximum possible for a
       // relative branch.
 
@@ -568,7 +637,7 @@ void Adafruit_NeoPixel::show(void) {
   } else { // end 800 KHz, do 400 KHz
 
     // Timing is more relaxed; unrolling the inner loop for each bit is
-    // not necessary.  Still using the peculiar RJMPs as 2X NOPs, not out
+    // not necessary. Still using the peculiar RJMPs as 2X NOPs, not out
     // of need but just to trim the code size down a little.
     // This 400-KHz-datastream-on-8-MHz-CPU code is not quite identical
     // to the 800-on-16 code later -- the hi/lo timing between WS2811 and
@@ -1119,100 +1188,100 @@ void Adafruit_NeoPixel::show(void) {
 
 #if F_CPU == 48000000
   uint8_t          *p   = pixels,
-		   pix, count, dly,
-                   bitmask = digitalPinToBitMask(pin);
+                    pix, count, dly,
+                    bitmask = digitalPinToBitMask(pin);
   volatile uint8_t *reg = portSetRegister(pin);
-  uint32_t         num = numBytes;
+  uint32_t          num = numBytes;
   asm volatile(
-	"L%=_begin:"				"\n\t"
-	"ldrb	%[pix], [%[p], #0]"		"\n\t"
-	"lsl	%[pix], #24"			"\n\t"
-	"movs	%[count], #7"			"\n\t"
-	"L%=_loop:"				"\n\t"
-	"lsl	%[pix], #1"			"\n\t"
-	"bcs	L%=_loop_one"			"\n\t"
-	"L%=_loop_zero:"
-	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
-	"movs	%[dly], #4"			"\n\t"
-	"L%=_loop_delay_T0H:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_loop_delay_T0H"		"\n\t"
-	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
-	"movs	%[dly], #13"			"\n\t"
-	"L%=_loop_delay_T0L:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_loop_delay_T0L"		"\n\t"
-	"b	L%=_next"			"\n\t"
-	"L%=_loop_one:"
-	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
-	"movs	%[dly], #13"			"\n\t"
-	"L%=_loop_delay_T1H:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_loop_delay_T1H"		"\n\t"
-	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
-	"movs	%[dly], #4"			"\n\t"
-	"L%=_loop_delay_T1L:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_loop_delay_T1L"		"\n\t"
-	"nop"					"\n\t"
-	"L%=_next:"				"\n\t"
-	"sub	%[count], #1"			"\n\t"
-	"bne	L%=_loop"			"\n\t"
-	"lsl	%[pix], #1"			"\n\t"
-	"bcs	L%=_last_one"			"\n\t"
-	"L%=_last_zero:"
-	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
-	"movs	%[dly], #4"			"\n\t"
-	"L%=_last_delay_T0H:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_last_delay_T0H"		"\n\t"
-	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
-	"movs	%[dly], #10"			"\n\t"
-	"L%=_last_delay_T0L:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_last_delay_T0L"		"\n\t"
-	"b	L%=_repeat"			"\n\t"
-	"L%=_last_one:"
-	"strb	%[bitmask], [%[reg], #0]"	"\n\t"
-	"movs	%[dly], #13"			"\n\t"
-	"L%=_last_delay_T1H:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_last_delay_T1H"		"\n\t"
-	"strb	%[bitmask], [%[reg], #4]"	"\n\t"
-	"movs	%[dly], #1"			"\n\t"
-	"L%=_last_delay_T1L:"			"\n\t"
-	"sub	%[dly], #1"			"\n\t"
-	"bne	L%=_last_delay_T1L"		"\n\t"
-	"nop"					"\n\t"
-	"L%=_repeat:"				"\n\t"
-	"add	%[p], #1"			"\n\t"
-	"sub	%[num], #1"			"\n\t"
-	"bne	L%=_begin"			"\n\t"
-	"L%=_done:"				"\n\t"
-	: [p] "+r" (p),
-	  [pix] "=&r" (pix),
-	  [count] "=&r" (count),
-	  [dly] "=&r" (dly),
-	  [num] "+r" (num)
-	: [bitmask] "r" (bitmask),
-	  [reg] "r" (reg)
+    "L%=_begin:"                      "\n\t"
+     "ldrb  %[pix], [%[p], #0]"       "\n\t"
+     "lsl   %[pix], #24"              "\n\t"
+     "movs  %[count], #7"             "\n\t"
+    "L%=_loop:"                       "\n\t"
+     "lsl   %[pix], #1"               "\n\t"
+     "bcs   L%=_loop_one"             "\n\t"
+     "L%=_loop_zero:"                 "\n\t"
+     "strb  %[bitmask], [%[reg], #0]" "\n\t"
+     "movs  %[dly], #4"               "\n\t"
+    "L%=_loop_delay_T0H:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_loop_delay_T0H"       "\n\t"
+     "strb  %[bitmask], [%[reg], #4]" "\n\t"
+     "movs  %[dly], #13"              "\n\t"
+    "L%=_loop_delay_T0L:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_loop_delay_T0L"       "\n\t"
+     "b     L%=_next"                 "\n\t"
+    "L%=_loop_one:"                   "\n\t"
+     "strb  %[bitmask], [%[reg], #0]" "\n\t"
+     "movs  %[dly], #13"              "\n\t"
+    "L%=_loop_delay_T1H:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_loop_delay_T1H"       "\n\t"
+     "strb  %[bitmask], [%[reg], #4]" "\n\t"
+     "movs  %[dly], #4"               "\n\t"
+    "L%=_loop_delay_T1L:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_loop_delay_T1L"       "\n\t"
+     "nop"                            "\n\t"
+    "L%=_next:"                       "\n\t"
+     "sub   %[count], #1"             "\n\t"
+     "bne   L%=_loop"                 "\n\t"
+     "lsl   %[pix], #1"               "\n\t"
+     "bcs   L%=_last_one"             "\n\t"
+    "L%=_last_zero:"                  "\n\t"
+     "strb  %[bitmask], [%[reg], #0]" "\n\t"
+     "movs  %[dly], #4"               "\n\t"
+    "L%=_last_delay_T0H:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_last_delay_T0H"       "\n\t"
+     "strb  %[bitmask], [%[reg], #4]" "\n\t"
+     "movs  %[dly], #10"              "\n\t"
+    "L%=_last_delay_T0L:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_last_delay_T0L"       "\n\t"
+     "b     L%=_repeat"               "\n\t"
+    "L%=_last_one:"                   "\n\t"
+     "strb  %[bitmask], [%[reg], #0]" "\n\t"
+     "movs  %[dly], #13"              "\n\t"
+    "L%=_last_delay_T1H:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_last_delay_T1H"       "\n\t"
+     "strb  %[bitmask], [%[reg], #4]" "\n\t"
+     "movs  %[dly], #1"               "\n\t"
+    "L%=_last_delay_T1L:"             "\n\t"
+     "sub   %[dly], #1"               "\n\t"
+     "bne   L%=_last_delay_T1L"       "\n\t"
+     "nop"                            "\n\t"
+    "L%=_repeat:"                     "\n\t"
+     "add   %[p], #1"                 "\n\t"
+     "sub   %[num], #1"               "\n\t"
+     "bne   L%=_begin"                "\n\t"
+    "L%=_done:"                       "\n\t"
+    : [p]       "+r"  (p),
+      [pix]     "=&r" (pix),
+      [count]   "=&r" (count),
+      [dly]     "=&r" (dly),
+      [num]     "+r"  (num)
+    : [bitmask] "r"   (bitmask),
+      [reg]     "r"   (reg)
   );
 #else
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
 
-// Begin of support for NRF52832 based boards  -------------------------
+// Begin of support for nRF52 based boards  -------------------------
 
-#elif defined(NRF52)
+#elif defined(NRF52) || defined(NRF52_SERIES)
 // [[[Begin of the Neopixel NRF52 EasyDMA implementation
 //                                    by the Hackerspace San Salvador]]]
 // This technique uses the PWM peripheral on the NRF52. The PWM uses the
-// EasyDMA feature included on the chip. This technique loads the duty 
-// cycle configuration for each cycle when the PWM is enabled. For this 
+// EasyDMA feature included on the chip. This technique loads the duty
+// cycle configuration for each cycle when the PWM is enabled. For this
 // to work we need to store a 16 bit configuration for each bit of the
 // RGB(W) values in the pixel buffer.
 // Comparator values for the PWM were hand picked and are guaranteed to
-// be 100% organic to preserve freshness and high accuracy. Current 
+// be 100% organic to preserve freshness and high accuracy. Current
 // parameters are:
 //   * PWM Clock: 16Mhz
 //   * Minimum step time: 62.5ns
@@ -1242,13 +1311,13 @@ void Adafruit_NeoPixel::show(void) {
 #define CTOPVAL_400KHz         40UL            // 2.5us
 
 // ---------- END Constants for the EasyDMA implementation -------------
-// 
+//
 // If there is no device available an alternative cycle-counter
 // implementation is tried.
-// The nRF52832 runs with a fixed clock of 64Mhz. The alternative
+// The nRF52 runs with a fixed clock of 64Mhz. The alternative
 // implementation is the same as the one used for the Teensy 3.0/1/2 but
 // with the Nordic SDK HAL & registers syntax.
-// The number of cycles was hand picked and is guaranteed to be 100% 
+// The number of cycles was hand picked and is guaranteed to be 100%
 // organic to preserve freshness and high accuracy.
 // ---------- BEGIN Constants for cycle counter implementation ---------
 #define CYCLES_800_T0H  18  // ~0.36 uS
@@ -1277,8 +1346,14 @@ void Adafruit_NeoPixel::show(void) {
 
   // Try to find a free PWM device, which is not enabled
   // and has no connected pins
-  NRF_PWM_Type* PWM[3] = {NRF_PWM0, NRF_PWM1, NRF_PWM2};
-  for(int device = 0; device<3; device++) {
+  NRF_PWM_Type* PWM[] = {
+    NRF_PWM0, NRF_PWM1, NRF_PWM2
+#ifdef NRF_PWM3
+    ,NRF_PWM3
+#endif
+  };
+
+  for(int device = 0; device < (sizeof(PWM)/sizeof(PWM[0])); device++) {
     if( (PWM[device]->ENABLE == 0)                            &&
         (PWM[device]->PSEL.OUT[0] & PWM_PSEL_OUT_CONNECT_Msk) &&
         (PWM[device]->PSEL.OUT[1] & PWM_PSEL_OUT_CONNECT_Msk) &&
@@ -1289,10 +1364,10 @@ void Adafruit_NeoPixel::show(void) {
       break;
     }
   }
-  
+
   // only malloc if there is PWM device available
   if ( pwm != NULL ) {
-    #ifdef ARDUINO_FEATHER52 // use thread-safe malloc
+    #ifdef ARDUINO_NRF52_ADAFRUIT // use thread-safe malloc
       pixels_pattern = (uint16_t *) rtos_malloc(pattern_size);
     #else
       pixels_pattern = (uint16_t *) malloc(pattern_size);
@@ -1307,7 +1382,7 @@ void Adafruit_NeoPixel::show(void) {
     for(uint16_t n=0; n<numBytes; n++) {
       uint8_t pix = pixels[n];
 
-      for(uint8_t mask=0x80, i=0; mask>0; mask >>= 1, i++) {
+      for(uint8_t mask=0x80; mask>0; mask >>= 1) {
         #ifdef NEO_KHZ400
         if( !is800KHz ) {
           pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
@@ -1322,8 +1397,8 @@ void Adafruit_NeoPixel::show(void) {
     }
 
     // Zero padding to indicate the end of que sequence
-    pixels_pattern[++pos] = 0 | (0x8000); // Seq end
-    pixels_pattern[++pos] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos++] = 0 | (0x8000); // Seq end
+    pixels_pattern[pos++] = 0 | (0x8000); // Seq end
 
     // Set the wave mode to count UP
     pwm->MODE = (PWM_MODE_UPDOWN_Up << PWM_MODE_UPDOWN_Pos);
@@ -1383,7 +1458,7 @@ void Adafruit_NeoPixel::show(void) {
     // But we have to wait for the flag to be set.
     while(!pwm->EVENTS_SEQEND[0])
     {
-      #ifdef ARDUINO_FEATHER52
+      #ifdef ARDUINO_NRF52_ADAFRUIT
       yield();
       #endif
     }
@@ -1399,7 +1474,7 @@ void Adafruit_NeoPixel::show(void) {
 
     pwm->PSEL.OUT[0] = 0xFFFFFFFFUL;
 
-    #ifdef ARDUINO_FEATHER52  // use thread-safe free
+    #ifdef ARDUINO_NRF52_ADAFRUIT  // use thread-safe free
       rtos_free(pixels_pattern);
     #else
       free(pixels_pattern);
@@ -1408,7 +1483,7 @@ void Adafruit_NeoPixel::show(void) {
   // ---------------------------------------------------------------------
   else{
     // Fall back to DWT
-    #ifdef ARDUINO_FEATHER52
+    #ifdef ARDUINO_NRF52_ADAFRUIT
       // Bluefruit Feather 52 uses freeRTOS
       // Critical Section is used since it does not block SoftDevice execution
       taskENTER_CRITICAL();
@@ -1421,7 +1496,8 @@ void Adafruit_NeoPixel::show(void) {
       __disable_irq();
     #endif
 
-    uint32_t pinMask = 1UL << g_ADigitalPinMap[pin];
+    NRF_GPIO_Type* nrf_port = (NRF_GPIO_Type*) digitalPinToPort(pin);
+    uint32_t pinMask = digitalPinToBitMask(pin);
 
     uint32_t CYCLES_X00     = CYCLES_800;
     uint32_t CYCLES_X00_T1H = CYCLES_800_T1H;
@@ -1454,7 +1530,7 @@ void Adafruit_NeoPixel::show(void) {
           while(DWT->CYCCNT - cyc < CYCLES_X00);
           cyc  = DWT->CYCCNT;
 
-          NRF_GPIO->OUTSET |= pinMask;
+          nrf_port->OUTSET |= pinMask;
 
           if(pix & mask) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T1H);
@@ -1462,7 +1538,7 @@ void Adafruit_NeoPixel::show(void) {
             while(DWT->CYCCNT - cyc < CYCLES_X00_T0H);
           }
 
-          NRF_GPIO->OUTCLR |= pinMask;
+          nrf_port->OUTCLR |= pinMask;
         }
       }
       while(DWT->CYCCNT - cyc < CYCLES_X00);
@@ -1479,7 +1555,7 @@ void Adafruit_NeoPixel::show(void) {
     }
 
     // Enable interrupts again
-    #ifdef ARDUINO_FEATHER52
+    #ifdef ARDUINO_NRF52_ADAFRUIT
       taskEXIT_CRITICAL();
     #elif defined(NRF52_DISABLE_INT)
       __enable_irq();
@@ -1489,7 +1565,7 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined (__SAMD21E17A__) || defined(__SAMD21G18A__)  || defined(__SAMD21E18A__) || defined(__SAMD21J18A__) // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo and others
   // Tried this with a timer/counter, couldn't quite get adequate
-  // resolution.  So yay, you get a load of goofball NOPs...
+  // resolution. So yay, you get a load of goofball NOPs...
 
   uint8_t  *ptr, *end, p, bitMask, portNum;
   uint32_t  pinMask;
@@ -1727,11 +1803,9 @@ if(is800KHz) {
 #endif
 //----
 
-#elif defined (__SAMD51__) // M4 @ 120mhz
-  // Tried this with a timer/counter, couldn't quite get adequate
-  // resolution.  So yay, you get a load of goofball NOPs...
+#elif defined (__SAMD51__) // M4
 
-  uint8_t  *ptr, *end, p, bitMask, portNum;
+  uint8_t  *ptr, *end, p, bitMask, portNum, bit;
   uint32_t  pinMask;
 
   portNum =  g_APinDescription[pin].ulPort;
@@ -1744,70 +1818,63 @@ if(is800KHz) {
   volatile uint32_t *set = &(PORT->Group[portNum].OUTSET.reg),
                     *clr = &(PORT->Group[portNum].OUTCLR.reg);
 
+  // SAMD51 overclock-compatible timing is only a mild abomination.
+  // It uses SysTick for a consistent clock reference regardless of
+  // optimization / cache settings.  That's the good news.  The bad news,
+  // since SysTick->VAL is a volatile type it's slow to access...and then,
+  // with the SysTick interval that Arduino sets up (1 ms), this would
+  // require a subtract and MOD operation for gauging elapsed time, and
+  // all taken in combination that lacks adequate temporal resolution
+  // for NeoPixel timing.  So a kind of horrible thing is done here...
+  // since interrupts are turned off anyway and it's generally accepted
+  // by now that we're gonna lose track of time in the NeoPixel lib,
+  // the SysTick timer is reconfigured for a period matching the NeoPixel
+  // bit timing (either 800 or 400 KHz) and we watch SysTick->VAL very
+  // closely (just a threshold, no subtract or MOD or anything) and that
+  // seems to work just well enough.  When finished, the SysTick
+  // peripheral is set back to its original state.
+
+  uint32_t t0, t1, top, ticks,
+           saveLoad = SysTick->LOAD, saveVal = SysTick->VAL;
+
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
-    for(;;) {
-      if(p & bitMask) { // ONE
-        // High 800ns
-        *set = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;");
-        // Low 450ns
-        *clr = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop;");
-      } else { // ZERO
-        // High 400ns
-        *set = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop;");
-        // Low 850ns
-        *clr = pinMask;
-        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;"
-            "nop; nop; nop; nop; nop; nop; nop; nop;");
-      }
-      if(bitMask >>= 1) {
-        // Move on to the next pixel
-        asm("nop;");
-      } else {
-        if(ptr >= end) break;
-        p       = *ptr++;
-        bitMask = 0x80;
-      }
-    }
+    top =       (uint32_t)(F_CPU * 0.00000125); // Bit hi + lo = 1.25 uS
+    t0  = top - (uint32_t)(F_CPU * 0.00000040); // 0 = 0.4 uS hi
+    t1  = top - (uint32_t)(F_CPU * 0.00000080); // 1 = 0.8 uS hi
 #ifdef NEO_KHZ400
   } else { // 400 KHz bitstream
-    // ToDo!
+    top =       (uint32_t)(F_CPU * 0.00000250); // Bit hi + lo = 2.5 uS
+    t0  = top - (uint32_t)(F_CPU * 0.00000050); // 0 = 0.5 uS hi
+    t1  = top - (uint32_t)(F_CPU * 0.00000120); // 1 = 1.2 uS hi
   }
 #endif
+
+  SysTick->LOAD = top;               // Config SysTick for NeoPixel bit freq
+  SysTick->VAL  = top;               // Set to start value (counts down)
+  (void)SysTick->VAL;                // Dummy read helps sync up 1st bit
+
+  for(;;) {
+    *set  = pinMask;                 // Set output high
+    ticks = (p & bitMask) ? t1 : t0; // SysTick threshold,
+    while(SysTick->VAL > ticks);     // wait for it
+    *clr  = pinMask;                 // Set output low
+    if(!(bitMask >>= 1)) {           // Next bit for this byte...done?
+      if(ptr >= end) break;          // If last byte sent, exit loop
+      p       = *ptr++;              // Fetch next byte
+      bitMask = 0x80;                // Reset bitmask
+    }
+    while(SysTick->VAL <= ticks);    // Wait for rollover to 'top'
+  }
+
+  SysTick->LOAD = saveLoad;          // Restore SysTick rollover to 1 ms
+  SysTick->VAL  = saveVal;           // Restore SysTick value
 
 #elif defined (ARDUINO_STM32_FEATHER) // FEATHER WICED (120MHz)
 
   // Tried this with a timer/counter, couldn't quite get adequate
-  // resolution.  So yay, you get a load of goofball NOPs...
+  // resolution. So yay, you get a load of goofball NOPs...
 
   uint8_t  *ptr, *end, p, bitMask;
   uint32_t  pinMask;
@@ -1989,7 +2056,7 @@ if(is800KHz) {
   TC_Start(TC1, 0);
 
   pinMask   = g_APinDescription[pin].ulPin; // Don't 'optimize' these into
-  port      = g_APinDescription[pin].pPort; // declarations above.  Want to
+  port      = g_APinDescription[pin].pPort; // declarations above. Want to
   portSet   = &(port->PIO_SODR);            // burn a few cycles after
   portClear = &(port->PIO_CODR);            // starting timer to minimize
   timeValue = &(TC1->TC_CHANNEL[0].TC_CV);  // the initial 'while'.
@@ -2135,21 +2202,25 @@ if(is800KHz) {
     }
   }
 
-#else 
+#else
 #error Architecture not supported
 #endif
 
 
 // END ARCHITECTURE SELECT ------------------------------------------------
 
-#ifndef NRF52
+#if !( defined(NRF52) || defined(NRF52_SERIES) )
   interrupts();
 #endif
 
   endTime = micros(); // Save EOD time for latch on next call
 }
 
-// Set the output pin number
+/*!
+  @brief   Set/change the NeoPixel output pin number. Previous pin,
+           if any, is set to INPUT and the new pin is set to OUTPUT.
+  @param   p  Arduino pin number (-1 = no pin).
+*/
 void Adafruit_NeoPixel::setPin(uint8_t p) {
   if(begun && (pin >= 0)) pinMode(pin, INPUT);
     pin = p;
@@ -2163,7 +2234,14 @@ void Adafruit_NeoPixel::setPin(uint8_t p) {
 #endif
 }
 
-// Set pixel color from separate R,G,B components:
+/*!
+  @brief   Set a pixel's color using separate red, green and blue
+           components. If using RGBW pixels, white will be set to 0.
+  @param   n  Pixel index, starting from 0.
+  @param   r  Red brightness, 0 = minimum (off), 255 = maximum.
+  @param   g  Green brightness, 0 = minimum (off), 255 = maximum.
+  @param   b  Blue brightness, 0 = minimum (off), 255 = maximum.
+*/
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
 
@@ -2186,6 +2264,16 @@ void Adafruit_NeoPixel::setPixelColor(
   }
 }
 
+/*!
+  @brief   Set a pixel's color using separate red, green, blue and white
+           components (for RGBW NeoPixels only).
+  @param   n  Pixel index, starting from 0.
+  @param   r  Red brightness, 0 = minimum (off), 255 = maximum.
+  @param   g  Green brightness, 0 = minimum (off), 255 = maximum.
+  @param   b  Blue brightness, 0 = minimum (off), 255 = maximum.
+  @param   w  White brightness, 0 = minimum (off), 255 = maximum, ignored
+              if using RGB pixels.
+*/
 void Adafruit_NeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
 
@@ -2209,7 +2297,13 @@ void Adafruit_NeoPixel::setPixelColor(
   }
 }
 
-// Set pixel color from 'packed' 32-bit RGB color:
+/*!
+  @brief   Set a pixel's color using a 32-bit 'packed' RGB or RGBW value.
+  @param   n  Pixel index, starting from 0.
+  @param   c  32-bit color value. Most significant byte is white (for RGBW
+              pixels) or ignored (for RGB pixels), next is red, then green,
+              and least significant byte is blue.
+*/
 void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   if(n < numLEDs) {
     uint8_t *p,
@@ -2234,19 +2328,149 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
-// Convert separate R,G,B into packed 32-bit RGB color.
-// Packed format is always RGB, regardless of LED strand color order.
-uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
-  return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+/*!
+  @brief   Fill all or part of the NeoPixel strip with a color.
+  @param   c      32-bit color value. Most significant byte is white (for
+                  RGBW pixels) or ignored (for RGB pixels), next is red,
+                  then green, and least significant byte is blue. If all
+                  arguments are unspecified, this will be 0 (off).
+  @param   first  Index of first pixel to fill, starting from 0. Must be
+                  in-bounds, no clipping is performed. 0 if unspecified.
+  @param   count  Number of pixels to fill, as a positive value. Passing
+                  0 or leaving unspecified will fill to end of strip.
+*/
+void Adafruit_NeoPixel::fill(uint32_t c, uint16_t first, uint16_t count) {
+  uint16_t i, end;
+
+  if(first >= numLEDs) {
+    return; // If first LED is past end of strip, nothing to do
+  }
+
+  // Calculate the index ONE AFTER the last pixel to fill
+  if(count == 0) {
+    // Fill to end of strip
+    end = numLEDs;
+  } else {
+    // Ensure that the loop won't go past the last pixel
+    end = first + count;
+    if(end > numLEDs) end = numLEDs;
+  }
+
+  for(i = first; i < end; i++) {
+    this->setPixelColor(i, c);
+  }
 }
 
-// Convert separate R,G,B,W into packed 32-bit WRGB color.
-// Packed format is always WRGB, regardless of LED strand color order.
-uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+/*!
+  @brief   Convert hue, saturation and value into a packed 32-bit RGB color
+           that can be passed to setPixelColor() or other RGB-compatible
+           functions.
+  @param   hue  An unsigned 16-bit value, 0 to 65535, representing one full
+                loop of the color wheel, which allows 16-bit hues to "roll
+                over" while still doing the expected thing (and allowing
+                more precision than the wheel() function that was common to
+                prior NeoPixel examples).
+  @param   sat  Saturation, 8-bit value, 0 (min or pure grayscale) to 255
+                (max or pure hue). Default of 255 if unspecified.
+  @param   val  Value (brightness), 8-bit value, 0 (min / black / off) to
+                255 (max or full brightness). Default of 255 if unspecified.
+  @return  Packed 32-bit RGB with the most significant byte set to 0 -- the
+           white element of WRGB pixels is NOT utilized. Result is linearly
+           but not perceptually correct, so you may want to pass the result
+           through the gamma32() function (or your own gamma-correction
+           operation) else colors may appear washed out. This is not done
+           automatically by this function because coders may desire a more
+           refined gamma-correction function than the simplified
+           one-size-fits-all operation of gamma32(). Diffusing the LEDs also
+           really seems to help when using low-saturation colors.
+*/
+uint32_t Adafruit_NeoPixel::ColorHSV(uint16_t hue, uint8_t sat, uint8_t val) {
+
+  uint8_t r, g, b;
+
+  // Remap 0-65535 to 0-1529. Pure red is CENTERED on the 64K rollover;
+  // 0 is not the start of pure red, but the midpoint...a few values above
+  // zero and a few below 65536 all yield pure red (similarly, 32768 is the
+  // midpoint, not start, of pure cyan). The 8-bit RGB hexcone (256 values
+  // each for red, green, blue) really only allows for 1530 distinct hues
+  // (not 1536, more on that below), but the full unsigned 16-bit type was
+  // chosen for hue so that one's code can easily handle a contiguous color
+  // wheel by allowing hue to roll over in either direction.
+  hue = (hue * 1530L + 32768) / 65536;
+  // Because red is centered on the rollover point (the +32768 above,
+  // essentially a fixed-point +0.5), the above actually yields 0 to 1530,
+  // where 0 and 1530 would yield the same thing. Rather than apply a
+  // costly modulo operator, 1530 is handled as a special case below.
+
+  // So you'd think that the color "hexcone" (the thing that ramps from
+  // pure red, to pure yellow, to pure green and so forth back to red,
+  // yielding six slices), and with each color component having 256
+  // possible values (0-255), might have 1536 possible items (6*256),
+  // but in reality there's 1530. This is because the last element in
+  // each 256-element slice is equal to the first element of the next
+  // slice, and keeping those in there this would create small
+  // discontinuities in the color wheel. So the last element of each
+  // slice is dropped...we regard only elements 0-254, with item 255
+  // being picked up as element 0 of the next slice. Like this:
+  // Red to not-quite-pure-yellow is:        255,   0, 0 to 255, 254,   0
+  // Pure yellow to not-quite-pure-green is: 255, 255, 0 to   1, 255,   0
+  // Pure green to not-quite-pure-cyan is:     0, 255, 0 to   0, 255, 254
+  // and so forth. Hence, 1530 distinct hues (0 to 1529), and hence why
+  // the constants below are not the multiples of 256 you might expect.
+
+  // Convert hue to R,G,B (nested ifs faster than divide+mod+switch):
+  if(hue < 510) {         // Red to Green-1
+    b = 0;
+    if(hue < 255) {       //   Red to Yellow-1
+      r = 255;
+      g = hue;            //     g = 0 to 254
+    } else {              //   Yellow to Green-1
+      r = 510 - hue;      //     r = 255 to 1
+      g = 255;
+    }
+  } else if(hue < 1020) { // Green to Blue-1
+    r = 0;
+    if(hue <  765) {      //   Green to Cyan-1
+      g = 255;
+      b = hue - 510;      //     b = 0 to 254
+    } else {              //   Cyan to Blue-1
+      g = 1020 - hue;     //     g = 255 to 1
+      b = 255;
+    }
+  } else if(hue < 1530) { // Blue to Red-1
+    g = 0;
+    if(hue < 1275) {      //   Blue to Magenta-1
+      r = hue - 1020;     //     r = 0 to 254
+      b = 255;
+    } else {              //   Magenta to Red-1
+      r = 255;
+      b = 1530 - hue;     //     b = 255 to 1
+    }
+  } else {                // Last 0.5 Red (quicker than % operator)
+    r = 255;
+    g = b = 0;
+  }
+
+  // Apply saturation and value to R,G,B, pack into 32-bit result:
+  uint32_t v1 =   1 + val; // 1 to 256; allows >>8 instead of /255
+  uint16_t s1 =   1 + sat; // 1 to 256; same reason
+  uint8_t  s2 = 255 - sat; // 255 to 0
+  return ((((((r * s1) >> 8) + s2) * v1) & 0xff00) << 8) |
+          (((((g * s1) >> 8) + s2) * v1) & 0xff00)       |
+         ( ((((b * s1) >> 8) + s2) * v1)           >> 8);
 }
 
-// Query color from previously-set pixel (returns packed 32-bit RGB value)
+/*!
+  @brief   Query the color of a previously-set pixel.
+  @param   n  Index of pixel to read (0 = first).
+  @return  'Packed' 32-bit RGB or WRGB value. Most significant byte is white
+           (for RGBW pixels) or 0 (for RGB pixels), next is red, then green,
+           and least significant byte is blue.
+  @note    If the strip brightness has been changed from the default value
+           of 255, the color read from a pixel may not exactly match what
+           was previously written with one of the setPixelColor() functions.
+           This gets more pronounced at lower brightness levels.
+*/
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   if(n >= numLEDs) return 0; // Out of bounds, return no color.
 
@@ -2255,10 +2479,10 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   if(wOffset == rOffset) { // Is RGB-type device
     p = &pixels[n * 3];
     if(brightness) {
-      // Stored color was decimated by setBrightness().  Returned value
+      // Stored color was decimated by setBrightness(). Returned value
       // attempts to scale back to an approximation of the original 24-bit
       // value used when setting the pixel color, but there will always be
-      // some error -- those bits are simply gone.  Issue is most
+      // some error -- those bits are simply gone. Issue is most
       // pronounced at low brightness levels.
       return (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
              (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
@@ -2285,39 +2509,41 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   }
 }
 
-// Returns pointer to pixels[] array.  Pixel data is stored in device-
-// native format and is not translated here.  Application will need to be
-// aware of specific pixel data format and handle colors appropriately.
-uint8_t *Adafruit_NeoPixel::getPixels(void) const {
-  return pixels;
-}
 
-uint16_t Adafruit_NeoPixel::numPixels(void) const {
-  return numLEDs;
-}
-
-// Adjust output brightness; 0=darkest (off), 255=brightest.  This does
-// NOT immediately affect what's currently displayed on the LEDs.  The
-// next call to show() will refresh the LEDs at this level.  However,
-// this process is potentially "lossy," especially when increasing
-// brightness.  The tight timing in the WS2811/WS2812 code means there
-// aren't enough free cycles to perform this scaling on the fly as data
-// is issued.  So we make a pass through the existing color data in RAM
-// and scale it (subsequent graphics commands also work at this
-// brightness level).  If there's a significant step up in brightness,
-// the limited number of steps (quantization) in the old data will be
-// quite visible in the re-scaled version.  For a non-destructive
-// change, you'll need to re-render the full strip data.  C'est la vie.
+/*!
+  @brief   Adjust output brightness. Does not immediately affect what's
+           currently displayed on the LEDs. The next call to show() will
+           refresh the LEDs at this level.
+  @param   b  Brightness setting, 0=minimum (off), 255=brightest.
+  @note    This was intended for one-time use in one's setup() function,
+           not as an animation effect in itself. Because of the way this
+           library "pre-multiplies" LED colors in RAM, changing the
+           brightness is often a "lossy" operation -- what you write to
+           pixels isn't necessary the same as what you'll read back.
+           Repeated brightness changes using this function exacerbate the
+           problem. Smart programs therefore treat the strip as a
+           write-only resource, maintaining their own state to render each
+           frame of an animation, not relying on read-modify-write.
+*/
 void Adafruit_NeoPixel::setBrightness(uint8_t b) {
   // Stored brightness value is different than what's passed.
   // This simplifies the actual scaling math later, allowing a fast
-  // 8x8-bit multiply and taking the MSB.  'brightness' is a uint8_t,
+  // 8x8-bit multiply and taking the MSB. 'brightness' is a uint8_t,
   // adding 1 here may (intentionally) roll over...so 0 = max brightness
   // (color values are interpreted literally; no scaling), 1 = min
   // brightness (off), 255 = just below max brightness.
   uint8_t newBrightness = b + 1;
   if(newBrightness != brightness) { // Compare against prior value
-    // Brightness has changed -- re-scale existing data in RAM
+    // Brightness has changed -- re-scale existing data in RAM,
+    // This process is potentially "lossy," especially when increasing
+    // brightness. The tight timing in the WS2811/WS2812 code means there
+    // aren't enough free cycles to perform this scaling on the fly as data
+    // is issued. So we make a pass through the existing color data in RAM
+    // and scale it (subsequent graphics commands also work at this
+    // brightness level). If there's a significant step up in brightness,
+    // the limited number of steps (quantization) in the old data will be
+    // quite visible in the re-scaled version. For a non-destructive
+    // change, you'll need to re-render the full strip data. C'est la vie.
     uint8_t  c,
             *ptr           = pixels,
              oldBrightness = brightness - 1; // De-wrap old brightness value
@@ -2333,71 +2559,33 @@ void Adafruit_NeoPixel::setBrightness(uint8_t b) {
   }
 }
 
-//Return the brightness value
+/*!
+  @brief   Retrieve the last-set brightness value for the strip.
+  @return  Brightness value: 0 = minimum (off), 255 = maximum.
+*/
 uint8_t Adafruit_NeoPixel::getBrightness(void) const {
   return brightness - 1;
 }
 
-void Adafruit_NeoPixel::clear() {
+/*!
+  @brief   Fill the whole NeoPixel strip with 0 / black / off.
+*/
+void Adafruit_NeoPixel::clear(void) {
   memset(pixels, 0, numBytes);
 }
 
-/* A PROGMEM (flash mem) table containing 8-bit unsigned sine wave (0-255).
-   Copy & paste this snippet into a Python REPL to regenerate:
-import math
-for x in range(256):
-    print("{:3},".format(int((math.sin(x/128.0*math.pi)+1.0)*127.5+0.5))),
-    if x&15 == 15: print
-*/
-static const uint8_t PROGMEM _sineTable[256] = {
-  128,131,134,137,140,143,146,149,152,155,158,162,165,167,170,173,
-  176,179,182,185,188,190,193,196,198,201,203,206,208,211,213,215,
-  218,220,222,224,226,228,230,232,234,235,237,238,240,241,243,244,
-  245,246,248,249,250,250,251,252,253,253,254,254,254,255,255,255,
-  255,255,255,255,254,254,254,253,253,252,251,250,250,249,248,246,
-  245,244,243,241,240,238,237,235,234,232,230,228,226,224,222,220,
-  218,215,213,211,208,206,203,201,198,196,193,190,188,185,182,179,
-  176,173,170,167,165,162,158,155,152,149,146,143,140,137,134,131,
-  128,124,121,118,115,112,109,106,103,100, 97, 93, 90, 88, 85, 82,
-   79, 76, 73, 70, 67, 65, 62, 59, 57, 54, 52, 49, 47, 44, 42, 40,
-   37, 35, 33, 31, 29, 27, 25, 23, 21, 20, 18, 17, 15, 14, 12, 11,
-   10,  9,  7,  6,  5,  5,  4,  3,  2,  2,  1,  1,  1,  0,  0,  0,
-    0,  0,  0,  0,  1,  1,  1,  2,  2,  3,  4,  5,  5,  6,  7,  9,
-   10, 11, 12, 14, 15, 17, 18, 20, 21, 23, 25, 27, 29, 31, 33, 35,
-   37, 40, 42, 44, 47, 49, 52, 54, 57, 59, 62, 65, 67, 70, 73, 76,
-   79, 82, 85, 88, 90, 93, 97,100,103,106,109,112,115,118,121,124};
-
-/* Similar to above, but for an 8-bit gamma-correction table.
-   Copy & paste this snippet into a Python REPL to regenerate:
-import math
-gamma=2.6
-for x in range(256):
-    print("{:3},".format(int(math.pow((x)/255.0,gamma)*255.0+0.5))),
-    if x&15 == 15: print
-*/
-static const uint8_t PROGMEM _gammaTable[256] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,
-    1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,
-    3,  3,  4,  4,  4,  4,  5,  5,  5,  5,  5,  6,  6,  6,  6,  7,
-    7,  7,  8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11, 12, 12,
-   13, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
-   20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 27, 27, 28, 29, 29,
-   30, 31, 31, 32, 33, 34, 34, 35, 36, 37, 38, 38, 39, 40, 41, 42,
-   42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-   58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 71, 72, 73, 75,
-   76, 77, 78, 80, 81, 82, 84, 85, 86, 88, 89, 90, 92, 93, 94, 96,
-   97, 99,100,102,103,105,106,108,109,111,112,114,115,117,119,120,
-  122,124,125,127,129,130,132,134,136,137,139,141,143,145,146,148,
-  150,152,154,156,158,160,162,164,166,168,170,172,174,176,178,180,
-  182,184,186,188,191,193,195,197,199,202,204,206,209,211,213,215,
-  218,220,223,225,227,230,232,235,237,240,242,245,247,250,252,255};
-
-uint8_t Adafruit_NeoPixel::sine8(uint8_t x) const {
-  return pgm_read_byte(&_sineTable[x]); // 0-255 in, 0-255 out
+// A 32-bit variant of gamma8() that applies the same function
+// to all components of a packed RGB or WRGB value.
+uint32_t Adafruit_NeoPixel::gamma32(uint32_t x) {
+  uint8_t *y = (uint8_t *)&x;
+  // All four bytes of a 32-bit value are filtered even if RGB (not WRGB),
+  // to avoid a bunch of shifting and masking that would be necessary for
+  // properly handling different endianisms (and each byte is a fairly
+  // trivial operation, so it might not even be wasting cycles vs a check
+  // and branch for the RGB case). In theory this might cause trouble *if*
+  // someone's storing information in the unused most significant byte
+  // of an RGB value, but this seems exceedingly rare and if it's
+  // encountered in reality they can mask values going in or coming out.
+  for(uint8_t i=0; i<4; i++) y[i] = gamma8(y[i]);
+  return x; // Packed 32-bit return
 }
-
-uint8_t Adafruit_NeoPixel::gamma8(uint8_t x) const {
-  return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
-}
-
