@@ -5,8 +5,9 @@
 #if defined(KENDRYTE_K210)
 
 #include <Arduino.h>
+#include "sysctl.h"
 
-void ICACHE_RAM_ATTR k210Show(
+void  k210Show(
     uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz)
 {
 

@@ -178,7 +178,7 @@ extern "C" void espShow(
 #endif // ESP8266
 
 #if defined(KENDRYTE_K210)
-extern "C" void ICACHE_RAM_ATTR k210Show(
+extern "C" void  k210Show(
     uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz);
 #endif //KENDRYTE_K210
 /*!
