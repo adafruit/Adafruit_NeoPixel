@@ -1184,6 +1184,64 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif // NEO_KHZ400
 
+#elif defined(TEENSYDUINO) && (defined(__IMXRT1052__) || defined(__IMXRT1062__))
+#define CYCLES_800_T0H  (F_CPU_ACTUAL / 4000000)
+#define CYCLES_800_T1H  (F_CPU_ACTUAL / 1250000)
+#define CYCLES_800      (F_CPU_ACTUAL /  800000)
+#define CYCLES_400_T0H  (F_CPU_ACTUAL / 2000000)
+#define CYCLES_400_T1H  (F_CPU_ACTUAL /  833333)
+#define CYCLES_400      (F_CPU_ACTUAL /  400000)
+
+  uint8_t           *p   = pixels,
+                    *end = p + numBytes, pix, mask;
+  volatile uint32_t *set = portSetRegister(pin),
+                    *clr = portClearRegister(pin);
+  uint32_t          cyc,
+                    msk = digitalPinToBitMask(pin);
+
+  ARM_DEMCR    |= ARM_DEMCR_TRCENA;
+  ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    cyc = ARM_DWT_CYCCNT + CYCLES_800;
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        while(ARM_DWT_CYCCNT - cyc < CYCLES_800);
+        cyc  = ARM_DWT_CYCCNT;
+        *set = msk;
+        if(pix & mask) {
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_800_T1H);
+        } else {
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_800_T0H);
+        }
+        *clr = msk;
+      }
+    }
+    while(ARM_DWT_CYCCNT - cyc < CYCLES_800);
+#ifdef NEO_KHZ400
+  } else { // 400 kHz bitstream
+    cyc = ARM_DWT_CYCCNT + CYCLES_400;
+    while(p < end) {
+      pix = *p++;
+      for(mask = 0x80; mask; mask >>= 1) {
+        while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
+        cyc  = ARM_DWT_CYCCNT;
+        *set = msk;
+        if(pix & mask) {
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_400_T1H);
+        } else {
+          while(ARM_DWT_CYCCNT - cyc < CYCLES_400_T0H);
+        }
+        *clr = msk;
+      }
+    }
+    while(ARM_DWT_CYCCNT - cyc < CYCLES_400);
+  }
+#endif // NEO_KHZ400
+
 #elif defined(TEENSYDUINO) && defined(__MKL26Z64__) // Teensy-LC
 
 #if F_CPU == 48000000
