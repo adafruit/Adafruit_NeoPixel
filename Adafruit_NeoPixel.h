@@ -246,7 +246,7 @@ class Adafruit_NeoPixel {
     @brief   Retrieve the pin number used for NeoPixel data output.
     @return  Arduino pin number (-1 if not set).
   */
-  int16_t            getPin(void) const { return pin; };
+  int8_t            getPin(void) const { return pin; };
   /*!
     @brief   Return the number of pixels in an Adafruit_NeoPixel strip object.
     @return  Pixel count (0 if not set).
@@ -334,7 +334,7 @@ class Adafruit_NeoPixel {
   boolean           begun;      ///< true if begin() previously called
   uint16_t          numLEDs;    ///< Number of RGB LEDs in strip
   uint16_t          numBytes;   ///< Size of 'pixels' buffer below
-  int16_t            pin;        ///< Output pin number (-1 if not yet set)
+  int8_t            pin;        ///< Output pin number (-1 if not yet set)
   uint8_t           brightness; ///< Strip brightness 0-255 (stored as +1)
   uint8_t          *pixels;     ///< Holds LED color values (3 or 4 bytes each)
   uint8_t           rOffset;    ///< Red index within each 3- or 4-byte pixel
