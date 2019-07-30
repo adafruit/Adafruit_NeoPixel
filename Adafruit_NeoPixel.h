@@ -36,11 +36,17 @@
 #ifndef ADAFRUIT_NEOPIXEL_H
 #define ADAFRUIT_NEOPIXEL_H
 
-#if (ARDUINO >= 100)
- #include <Arduino.h>
-#else
- #include <WProgram.h>
- #include <pins_arduino.h>
+#ifdef ARDUINO
+  #if (ARDUINO >= 100)
+  #include <Arduino.h>
+  #else
+  #include <WProgram.h>
+  #include <pins_arduino.h>
+  #endif
+#endif
+
+#ifdef TARGET_LPC1768
+  #include <Arduino.h>
 #endif
 
 // The order of primary colors in the NeoPixel data stream can vary among
