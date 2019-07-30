@@ -36,11 +36,17 @@
 #ifndef ADAFRUIT_NEOPIXEL_H
 #define ADAFRUIT_NEOPIXEL_H
 
-#if (ARDUINO >= 100)
- #include <Arduino.h>
-#else
- #include <WProgram.h>
- #include <pins_arduino.h>
+#ifdef ARDUINO
+  #if (ARDUINO >= 100)
+  #include <Arduino.h>
+  #else
+  #include <WProgram.h>
+  #include <pins_arduino.h>
+  #endif
+#endif
+
+#ifdef TARGET_LPC1768
+  #include <Arduino.h>
 #endif
 
 // The order of primary colors in the NeoPixel data stream can vary among
@@ -195,14 +201,14 @@ class Adafruit_NeoPixel {
  public:
 
   // Constructor: number of LEDs, pin number, LED type
-  Adafruit_NeoPixel(uint16_t n, uint8_t pin=6,
+  Adafruit_NeoPixel(uint16_t n, uint16_t pin=6,
     neoPixelType type=NEO_GRB + NEO_KHZ800);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
   void              begin(void);
   void              show(void);
-  void              setPin(uint8_t p);
+  void              setPin(uint16_t p);
   void              setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
   void              setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b,
                       uint8_t w);
@@ -246,7 +252,7 @@ class Adafruit_NeoPixel {
     @brief   Retrieve the pin number used for NeoPixel data output.
     @return  Arduino pin number (-1 if not set).
   */
-  int8_t            getPin(void) const { return pin; };
+  int16_t            getPin(void) const { return pin; };
   /*!
     @brief   Return the number of pixels in an Adafruit_NeoPixel strip object.
     @return  Pixel count (0 if not set).
@@ -334,7 +340,7 @@ class Adafruit_NeoPixel {
   boolean           begun;      ///< true if begin() previously called
   uint16_t          numLEDs;    ///< Number of RGB LEDs in strip
   uint16_t          numBytes;   ///< Size of 'pixels' buffer below
-  int8_t            pin;        ///< Output pin number (-1 if not yet set)
+  int16_t            pin;        ///< Output pin number (-1 if not yet set)
   uint8_t           brightness; ///< Strip brightness 0-255 (stored as +1)
   uint8_t          *pixels;     ///< Holds LED color values (3 or 4 bytes each)
   uint8_t           rOffset;    ///< Red index within each 3- or 4-byte pixel

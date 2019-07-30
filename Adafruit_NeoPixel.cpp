@@ -45,6 +45,10 @@
 
 #include "Adafruit_NeoPixel.h"
 
+#ifdef TARGET_LPC1768
+  #include <time.h>
+#endif
+
 #if defined(NRF52) || defined(NRF52_SERIES)
 #include "nrf.h"
 
@@ -65,7 +69,7 @@
               pixel.
   @return  Adafruit_NeoPixel object. Call the begin() function before use.
 */
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint16_t p, neoPixelType t) :
   begun(false), brightness(0), pixels(NULL), endTime(0) {
   updateType(t);
   updateLength(n);
@@ -171,10 +175,10 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 #if defined(ESP8266)
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" void ICACHE_RAM_ATTR espShow(
-  uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+  uint16_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #elif defined(ESP32)
 extern "C" void espShow(
-  uint8_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+  uint16_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #endif // ESP8266
 
 /*!
@@ -1846,6 +1850,50 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+#elif defined(TARGET_LPC1768)
+  uint8_t  *ptr, *end, p, bitMask;
+  ptr     =  pixels;
+  end     =  ptr + numBytes;
+  p       = *ptr++;
+  bitMask =  0x80;
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    for(;;) {
+      if(p & bitMask) {
+        // data ONE high
+        // min: 550 typ: 700 max: 5,500
+        gpio_set(pin);
+        time::delay_ns(550);
+        // min: 450 typ: 600 max: 5,000
+        gpio_clear(pin);
+        time::delay_ns(450);
+      } else {
+        // data ZERO high
+        // min: 200  typ: 350 max: 500
+        gpio_set(pin);
+        time::delay_ns(200);
+        // data low
+        // min: 450 typ: 600 max: 5,000
+        gpio_clear(pin);
+        time::delay_ns(450);
+      }
+      if(bitMask >>= 1) {
+        // Move on to the next pixel
+        asm("nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+#ifdef NEO_KHZ400
+  } else { // 400 KHz bitstream
+    // ToDo!
+  }
+#endif
+
 #elif defined (NRF51)
   uint8_t          *p   = pixels,
                     pix, count, mask;
@@ -2114,7 +2162,7 @@ void Adafruit_NeoPixel::show(void) {
            if any, is set to INPUT and the new pin is set to OUTPUT.
   @param   p  Arduino pin number (-1 = no pin).
 */
-void Adafruit_NeoPixel::setPin(uint8_t p) {
+void Adafruit_NeoPixel::setPin(uint16_t p) {
   if(begun && (pin >= 0)) pinMode(pin, INPUT);
     pin = p;
     if(begun) {
