@@ -120,9 +120,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a07b6949674125159484e9e02ef025f7d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a07b6949674125159484e9e02ef025f7d">updateType</a> (<a class="el" href="_adafruit___neo_pixel_8h.html#ab88a50d51bb5488df4379ff49c81fd72">neoPixelType</a> t)</td></tr>
 <tr class="memdesc:a07b6949674125159484e9e02ef025f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the pixel format of a previously-declared <a class="el" href="class_adafruit___neo_pixel.html" title="Class that stores state and functions for interacting with Adafruit NeoPixels and compatible devices...">Adafruit_NeoPixel</a> strip object. If format changes from one of the RGB variants to an RGBW variant (or RGBW to RGB), the old data will be deallocated and new data is cleared. Otherwise, the old data will remain in RAM and is not reordered to the new format, so it's advisable to follow up with <a class="el" href="class_adafruit___neo_pixel.html#ae259682b202be0acd258d6879f4c7121" title="Fill the whole NeoPixel strip with 0 / black / off. ">clear()</a>.  <a href="#a07b6949674125159484e9e02ef025f7d">More...</a><br /></td></tr>
 <tr class="separator:a07b6949674125159484e9e02ef025f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dcbc5c0df256bfbb7998b492c3747e8"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a5dcbc5c0df256bfbb7998b492c3747e8">canShow</a> (void)</td></tr>
-<tr class="memdesc:a5dcbc5c0df256bfbb7998b492c3747e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether a call to <a class="el" href="class_adafruit___neo_pixel.html#a4bcda7a15591065570d3598cbf970be7" title="Transmit pixel data in RAM to NeoPixels. ">show()</a> will start sending data immediately or will 'block' for a required interval. NeoPixels require a short quiet time (about 300 microseconds) after the last bit is received before the data 'latches' and new data can start being received. Usually one's sketch is implicitly using this time to generate a new frame of animation...but if it finishes very quickly, this function could be used to see if there's some idle time available for some low-priority concurrent task.  <a href="#a5dcbc5c0df256bfbb7998b492c3747e8">More...</a><br /></td></tr>
-<tr class="separator:a5dcbc5c0df256bfbb7998b492c3747e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab38dd82a9bae4647a31f7372600bfe7"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#aab38dd82a9bae4647a31f7372600bfe7">canShow</a> (void) const</td></tr>
+<tr class="memdesc:aab38dd82a9bae4647a31f7372600bfe7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether a call to <a class="el" href="class_adafruit___neo_pixel.html#a4bcda7a15591065570d3598cbf970be7" title="Transmit pixel data in RAM to NeoPixels. ">show()</a> will start sending data immediately or will 'block' for a required interval. NeoPixels require a short quiet time (about 300 microseconds) after the last bit is received before the data 'latches' and new data can start being received. Usually one's sketch is implicitly using this time to generate a new frame of animation...but if it finishes very quickly, this function could be used to see if there's some idle time available for some low-priority concurrent task.  <a href="#aab38dd82a9bae4647a31f7372600bfe7">More...</a><br /></td></tr>
+<tr class="separator:aab38dd82a9bae4647a31f7372600bfe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#ab86a181ad2aef2e83cd6bcca66eaae1f">getPixels</a> (void) const</td></tr>
 <tr class="memdesc:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a pointer directly to the NeoPixel data buffer in RAM. Pixel data is stored in a device-native format (a la the NEO_* constants) and is not translated here. Applications that access this buffer will need to be aware of the specific data format and handle colors appropriately.  <a href="#ab86a181ad2aef2e83cd6bcca66eaae1f">More...</a><br /></td></tr>
 <tr class="separator:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -600,8 +600,8 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 
 </div>
 </div>
-<a id="a5dcbc5c0df256bfbb7998b492c3747e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5dcbc5c0df256bfbb7998b492c3747e8">&#9670;&nbsp;</a></span>canShow()</h2>
+<a id="aab38dd82a9bae4647a31f7372600bfe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab38dd82a9bae4647a31f7372600bfe7">&#9670;&nbsp;</a></span>canShow()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -614,7 +614,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td> const</td>
         </tr>
       </table>
   </td>
