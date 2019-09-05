@@ -1893,7 +1893,54 @@ void Adafruit_NeoPixel::show(void) {
     // ToDo!
   }
 #endif
-
+#elif defined(ARDUINO_ARCH_STM32)
+  uint8_t           *p   = pixels, *end = p + numBytes,
+                    pix = *p++, mask = 0x80;
+  uint32_t          cyc;
+  uint32_t saveLoad = SysTick->LOAD, saveVal = SysTick->VAL;
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    uint32_t top = (F_CPU /  800000);       // 1.25µs
+    uint32_t t0  = top - (F_CPU / 2500000); // 0.4µs
+    uint32_t t1  = top - (F_CPU / 1250000); // 0.8µs
+    SysTick->LOAD = top - 1; // Config SysTick for NeoPixel bit freq
+    SysTick->VAL  = 0; // Set to start value
+    for(;;) {
+      LL_GPIO_SetOutputPin(gpioPort, gpioPin);
+      cyc = (pix & mask) ? t1 : t0;
+      while(SysTick->VAL > cyc);
+      LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      if(!(mask >>= 1)) {
+        if(p >= end) break;
+        pix       = *p++;
+        mask = 0x80;
+      }
+      while(SysTick->VAL <= cyc);
+    }
+#ifdef NEO_KHZ400
+  } else { // 400 kHz bitstream
+    uint32_t top = (F_CPU /  400000);       // 2.5µs
+    uint32_t t0  = top - (F_CPU / 2000000); // 0.5µs
+    uint32_t t1  = top - (F_CPU /  833333); // 1.2µs
+    SysTick->LOAD = top - 1; // Config SysTick for NeoPixel bit freq
+    SysTick->VAL  = 0;       // Set to start value
+    for(;;) {
+      LL_GPIO_SetOutputPin(gpioPort, gpioPin);
+      cyc = (pix & mask) ? t1 : t0;
+      while(SysTick->VAL > cyc);
+      LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      if(!(mask >>= 1)) {
+        if(p >= end) break;
+        pix       = *p++;
+        mask = 0x80;
+      }
+      while(SysTick->VAL <= cyc);
+    }
+  }
+#endif // NEO_KHZ400
+  SysTick->LOAD = saveLoad;          // Restore SysTick rollover to 1 ms
+  SysTick->VAL  = saveVal;           // Restore SysTick value
 #elif defined (NRF51)
   uint8_t          *p   = pixels,
                     pix, count, mask;
@@ -2164,14 +2211,18 @@ void Adafruit_NeoPixel::show(void) {
 */
 void Adafruit_NeoPixel::setPin(uint16_t p) {
   if(begun && (pin >= 0)) pinMode(pin, INPUT);
-    pin = p;
-    if(begun) {
-      pinMode(p, OUTPUT);
-      digitalWrite(p, LOW);
-    }
+  pin = p;
+  if(begun) {
+    pinMode(p, OUTPUT);
+    digitalWrite(p, LOW);
+  }
 #ifdef __AVR__
-    port    = portOutputRegister(digitalPinToPort(p));
-    pinMask = digitalPinToBitMask(p);
+  port    = portOutputRegister(digitalPinToPort(p));
+  pinMask = digitalPinToBitMask(p);
+#endif
+#ifdef ARDUINO_ARCH_STM32
+  gpioPort = digitalPinToPort(p);
+  gpioPin = STM_LL_GPIO_PIN(digitalPinToPinName(p));
 #endif
 }
 
