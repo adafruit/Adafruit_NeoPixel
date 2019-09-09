@@ -1700,6 +1700,10 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+#elif defined (AM_PART_APOLLO3) // Apollo3
+
+  apollo3Show(pin, pixels, numBytes, is800KHz);
+
 #elif defined (__SAMD51__) // M4
 
   uint8_t  *ptr, *end, p, bitMask, portNum, bit;
@@ -2210,7 +2214,18 @@ void Adafruit_NeoPixel::show(void) {
   @param   p  Arduino pin number (-1 = no pin).
 */
 void Adafruit_NeoPixel::setPin(uint16_t p) {
-  if(begun && (pin >= 0)) pinMode(pin, INPUT);
+  if(begun && (pin >= 0)) {
+#if defined(AM_PART_APOLLO3)
+    // The pin has been mapped to the Apollo3 pad
+    apollo3UnsetPad(pin);
+#endif
+    pinMode(pin, INPUT);
+  }
+#if defined(AM_PART_APOLLO3)
+  // Map the specified pin to the Apollo3 pad
+  p = ap3_gpio_pin2pad(p);
+  apollo3SetPad(p);
+#endif
   pin = p;
   if(begun) {
     pinMode(p, OUTPUT);
