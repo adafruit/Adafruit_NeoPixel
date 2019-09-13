@@ -352,6 +352,10 @@ class Adafruit_NeoPixel {
   volatile uint8_t *port;       ///< Output PORT register
   uint8_t           pinMask;    ///< Output PORT bitmask
 #endif
+#ifdef ARDUINO_ARCH_STM32
+  GPIO_TypeDef *gpioPort;       ///< Output GPIO PORT
+  uint32_t gpioPin;             ///< Output GPIO PIN
+#endif
 };
 
 #endif // ADAFRUIT_NEOPIXEL_H
