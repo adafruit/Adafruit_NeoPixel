@@ -1893,7 +1893,7 @@ void Adafruit_NeoPixel::show(void) {
     // ToDo!
   }
 #endif
-#elif defined(ARDUINO_ARCH_STM32)
+#elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
   uint8_t           *p   = pixels, *end = p + numBytes,
                     pix = *p++, mask = 0x80;
   uint32_t          cyc;
@@ -2220,7 +2220,7 @@ void Adafruit_NeoPixel::setPin(uint16_t p) {
   port    = portOutputRegister(digitalPinToPort(p));
   pinMask = digitalPinToBitMask(p);
 #endif
-#ifdef ARDUINO_ARCH_STM32
+#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
   gpioPort = digitalPinToPort(p);
   gpioPin = STM_LL_GPIO_PIN(digitalPinToPinName(p));
 #endif
