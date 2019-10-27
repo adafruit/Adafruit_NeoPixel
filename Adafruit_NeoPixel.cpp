@@ -1548,7 +1548,7 @@ void Adafruit_NeoPixel::show(void) {
   }// End of DMA implementation
   // ---------------------------------------------------------------------
   else{
-#ifndef ARDUINO_ARCH_NRF52840     
+#ifndef ARDUINO_ARCH_NRF52840
     // Fall back to DWT
     #ifdef ARDUINO_NRF52_ADAFRUIT
       // Bluefruit Feather 52 uses freeRTOS
@@ -2245,9 +2245,9 @@ void Adafruit_NeoPixel::setPixelColor(
 
   if(n < numLEDs) {
     if(brightness) { // See notes in setBrightness()
-      r = (r * brightness) >> 8;
-      g = (g * brightness) >> 8;
-      b = (b * brightness) >> 8;
+      r = (r * (brightness - 1)) >> 8;
+      g = (g * (brightness - 1)) >> 8;
+      b = (b * (brightness - 1)) >> 8;
     }
     uint8_t *p;
     if(wOffset == rOffset) { // Is an RGB-type strip
@@ -2277,10 +2277,10 @@ void Adafruit_NeoPixel::setPixelColor(
 
   if(n < numLEDs) {
     if(brightness) { // See notes in setBrightness()
-      r = (r * brightness) >> 8;
-      g = (g * brightness) >> 8;
-      b = (b * brightness) >> 8;
-      w = (w * brightness) >> 8;
+      r = (r * (brightness - 1)) >> 8;
+      g = (g * (brightness - 1)) >> 8;
+      b = (b * (brightness - 1)) >> 8;
+      w = (w * (brightness - 1)) >> 8;
     }
     uint8_t *p;
     if(wOffset == rOffset) { // Is an RGB-type strip
@@ -2309,16 +2309,16 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
       g = (uint8_t)(c >>  8),
       b = (uint8_t)c;
     if(brightness) { // See notes in setBrightness()
-      r = (r * brightness) >> 8;
-      g = (g * brightness) >> 8;
-      b = (b * brightness) >> 8;
+      r = (r * (brightness - 1)) >> 8;
+      g = (g * (brightness - 1)) >> 8;
+      b = (b * (brightness - 1)) >> 8;
     }
     if(wOffset == rOffset) {
       p = &pixels[n * 3];
     } else {
       p = &pixels[n * 4];
       uint8_t w = (uint8_t)(c >> 24);
-      p[wOffset] = brightness ? ((w * brightness) >> 8) : w;
+      p[wOffset] = brightness ? ((w * (brightness - 1)) >> 8) : w;
     }
     p[rOffset] = r;
     p[gOffset] = g;
@@ -2482,9 +2482,9 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
       // value used when setting the pixel color, but there will always be
       // some error -- those bits are simply gone. Issue is most
       // pronounced at low brightness levels.
-      return (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
-             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+      return (((uint32_t)(p[rOffset] << 8) / (brightness - 1)) << 16) |
+             (((uint32_t)(p[gOffset] << 8) / (brightness - 1)) <<  8) |
+             ( (uint32_t)(p[bOffset] << 8) / (brightness - 1)       );
     } else {
       // No brightness adjustment has been made -- return 'raw' color
       return ((uint32_t)p[rOffset] << 16) |
@@ -2494,10 +2494,10 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   } else {                 // Is RGBW-type device
     p = &pixels[n * 4];
     if(brightness) { // Return scaled color
-      return (((uint32_t)(p[wOffset] << 8) / brightness) << 24) |
-             (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) <<  8) |
-             ( (uint32_t)(p[bOffset] << 8) / brightness       );
+      return (((uint32_t)(p[wOffset] << 8) / (brightness - 1)) << 24) |
+             (((uint32_t)(p[rOffset] << 8) / (brightness - 1)) << 16) |
+             (((uint32_t)(p[gOffset] << 8) / (brightness - 1)) <<  8) |
+             ( (uint32_t)(p[bOffset] << 8) / (brightness - 1)       );
     } else { // Return raw color
       return ((uint32_t)p[wOffset] << 24) |
              ((uint32_t)p[rOffset] << 16) |
