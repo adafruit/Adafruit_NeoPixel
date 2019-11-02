@@ -2076,10 +2076,10 @@ void Adafruit_NeoPixel::show(void) {
 
   for(t = time0;; t = time0) {
     if(pix & mask) t = time1;
-    while(*timeValue < period);
+    while(*timeValue < (unsigned)period);
     *portSet   = pinMask;
     *timeReset = TC_CCR_CLKEN | TC_CCR_SWTRG;
-    while(*timeValue < t);
+    while(*timeValue < (unsigned)t);
     *portClear = pinMask;
     if(!(mask >>= 1)) {   // This 'inside-out' loop logic utilizes
       if(p >= end) break; // idle time to minimize inter-byte delays.
@@ -2087,7 +2087,7 @@ void Adafruit_NeoPixel::show(void) {
       mask = 0x80;
     }
   }
-  while(*timeValue < period); // Wait for last bit
+  while(*timeValue < (unsigned)period); // Wait for last bit
   TC_Stop(TC1, 0);
 
 #endif // end Due
