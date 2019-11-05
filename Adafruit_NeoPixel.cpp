@@ -1415,7 +1415,7 @@ void Adafruit_NeoPixel::show(void) {
 #endif
   };
 
-  for(int device = 0; device < (sizeof(PWM)/sizeof(PWM[0])); device++) {
+  for(unsigned int device = 0; device < (sizeof(PWM)/sizeof(PWM[0])); device++) {
     if( (PWM[device]->ENABLE == 0)                            &&
         (PWM[device]->PSEL.OUT[0] & PWM_PSEL_OUT_CONNECT_Msk) &&
         (PWM[device]->PSEL.OUT[1] & PWM_PSEL_OUT_CONNECT_Msk) &&
