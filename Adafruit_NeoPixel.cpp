@@ -154,7 +154,7 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
            (length, pin, type).
 */
 void Adafruit_NeoPixel::updateType(neoPixelType t) {
-  boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
+  bool oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
 
   wOffset = (t >> 6) & 0b11; // See notes in header file
   rOffset = (t >> 4) & 0b11; // regarding R/G/B/W offsets
@@ -167,7 +167,7 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   // If bytes-per-pixel has changed (and pixel data was previously
   // allocated), re-allocate to new size. Will clear any data.
   if(pixels) {
-    boolean newThreeBytesPerPixel = (wOffset == rOffset);
+    bool newThreeBytesPerPixel = (wOffset == rOffset);
     if(newThreeBytesPerPixel != oldThreeBytesPerPixel) updateLength(numLEDs);
   }
 }
