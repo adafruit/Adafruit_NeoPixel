@@ -120,9 +120,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a07b6949674125159484e9e02ef025f7d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a07b6949674125159484e9e02ef025f7d">updateType</a> (<a class="el" href="_adafruit___neo_pixel_8h.html#ab88a50d51bb5488df4379ff49c81fd72">neoPixelType</a> t)</td></tr>
 <tr class="memdesc:a07b6949674125159484e9e02ef025f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the pixel format of a previously-declared <a class="el" href="class_adafruit___neo_pixel.html" title="Class that stores state and functions for interacting with Adafruit NeoPixels and compatible devices...">Adafruit_NeoPixel</a> strip object. If format changes from one of the RGB variants to an RGBW variant (or RGBW to RGB), the old data will be deallocated and new data is cleared. Otherwise, the old data will remain in RAM and is not reordered to the new format, so it's advisable to follow up with <a class="el" href="class_adafruit___neo_pixel.html#ae259682b202be0acd258d6879f4c7121" title="Fill the whole NeoPixel strip with 0 / black / off. ">clear()</a>.  <a href="#a07b6949674125159484e9e02ef025f7d">More...</a><br /></td></tr>
 <tr class="separator:a07b6949674125159484e9e02ef025f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab38dd82a9bae4647a31f7372600bfe7"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#aab38dd82a9bae4647a31f7372600bfe7">canShow</a> (void) const</td></tr>
-<tr class="memdesc:aab38dd82a9bae4647a31f7372600bfe7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether a call to <a class="el" href="class_adafruit___neo_pixel.html#a4bcda7a15591065570d3598cbf970be7" title="Transmit pixel data in RAM to NeoPixels. ">show()</a> will start sending data immediately or will 'block' for a required interval. NeoPixels require a short quiet time (about 300 microseconds) after the last bit is received before the data 'latches' and new data can start being received. Usually one's sketch is implicitly using this time to generate a new frame of animation...but if it finishes very quickly, this function could be used to see if there's some idle time available for some low-priority concurrent task.  <a href="#aab38dd82a9bae4647a31f7372600bfe7">More...</a><br /></td></tr>
-<tr class="separator:aab38dd82a9bae4647a31f7372600bfe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3d67cd31ec9345d98a6eb9045fe98b5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#af3d67cd31ec9345d98a6eb9045fe98b5">canShow</a> (void) const</td></tr>
+<tr class="memdesc:af3d67cd31ec9345d98a6eb9045fe98b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether a call to <a class="el" href="class_adafruit___neo_pixel.html#a4bcda7a15591065570d3598cbf970be7" title="Transmit pixel data in RAM to NeoPixels. ">show()</a> will start sending data immediately or will 'block' for a required interval. NeoPixels require a short quiet time (about 300 microseconds) after the last bit is received before the data 'latches' and new data can start being received. Usually one's sketch is implicitly using this time to generate a new frame of animation...but if it finishes very quickly, this function could be used to see if there's some idle time available for some low-priority concurrent task.  <a href="#af3d67cd31ec9345d98a6eb9045fe98b5">More...</a><br /></td></tr>
+<tr class="separator:af3d67cd31ec9345d98a6eb9045fe98b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#ab86a181ad2aef2e83cd6bcca66eaae1f">getPixels</a> (void) const</td></tr>
 <tr class="memdesc:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a pointer directly to the NeoPixel data buffer in RAM. Pixel data is stored in a device-native format (a la the NEO_* constants) and is not translated here. Applications that access this buffer will need to be aware of the specific data format and handle colors appropriately.  <a href="#ab86a181ad2aef2e83cd6bcca66eaae1f">More...</a><br /></td></tr>
 <tr class="separator:ab86a181ad2aef2e83cd6bcca66eaae1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,14 +162,14 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a82470f2a4c8a1a96508a944243655a99"><td class="memItemLeft" align="right" valign="top"><a id="a82470f2a4c8a1a96508a944243655a99"></a>
-boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a82470f2a4c8a1a96508a944243655a99">is800KHz</a></td></tr>
-<tr class="memdesc:a82470f2a4c8a1a96508a944243655a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">true if 800 KHz pixels <br /></td></tr>
-<tr class="separator:a82470f2a4c8a1a96508a944243655a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe22724953dac6b9d4a7812dbbfbb8a4"><td class="memItemLeft" align="right" valign="top"><a id="abe22724953dac6b9d4a7812dbbfbb8a4"></a>
-boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#abe22724953dac6b9d4a7812dbbfbb8a4">begun</a></td></tr>
-<tr class="memdesc:abe22724953dac6b9d4a7812dbbfbb8a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">true if <a class="el" href="class_adafruit___neo_pixel.html#ac1cb16509be644232ce0e28d250083da" title="Configure NeoPixel pin for output. ">begin()</a> previously called <br /></td></tr>
-<tr class="separator:abe22724953dac6b9d4a7812dbbfbb8a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56919a5e954b1a87ef965c75c6cc68a1"><td class="memItemLeft" align="right" valign="top"><a id="a56919a5e954b1a87ef965c75c6cc68a1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a56919a5e954b1a87ef965c75c6cc68a1">is800KHz</a></td></tr>
+<tr class="memdesc:a56919a5e954b1a87ef965c75c6cc68a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">true if 800 KHz pixels <br /></td></tr>
+<tr class="separator:a56919a5e954b1a87ef965c75c6cc68a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2215c42c8ed043dc43d28592c2c1d750"><td class="memItemLeft" align="right" valign="top"><a id="a2215c42c8ed043dc43d28592c2c1d750"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a2215c42c8ed043dc43d28592c2c1d750">begun</a></td></tr>
+<tr class="memdesc:a2215c42c8ed043dc43d28592c2c1d750"><td class="mdescLeft">&#160;</td><td class="mdescRight">true if <a class="el" href="class_adafruit___neo_pixel.html#ac1cb16509be644232ce0e28d250083da" title="Configure NeoPixel pin for output. ">begin()</a> previously called <br /></td></tr>
+<tr class="separator:a2215c42c8ed043dc43d28592c2c1d750"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8218520ee2ad574f805985ea2c2b0b6"><td class="memItemLeft" align="right" valign="top"><a id="ad8218520ee2ad574f805985ea2c2b0b6"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#ad8218520ee2ad574f805985ea2c2b0b6">numLEDs</a></td></tr>
 <tr class="memdesc:ad8218520ee2ad574f805985ea2c2b0b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of RGB LEDs in strip. <br /></td></tr>
@@ -600,8 +600,8 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 
 </div>
 </div>
-<a id="aab38dd82a9bae4647a31f7372600bfe7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab38dd82a9bae4647a31f7372600bfe7">&#9670;&nbsp;</a></span>canShow()</h2>
+<a id="af3d67cd31ec9345d98a6eb9045fe98b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3d67cd31ec9345d98a6eb9045fe98b5">&#9670;&nbsp;</a></span>canShow()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -610,7 +610,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boolean Adafruit_NeoPixel::canShow </td>
+          <td class="memname">bool Adafruit_NeoPixel::canShow </td>
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
