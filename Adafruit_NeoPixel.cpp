@@ -637,7 +637,7 @@ void Adafruit_NeoPixel::show(void) {
  #endif // defined(PORTD/B/C)
 #endif // defined(PORTF)
 
-#if definedNEO_KHZ400)
+#if defined(NEO_KHZ400)
   } else { // end 800 KHz, do 400 KHz
 
     // Timing is more relaxed; unrolling the inner loop for each bit is
