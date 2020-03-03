@@ -32,9 +32,13 @@ void espShow(
 #define CYCLES_400      (F_CPU /  400000) // 2.5us per bit
 
   uint8_t *p, *end, pix, mask;
-  uint32_t t, time0, time1, period, c, startTime, pinMask;
+  uint32_t t, time0, time1, period, c, startTime;
 
+#ifdef ESP8266
+  uint32_t pinMask;
   pinMask   = _BV(pin);
+#endif
+
   p         =  pixels;
   end       =  p + numBytes;
   pix       = *p++;
