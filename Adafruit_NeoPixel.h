@@ -352,9 +352,15 @@ class Adafruit_NeoPixel {
   volatile uint8_t *port;       ///< Output PORT register
   uint8_t           pinMask;    ///< Output PORT bitmask
 #endif
+
 #if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
   GPIO_TypeDef *gpioPort;       ///< Output GPIO PORT
   uint32_t gpioPin;             ///< Output GPIO PIN
+#endif
+
+#ifdef NRF52_SERIES
+  NRF_PWM_Type* _pwm_dev;
+  uint16_t* _pixels_pattern;
 #endif
 };
 
