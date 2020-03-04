@@ -360,7 +360,7 @@ class Adafruit_NeoPixel {
 
 #ifdef NRF52_SERIES
   NRF_PWM_Type* _pwm_dev;
-  uint16_t* _pixels_pattern;
+  uint16_t* _pwm_dmabuf;
 #endif
 };
 

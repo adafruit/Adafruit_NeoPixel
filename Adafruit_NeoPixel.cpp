@@ -74,7 +74,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint16_t p, neoPixelType t) :
 
 #ifdef NRF52_SERIES
   _pwm_dev = NULL;
-  _pixels_pattern = NULL;
+  _pwm_dmabuf = NULL;
 #endif
 
   updateType(t);
@@ -102,7 +102,7 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 
 #ifdef NRF52_SERIES
   _pwm_dev = NULL;
-  _pixels_pattern = NULL;
+  _pwm_dmabuf = NULL;
 #endif
 }
 
@@ -113,7 +113,7 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   free(pixels);
 
 #ifdef NRF52_SERIES
-  free(_pixels_pattern);
+  free(_pwm_dmabuf);
 
   if (_pwm_dev) {
     _pwm_dev->ENABLE = 0;
@@ -158,10 +158,10 @@ void Adafruit_NeoPixel::updateLength(uint16_t n) {
   }
 
 #ifdef NRF52_SERIES
-  free(_pixels_pattern);
+  free(_pwm_dmabuf);
 
   uint32_t const pattern_size = (numBytes*8+2)*sizeof(uint16_t);
-  _pixels_pattern = (uint16_t*) malloc(pattern_size);
+  _pwm_dmabuf = (uint16_t*) malloc(pattern_size);
 #endif
 }
 
@@ -1489,7 +1489,7 @@ void Adafruit_NeoPixel::show(void) {
                        (PWM_DECODER_MODE_RefreshCount << PWM_DECODER_MODE_Pos);
 
         // Pointer to the memory storing the patter
-        _pwm_dev->SEQ[0].PTR = (uint32_t)(_pixels_pattern) << PWM_SEQ_PTR_PTR_Pos;
+        _pwm_dev->SEQ[0].PTR = (uint32_t)(_pwm_dmabuf) << PWM_SEQ_PTR_PTR_Pos;
 
         // Calculation of the number of steps loaded from memory.
         _pwm_dev->SEQ[0].CNT = (pattern_size/sizeof(uint16_t)) << PWM_SEQ_CNT_CNT_Pos;
@@ -1514,7 +1514,7 @@ void Adafruit_NeoPixel::show(void) {
   }
 
   // there is no memory nor pwm device, we cannot perform show()
-  if ( !_pixels_pattern || !_pwm_dev ) return;
+  if ( !_pwm_dmabuf || !_pwm_dev ) return;
 
   // Since nRF implements non-blocking show()
   // If show() is called again, we must wait for the previous invocation is complete
@@ -1533,11 +1533,11 @@ void Adafruit_NeoPixel::show(void) {
     for(uint8_t mask=0x80; mask>0; mask >>= 1) {
       #if defined(NEO_KHZ400)
       if( !is800KHz ) {
-        _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
+        _pwm_dmabuf[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
       }else
       #endif
       {
-        _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
+        _pwm_dmabuf[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
       }
 
       pos++;
@@ -1545,8 +1545,8 @@ void Adafruit_NeoPixel::show(void) {
   }
 
   // Zero padding to indicate the end of the sequence
-  _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
-  _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
+  _pwm_dmabuf[pos++] = 0 | (0x8000); // Seq end
+  _pwm_dmabuf[pos++] = 0 | (0x8000); // Seq end
 
   // After all of this and many hours of reading the documentation
   // we are ready to start the sequence...
