@@ -1513,48 +1513,48 @@ void Adafruit_NeoPixel::show(void) {
     }
   }
 
-  // If a PWM device is available use DMA
-  if( (_pixels_pattern != NULL) && (_pwm_dev != NULL) ) {
+  // there is no memory nor pwm device, we cannot perform show()
+  if ( !_pixels_pattern || !_pwm_dev ) return;
 
-    // Since nRF implements non-blocking show()
-    // If show() is called again, we must wait for the previous invocation is complete
-    // Started by not ended yet
-    while(_pwm_dev->EVENTS_SEQSTARTED[0] && !_pwm_dev->EVENTS_SEQEND[0]) yield();
+  // Since nRF implements non-blocking show()
+  // If show() is called again, we must wait for the previous invocation is complete
+  // Started by not ended yet
+  while(_pwm_dev->EVENTS_SEQSTARTED[0] && !_pwm_dev->EVENTS_SEQEND[0]) yield();
 
-    // Clear the flag for the event.
-    _pwm_dev->EVENTS_SEQSTARTED[0] = 0;
-    _pwm_dev->EVENTS_SEQEND[0] = 0;
+  // Clear the flag for the event.
+  _pwm_dev->EVENTS_SEQSTARTED[0] = 0;
+  _pwm_dev->EVENTS_SEQEND[0] = 0;
 
-    uint16_t pos = 0; // bit position
+  uint16_t pos = 0; // bit position
 
-    for(uint16_t n=0; n<numBytes; n++) {
-      uint8_t pix = pixels[n];
+  for(uint16_t n=0; n<numBytes; n++) {
+    uint8_t pix = pixels[n];
 
-      for(uint8_t mask=0x80; mask>0; mask >>= 1) {
-        #if defined(NEO_KHZ400)
-        if( !is800KHz ) {
-          _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
-        }else
-        #endif
-        {
-          _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
-        }
-
-        pos++;
+    for(uint8_t mask=0x80; mask>0; mask >>= 1) {
+      #if defined(NEO_KHZ400)
+      if( !is800KHz ) {
+        _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H_400KHz : MAGIC_T0H_400KHz;
+      }else
+      #endif
+      {
+        _pixels_pattern[pos] = (pix & mask) ? MAGIC_T1H : MAGIC_T0H;
       }
+
+      pos++;
     }
+  }
 
-    // Zero padding to indicate the end of the sequence
-    _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
-    _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
+  // Zero padding to indicate the end of the sequence
+  _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
+  _pixels_pattern[pos++] = 0 | (0x8000); // Seq end
 
-    // After all of this and many hours of reading the documentation
-    // we are ready to start the sequence...
-    _pwm_dev->TASKS_SEQSTART[0] = 1;
+  // After all of this and many hours of reading the documentation
+  // we are ready to start the sequence...
+  _pwm_dev->TASKS_SEQSTART[0] = 1;
 
-    // Non blocking implementation, skip waiting for DMA complete
+  // Non blocking implementation, skip waiting for DMA complete
 
-  }// End of nRF52 DMA implementation
+  // End of nRF52 DMA implementation
 
 #elif defined (__SAMD21E17A__) || defined(__SAMD21G18A__)  || defined(__SAMD21E18A__) || defined(__SAMD21J18A__) // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo and others
   // Tried this with a timer/counter, couldn't quite get adequate
