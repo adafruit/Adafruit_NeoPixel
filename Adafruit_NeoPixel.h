@@ -231,7 +231,12 @@ class Adafruit_NeoPixel {
     @return  1 or true if show() will start sending immediately, 0 or false
              if show() would block (meaning some idle time is available).
   */
-  bool           canShow(void) const { return (micros()-endTime) >= 300L; }
+  bool canShow(void) {
+    if (endTime > micros()) {
+      endTime = micros();
+    }
+    return (micros() - endTime) >= 300L;
+  }
   /*!
     @brief   Get a pointer directly to the NeoPixel data buffer in RAM.
              Pixel data is stored in a device-native format (a la the NEO_*
