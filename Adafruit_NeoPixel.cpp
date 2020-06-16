@@ -422,10 +422,10 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t" // 1    PORT = lo
                    "brne headD"
                    "\n" // 2    while(i) (Z flag set above)
-                   :
-                   [byte] "+r"(b), [n1] "+r"(n1), [n2] "+r"(n2), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTD)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2]  "+r"(n2),
+                     [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTD)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTB) || defined(PORTC) || defined(PORTF)
     } else // other PORT(s)
@@ -576,10 +576,10 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "brne headB"
                    "\n"
-                   :
-                   [byte] "+r"(b), [n1] "+r"(n1), [n2] "+r"(n2), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTB)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2 ] "+r"(n2),
+                     [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTB)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTC) || defined(PORTF)
     }
@@ -733,10 +733,10 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "brne headC"
                    "\n"
-                   :
-                   [byte] "+r"(b), [n1] "+r"(n1), [n2] "+r"(n2), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTC)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2 ] "+r"(n2),
+                     [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTC)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTB) || defined(PORTF)
     }
@@ -889,10 +889,10 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "brne headF"
                    "\n"
-                   :
-                   [byte] "+r"(b), [n1] "+r"(n1), [n2] "+r"(n2), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTF)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2 ] "+r"(n2),
+                     [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTF)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTB) || defined(PORTC)
     }
@@ -961,9 +961,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 18)
                  "brne head20"
                  "\n" // 2    if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
-                   [next] "+r"(next), [count] "+w"(i)
-                 : [hi] "r"(hi), [lo] "r"(lo), [ptr] "e"(ptr));
+                 : [ port ] "+e"(port), [ byte ] "+r"(b), [ bit ] "+r"(bit),
+                   [ next ] "+r"(next), [ count ] "+w"(i)
+                 : [ hi ] "r"(hi), [ lo ] "r"(lo), [ ptr ] "e"(ptr));
   }
 #endif // NEO_KHZ400
 
@@ -1073,9 +1073,9 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t" // 4    nop nop nop nop (T = 15)
                    "doneD:"
                    "\n"
-                   : [byte] "+r"(b), [next] "+r"(next), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTD)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ next ] "+r"(next), [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTD)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTB) || defined(PORTC) || defined(PORTF)
     } else // other PORT(s)
@@ -1170,9 +1170,9 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "doneB:"
                    "\n"
-                   : [byte] "+r"(b), [next] "+r"(next), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTB)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ next ] "+r"(next), [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTB)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTC) || defined(PORTF)
     }
@@ -1270,9 +1270,9 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "doneC:"
                    "\n"
-                   : [byte] "+r"(b), [next] "+r"(next), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTC)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ next ] "+r"(next), [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTC)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTB) || defined(PORTF)
     }
@@ -1370,9 +1370,9 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t"
                    "doneC:"
                    "\n"
-                   : [byte] "+r"(b), [next] "+r"(next), [count] "+w"(i)
-                   : [port] "I"(_SFR_IO_ADDR(PORTF)), [ptr] "e"(ptr),
-                     [hi] "r"(hi), [lo] "r"(lo));
+                   : [ byte ] "+r"(b), [ next ] "+r"(next), [ count ] "+w"(i)
+                   : [ port ] "I"(_SFR_IO_ADDR(PORTF)), [ ptr ] "e"(ptr),
+                     [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(PORTD) || defined(PORTB) || defined(PORTC)
     }
@@ -1442,9 +1442,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 28)
                  "brne head30"
                  "\n" // 1-2  if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
-                   [next] "+r"(next), [count] "+w"(i)
-                 : [hi] "r"(hi), [lo] "r"(lo), [ptr] "e"(ptr));
+                 : [ port ] "+e"(port), [ byte ] "+r"(b), [ bit ] "+r"(bit),
+                   [ next ] "+r"(next), [ count ] "+w"(i)
+                 : [ hi ] "r"(hi), [ lo ] "r"(lo), [ ptr ] "e"(ptr));
   }
 #endif // NEO_KHZ400
 
@@ -1512,9 +1512,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 18)
                  "brne head20"
                  "\n" // 2    if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
-                   [next] "+r"(next), [count] "+w"(i)
-                 : [ptr] "e"(ptr), [hi] "r"(hi), [lo] "r"(lo));
+                 : [ port ] "+e"(port), [ byte ] "+r"(b), [ bit ] "+r"(bit),
+                   [ next ] "+r"(next), [ count ] "+w"(i)
+                 : [ ptr ] "e"(ptr), [ hi ] "r"(hi), [ lo ] "r"(lo));
 
 #if defined(NEO_KHZ400)
   } else { // 400 KHz
@@ -1597,9 +1597,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 38)
                  "brne head40"
                  "\n" // 1-2  if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
-                   [next] "+r"(next), [count] "+w"(i)
-                 : [ptr] "e"(ptr), [hi] "r"(hi), [lo] "r"(lo));
+                 : [ port ] "+e"(port), [ byte ] "+r"(b), [ bit ] "+r"(bit),
+                   [ next ] "+r"(next), [ count ] "+w"(i)
+                 : [ ptr ] "e"(ptr), [ hi ] "r"(hi), [ lo ] "r"(lo));
   }
 #endif // NEO_KHZ400
 
@@ -1875,9 +1875,9 @@ void Adafruit_NeoPixel::show(void) {
                "\n\t"
                "L%=_done:"
                "\n\t"
-               : [p] "+r"(p), [pix] "=&r"(pix), [count] "=&r"(count),
-                 [dly] "=&r"(dly), [num] "+r"(num)
-               : [bitmask] "r"(bitmask), [reg] "r"(reg));
+               : [ p ] "+r"(p), [ pix ] "=&r"(pix), [ count ] "=&r"(count),
+                 [ dly ] "=&r"(dly), [ num ] "+r"(num)
+               : [ bitmask ] "r"(bitmask), [ reg ] "r"(reg));
 #else
 #error "Sorry, only 48 MHz is supported, please set Tools > CPU Speed to 48 MHz"
 #endif // F_CPU == 48000000
@@ -2610,9 +2610,9 @@ void Adafruit_NeoPixel::show(void) {
       "\n\t" //; pin := lo
       //    cpsie i            ; enable irq
 
-      : [p] "+r"(p), [pix] "=&r"(pix), [count] "=&r"(count), [mask] "=&r"(mask),
-        [num] "+r"(num)
-      : [bitmask] "r"(bitmask), [reg] "r"(reg));
+      : [ p ] "+r"(p), [ pix ] "=&r"(pix), [ count ] "=&r"(count),
+        [ mask ] "=&r"(mask), [ num ] "+r"(num)
+      : [ bitmask ] "r"(bitmask), [ reg ] "r"(reg));
 
 #elif defined(__SAM3X8E__) // Arduino Due
 
