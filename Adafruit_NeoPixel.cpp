@@ -422,7 +422,7 @@ void Adafruit_NeoPixel::show(void) {
                    "\n\t" // 1    PORT = lo
                    "brne headD"
                    "\n" // 2    while(i) (Z flag set above)
-                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2 ]  "+r"(n2),
+                   : [ byte ] "+r"(b), [ n1 ] "+r"(n1), [ n2 ] "+r"(n2),
                      [ count ] "+w"(i)
                    : [ port ] "I"(_SFR_IO_ADDR(PORTD)), [ ptr ] "e"(ptr),
                      [ hi ] "r"(hi), [ lo ] "r"(lo));
