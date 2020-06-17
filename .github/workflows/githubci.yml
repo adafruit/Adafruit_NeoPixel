@@ -22,9 +22,6 @@ jobs:
     - name: test platforms
       run: python3 ci/build_platform.py main_platforms
 
-    - name: clang
-      run: python3 ci/run-clang-format.py -e "ci/*" -e "bin/*" -r . 
-
     - name: doxygen
       env:
         GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
