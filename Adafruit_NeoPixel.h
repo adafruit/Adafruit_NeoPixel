@@ -47,6 +47,12 @@
 
 #ifdef TARGET_LPC1768
   #include <Arduino.h>
+  #define NEOPIXEL_SHOW_ATTR [[gnu::section(".ramcode"), gnu::optimize("O3")]]
+#endif
+
+#ifndef NEOPIXEL_SHOW_ATTR
+// Define the attributes for the Adafruit_NeoPixel::show function
+  #define NEOPIXEL_SHOW_ATTR
 #endif
 
 // The order of primary colors in the NeoPixel data stream can vary among
@@ -192,7 +198,7 @@ static const uint8_t PROGMEM _NeoPixelGammaTable[256] = {
   182,184,186,188,191,193,195,197,199,202,204,206,209,211,213,215,
   218,220,223,225,227,230,232,235,237,240,242,245,247,250,252,255};
 
-/*! 
+/*!
     @brief  Class that stores state and functions for interacting with
             Adafruit NeoPixels and compatible devices.
 */

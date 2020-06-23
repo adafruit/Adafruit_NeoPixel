@@ -45,10 +45,6 @@
 
 #include "Adafruit_NeoPixel.h"
 
-#if defined(TARGET_LPC1768)
-  #include <time.h>
-#endif
-
 #if defined(NRF52) || defined(NRF52_SERIES)
 #include "nrf.h"
 
@@ -192,7 +188,7 @@ extern "C" void espShow(
            specialized alternative or companion libraries exist that use
            very device-specific peripherals to work around it.
 */
-void Adafruit_NeoPixel::show(void) {
+NEOPIXEL_SHOW_ATTR void Adafruit_NeoPixel::show(void) {
 
   if(!pixels) return;
 
@@ -1857,6 +1853,26 @@ void Adafruit_NeoPixel::show(void) {
 #endif
 
 #elif defined(TARGET_LPC1768)
+#if PIO_FRAMEWORK_VERSION < 2002
+  #error Use Adafruit Neopixel library version 5.0.0 or less
+#endif
+#ifndef NEOPIXEL_DATA_ONE_HIGH
+  // min: 550 typical: 700 max: 5,500
+  #define NEOPIXEL_DATA_ONE_HIGH  700
+#endif
+#ifndef NEOPIXEL_DATA_ONE_LOW
+  // min: 450 typical: 600 max: 5,000
+  #define NEOPIXEL_DATA_ONE_LOW   600
+#endif
+#ifndef NEOPIXEL_DATA_ZERO_HIGH
+  // min: 200  typical: 350 max: 500
+  #define NEOPIXEL_DATA_ZERO_HIGH 300
+#endif
+#ifndef NEOPIXEL_DATA_ZERO_LOW
+  // min: 450 typical: 600 max: 5,000
+  #define NEOPIXEL_DATA_ZERO_LOW  600
+#endif
+
   uint8_t  *ptr, *end, p, bitMask;
   ptr     =  pixels;
   end     =  ptr + numBytes;
@@ -1868,22 +1884,15 @@ void Adafruit_NeoPixel::show(void) {
 #endif
     for(;;) {
       if(p & bitMask) {
-        // data ONE high
-        // min: 550 typ: 700 max: 5,500
-        gpio_set(pin);
-        time::delay_ns(550);
-        // min: 450 typ: 600 max: 5,000
-        gpio_clear(pin);
-        time::delay_ns(450);
+        LPC176x::gpio_set(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ONE_HIGH);
+        LPC176x::gpio_clear(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ONE_LOW);
       } else {
-        // data ZERO high
-        // min: 200  typ: 350 max: 500
-        gpio_set(pin);
-        time::delay_ns(200);
-        // data low
-        // min: 450 typ: 600 max: 5,000
-        gpio_clear(pin);
-        time::delay_ns(450);
+        LPC176x::gpio_set(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ZERO_HIGH);
+        LPC176x::gpio_clear(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ZERO_LOW);
       }
       if(bitMask >>= 1) {
         // Move on to the next pixel
@@ -1896,7 +1905,27 @@ void Adafruit_NeoPixel::show(void) {
     }
 #if defined(NEO_KHZ400)
   } else { // 400 KHz bitstream
-    // ToDo!
+    for(;;) {
+      if(p & bitMask) {
+        LPC176x::gpio_set(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ONE_HIGH * 2);
+        LPC176x::gpio_clear(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ONE_LOW * 2);
+      } else {
+        LPC176x::gpio_set(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ZERO_HIGH * 2);
+        LPC176x::gpio_clear(pin);
+        LPC176x::delay_ns(NEOPIXEL_DATA_ZERO_LOW * 2);
+      }
+      if(bitMask >>= 1) {
+        // Move on to the next pixel
+        asm("nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
   }
 #endif
 #elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
