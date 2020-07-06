@@ -1548,7 +1548,7 @@ void Adafruit_NeoPixel::show(void) {
   }// End of DMA implementation
   // ---------------------------------------------------------------------
   else{
-#ifndef ARDUINO_ARCH_NRF52840     
+#ifndef ARDUINO_ARCH_NRF52840
     // Fall back to DWT
     #if defined(ARDUINO_NRF52_ADAFRUIT)
       // Bluefruit Feather 52 uses freeRTOS
@@ -1708,7 +1708,7 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined (__SAMD51__) // M4
 
-  uint8_t  *ptr, *end, p, bitMask, portNum, bit;
+  uint8_t  *ptr, *end, p, bitMask, portNum;
   uint32_t  pinMask;
 
   portNum =  g_APinDescription[pin].ulPort;
