@@ -45,6 +45,9 @@
 
 #include "Adafruit_NeoPixel.h"
 
+// ENJAMBRACAO
+#define KENDRYTE_K210 1
+
 #if defined(NRF52) || defined(NRF52_SERIES)
 #include "nrf.h"
 
