@@ -1,7 +1,10 @@
 // This is a mash-up of the Due show() code + insights from Michael Miller's
 // ESP8266 work for the NeoPixelBus library: github.com/Makuna/NeoPixelBus
 // Needs to be a separate .c file to enforce ICACHE_RAM_ATTR execution.
+#if defined(K210) 
 #define KENDRYTE_K210 1
+#endif
+
 #if defined(KENDRYTE_K210)
 
 #include <Arduino.h>
