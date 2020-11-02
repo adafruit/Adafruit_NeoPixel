@@ -155,6 +155,8 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     // Free channel again
     rmt_driver_uninstall(config.channel);
     rmt_reserved_channels[channel] = false;
+
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
 }
 
 #endif
