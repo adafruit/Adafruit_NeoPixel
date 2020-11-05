@@ -2,7 +2,7 @@
 // ESP8266 work for the NeoPixelBus library: github.com/Makuna/NeoPixelBus
 // Needs to be a separate .c file to enforce ICACHE_RAM_ATTR execution.
 
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266)
 
 #include <Arduino.h>
 #ifdef ESP8266
