@@ -9,9 +9,7 @@
 
 #if defined(ARDUINO_ARCH_RP2040)
 
-#include <stdio.h>
 #include <stdlib.h>
-#include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 
