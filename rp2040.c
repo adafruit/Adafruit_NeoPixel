@@ -15,39 +15,24 @@
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 
-typedef struct {
-    pin_size_t pin;
-    PIO pio;
-    int sm;
-} Neopixel;
-
-#include "rp2040.pio.h"
-static PIOProgram _neopixelPgm(&neopixel_program);
+#include "rp2040_pio.h"
 
 void rp2040Init(uint8_t pin, bool is800KHz)
 {
-    auto newNeopixel = new Neopixel();
-    newNeopixel->pin = pin;
-    pinMode(pin, OUTPUT); // Main class has done this already but no harm here
-
-    int offset;
-    if (!_neopixelPgm.prepare(&newNeopixel->pio, &newNeopixel->sm, &offset)) {
-        DEBUGCORE("ERROR: tone unable to start, out of PIO resources\n");
-        // ERROR, no free slots
-	      delete newNeopixel;
-        return;
-    }
-    uint offset = pio_add_program(newNeopixel->pio, &ws2812_program);
+    // todo get free sm
+    PIO pio = pio0;
+    int sm = 0;
+    uint offset = pio_add_program(pio, &ws2812_program);
 
     if (is800KHz)
     {
         // 800kHz, 8 bit transfers
-        ws2812_program_init(newNeopixel->pio, newNeopixel->sm, offset, pin, 800000, 8);
+        ws2812_program_init(pio, sm, offset, pin, 800000, 8);
     }
     else
     {
         // 400kHz, 8 bit transfers
-        ws2812_program_init(newNeopixel->pio, newNeopixel->sm, offset, pin, 400000, 8);
+        ws2812_program_init(pio, sm, offset, pin, 400000, 8);
     }
 }
  
