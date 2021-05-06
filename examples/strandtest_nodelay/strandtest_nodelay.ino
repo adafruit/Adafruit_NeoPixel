@@ -71,10 +71,10 @@ void loop() {
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
       case 7:
-        theaterChaseRainbow(50);
+        theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
         break;
       case 6:
-        rainbow(10);
+        rainbow(10); // Flowing rainbow cycle along the whole strip
         break;     
       case 5:
         theaterChase(strip.Color(0, 0, 127), 50); // Blue
@@ -157,12 +157,12 @@ void theaterChaseRainbow(uint8_t wait) {
   for(int i=0; i < pixelNumber; i+3) {
     strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Update delay time  
   }      
-  pixelQueue++;
-  pixelCycle++;
+  pixelQueue++;                           //  Advance current queue  
+  pixelCycle++;                           //  Advance current cycle
   if(pixelQueue >= 3)
-    pixelQueue = 0;
+    pixelQueue = 0;                       //  Loop
   if(pixelCycle >= 256)
-    pixelCycle = 0;
+    pixelCycle = 0;                       //  Loop
 }
 
 // Input a value 0 to 255 to get a color value.
