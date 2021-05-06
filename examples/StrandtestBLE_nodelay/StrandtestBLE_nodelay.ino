@@ -11,9 +11,9 @@
  * To test it, compile this example and use the UART module from the nRF
  * Toolbox App for Android. Edit the interface and send the characters
  * 'a' to 'i' to switch the animation.
- * There is a delay because this example blocks the thread of execution but
- * the change will be shown after the current animation ends. (This might
- * take a couple of seconds)
+ * There is a no delay because this example does not block the threads execution
+ * so the change will be shown immediately and will not need to wait for the current 
+ * animation to end.
  * For more info write us at: info _at- teubi.co
  */
 #include <SPI.h>
