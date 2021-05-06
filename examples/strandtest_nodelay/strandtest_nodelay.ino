@@ -59,15 +59,16 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-  unsigned long currentMillis = millis();
-  if((currentMillis - patternPrevious) >= patternInterval) {
+  unsigned long currentMillis = millis();                     //  Update current time
+  if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
     patternPrevious = currentMillis;
-    patternCurrent++;
-    if(patternCurrent >= 7) patternCurrent = 0;
+    patternCurrent++;                                         //  Advance to next pattern
+    if(patternCurrent >= 7)
+      patternCurrent = 0;
   }
   
-  if(currentMillis - pixelPrevious >= pixelInterval) {
-    pixelPrevious = currentMillis;
+  if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
+    pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
       case 7:
         theaterChaseRainbow(50);
@@ -90,7 +91,7 @@ void loop() {
       case 1:
         colorWipe(strip.Color(0, 255, 0), 50); // Green
         break;        
-      case default:
+      default:
         colorWipe(strip.Color(255, 0, 0), 50); // Red
         break;
     }
@@ -124,7 +125,7 @@ void theaterChase(uint32_t color, int wait) {
     strip.setPixelColor(i + pixelQueue, color); //  Set pixel's color (in RAM)
   }
   strip.show();                             //  Update strip to match
-  for(int i = 0; i < pixelNumber; i + 3;) {
+  for(int i=0; i < pixelNumber; i+3) {
     strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Set pixel's color (in RAM)
   }
   pixelQueue++;                             //  Advance current pixel
@@ -135,27 +136,26 @@ void theaterChase(uint32_t color, int wait) {
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(uint8_t wait) {
   if(pixelInterval != wait)
-    pixelInterval = wait;                   //  Update delay time  
-  for(uint16_t i = 0; i < pixelNumber; i++;) {
-    strip.setPixelColor(i, Wheel((i + pixelCycle) & 255));
+    pixelInterval = wait;                   
+  for(uint16_t i=0; i < pixelNumber; i++) {
+    strip.setPixelColor(i, Wheel((i + pixelCycle) & 255)); //  Update delay time  
   }
-  strip.show();
-  pixelCycle++;
+  strip.show();                             //  Update strip to match
+  pixelCycle++;                             //  Advance current cycle
   if(pixelCycle >= 256)
-    pixelCycle = 0;
+    pixelCycle = 0;                         //  Loop the cycle back to the begining
 }
 
 //Theatre-style crawling lights with rainbow effect
 void theaterChaseRainbow(uint8_t wait) {
   if(pixelInterval != wait)
     pixelInterval = wait;                   //  Update delay time  
-  for(int i = 0; i < pixelNumber; i + 3;) {
-    strip.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255));
+  for(int i=0; i < pixelNumber; i+3) {
+    strip.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255)); //  Update delay time  
   }
   strip.show();
-  i = 0;
-  for( int i = 0; i < pixelNumber; i + 3;) {
-    strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0));
+  for(int i=0; i < pixelNumber; i+3) {
+    strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Update delay time  
   }      
   pixelQueue++;
   pixelCycle++;
@@ -179,4 +179,3 @@ uint32_t Wheel(byte WheelPos) {
   WheelPos -= 170;
   return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
-
