@@ -89,6 +89,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
         if (!rmt_reserved_channels[i]) {
             rmt_reserved_channels[i] = true;
             channel = i;
+            break;
         }
     }
     if (channel == ADAFRUIT_RMT_CHANNEL_MAX) {
