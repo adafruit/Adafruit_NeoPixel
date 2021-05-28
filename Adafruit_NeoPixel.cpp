@@ -57,6 +57,14 @@
 //#define NRF52_DISABLE_INT
 #endif
 
+#if defined(ARDUINO_ARCH_NRF52840)
+#if defined __has_include
+#  if __has_include (<pinDefinitions.h>)
+#    include <pinDefinitions.h>
+#  endif
+#endif
+#endif
+
 /*!
   @brief   NeoPixel constructor when length, pin and pixel type are known
            at compile-time.
