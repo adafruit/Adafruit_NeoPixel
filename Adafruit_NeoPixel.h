@@ -339,6 +339,12 @@ class Adafruit_NeoPixel {
 
  protected:
 
+#if defined (AM_PART_APOLLO3)
+  void apollo3UnsetPad(ap3_gpio_pad_t pad);
+  void apollo3SetPad(ap3_gpio_pad_t pad);
+  void apollo3Show(ap3_gpio_pad_t pad, uint8_t *pixels, uint32_t numBytes, boolean is800KHz);
+#endif // AM_PART_APOLLO3
+
 #ifdef NEO_KHZ400  // If 400 KHz NeoPixel support enabled...
   bool              is800KHz;   ///< true if 800 KHz pixels
 #endif
