@@ -17,8 +17,8 @@ static inline uint32_t _getCycleCount(void) {
 }
 
 #ifdef ESP8266
-void ICACHE_RAM_ATTR espShow(
- uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+IRAM_ATTR void espShow(
+ uint8_t pin, uint8_t *pixels, uint32_t numBytes, __attribute__((unused)) boolean is800KHz) {
 #else
 void espShow(
  uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
