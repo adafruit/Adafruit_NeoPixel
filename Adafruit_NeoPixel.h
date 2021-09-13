@@ -232,10 +232,26 @@ class Adafruit_NeoPixel {
              if show() would block (meaning some idle time is available).
   */
   bool canShow(void) {
-    if (endTime > micros()) {
-      endTime = micros();
+    // It's normal and possible for endTime to exceed micros() if the
+    // 32-bit clock counter has rolled over (about every 70 minutes).
+    // Since both are uint32_t, a negative delta correctly maps back to
+    // positive space, and it would seem like the subtraction below would
+    // suffice. But a problem arises if code invokes show() very
+    // infrequently...the micros() counter may roll over MULTIPLE times in
+    // that interval, the delta calculation is no longer correct and the
+    // next update may stall for a very long time. The check below resets
+    // the latch counter if a rollover has occurred. This can cause an
+    // extra delay of up to 300 microseconds in the rare case where a
+    // show() call happens precisely around the rollover, but that's
+    // neither likely nor especially harmful, vs. other code that might
+    // stall for 30+ minutes, or having to document and frequently remind
+    // and/or provide tech support explaining an unintuitive need for
+    // show() calls at least once an hour.
+    uint32_t now = micros();
+    if (endTime > now) {
+      endTime = now;
     }
-    return (micros() - endTime) >= 300L;
+    return (now - endTime) >= 300L;
   }
   /*!
     @brief   Get a pointer directly to the NeoPixel data buffer in RAM.
