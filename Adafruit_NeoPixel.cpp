@@ -77,7 +77,7 @@
               pixel.
   @return  Adafruit_NeoPixel object. Call the begin() function before use.
 */
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint16_t p, neoPixelType t) :
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t) :
   begun(false), brightness(0), pixels(NULL), endTime(0) {
   updateType(t);
   updateLength(n);
@@ -2244,8 +2244,8 @@ void Adafruit_NeoPixel::show(void) {
            if any, is set to INPUT and the new pin is set to OUTPUT.
   @param   p  Arduino pin number (-1 = no pin).
 */
-void Adafruit_NeoPixel::setPin(uint16_t p) {
-  if(begun && (pin >= 0)) pinMode(pin, INPUT);
+void Adafruit_NeoPixel::setPin(int16_t p) {
+  if(begun && (pin >= 0)) pinMode(pin, INPUT); // Disable existing out pin
   pin = p;
   if(begun) {
     pinMode(p, OUTPUT);
