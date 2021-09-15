@@ -22,6 +22,12 @@
 #include <Arduino.h>
 #include "driver/rmt.h"
 
+#if defined(ESP_IDF_VERSION)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#define HAS_ESP_IDF_4
+#endif
+#endif
+
 // This code is adapted from the ESP-IDF v3.4 RMT "led_strip" example, altered
 // to work with the Arduino version of the ESP-IDF (3.2)
 
@@ -97,7 +103,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
         return;
     }
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#if defined(HAS_ESP_IDF_4)
     rmt_config_t config = RMT_DEFAULT_CONFIG_TX(pin, channel);
     config.clk_div = 2;
 #else
@@ -125,7 +131,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     // Convert NS timings to ticks
     uint32_t counter_clk_hz = 0;
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#if defined(HAS_ESP_IDF_4)
     rmt_get_counter_clock(channel, &counter_clk_hz);
 #else
     // this emulates the rmt_get_counter_clock() function from ESP-IDF 3.4
