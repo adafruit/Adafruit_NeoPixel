@@ -2056,12 +2056,12 @@ void Adafruit_NeoPixel::show(void) {
 
   #define SCALE      VARIANT_MCK / 2UL / 1000000UL
   #define INST       (2UL * F_CPU / VARIANT_MCK)
-  #define TIME_800_0 ((int)(0.40 * SCALE + 0.5) - (5 * INST))
-  #define TIME_800_1 ((int)(0.80 * SCALE + 0.5) - (5 * INST))
-  #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_0 ((int)(0.50 * SCALE + 0.5) - (5 * INST))
-  #define TIME_400_1 ((int)(1.20 * SCALE + 0.5) - (5 * INST))
-  #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) - (5 * INST))
+  #define TIME_800_0 ((int)(0.40 * SCALE + 0.5) + (2 * INST))
+  #define TIME_800_1 ((int)(0.80 * SCALE + 0.5) + (2 * INST))
+  #define PERIOD_800 ((int)(1.25 * SCALE + 0.5) + (2 * INST))
+  #define TIME_400_0 ((int)(0.50 * SCALE + 0.5) + (2 * INST))
+  #define TIME_400_1 ((int)(1.20 * SCALE + 0.5) + (2 * INST))
+  #define PERIOD_400 ((int)(2.50 * SCALE + 0.5) + (2 * INST))
 
   int             pinMask, time0, time1, period, t;
   Pio            *port;
