@@ -2294,6 +2294,171 @@ void Adafruit_NeoPixel::show(void) {
   }
 #endif
 
+//----
+#elif defined(XMC1100_XMC2GO) || defined(XMC1100_H_BRIDGE2GO) || defined(XMC1100_Boot_Kit)  || defined(XMC1300_Boot_Kit)
+
+  // XMC1100/1200/1300 with ARM Cortex M0 are running with 32MHz, XMC1400 runs with 48MHz so may not work
+  // Tried this with a timer/counter, couldn't quite get adequate
+  // resolution.  So yay, you get a load of goofball NOPs...
+
+  uint8_t  *ptr, *end, p, bitMask, portNum;
+  uint32_t  pinMask;
+
+  ptr     =  pixels;
+  end     =  ptr + numBytes;
+  p       = *ptr++;
+  bitMask =  0x80;
+
+  XMC_GPIO_PORT_t*  XMC_port = mapping_port_pin[ pin ].port;
+  uint8_t  XMC_pin           = mapping_port_pin[ pin ].pin;
+
+	uint32_t omrhigh = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_HIGH << XMC_pin;
+	uint32_t omrlow  = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+  if(is800KHz) {
+#endif
+    for(;;) {
+			XMC_port->OMR = omrhigh;
+      asm("nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop;");
+			  XMC_port->OMR = omrlow;
+      } else {
+				XMC_port->OMR = omrlow;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop;");
+      }
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+#ifdef NEO_KHZ400 // untested code
+  } else { // 400 KHz bitstream
+    for(;;) {
+      XMC_port->OMR = omrhigh;
+      asm("nop; nop; nop; nop; nop;");
+      if(p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop;");
+        XMC_port->OMR = omrlow;
+      } else {
+        XMC_port->OMR = omrlow;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop;");
+      }
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+      if(bitMask >>= 1) {
+        asm("nop; nop; nop;");
+      } else {
+        if(ptr >= end) break;
+        p       = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+  }
+
+#endif
+//----
+
+//----
+#elif defined(XMC4700_Relax_Kit) || defined(XMC4800_Relax_Kit)
+
+// XMC4700 and XMC4800 with ARM Cortex M4 are running with 144MHz
+// Tried this with a timer/counter, couldn't quite get adequate
+// resolution.  So yay, you get a load of goofball NOPs...
+
+uint8_t  *ptr, *end, p, bitMask, portNum;
+uint32_t  pinMask;
+
+ptr     =  pixels;
+end     =  ptr + numBytes;
+p       = *ptr++;
+bitMask =  0x80;
+
+XMC_GPIO_PORT_t*   XMC_port = mapping_port_pin[ pin ].port;
+uint8_t            XMC_pin  = mapping_port_pin[ pin ].pin;
+
+uint32_t omrhigh = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_HIGH << XMC_pin;
+uint32_t omrlow  = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
+
+#ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
+if(is800KHz) {
+#endif
+
+  for(;;) {
+    XMC_port->OMR = omrhigh;
+    asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop;");
+    if(p & bitMask) {
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+      XMC_port->OMR = omrlow;
+    } else {
+      XMC_port->OMR = omrlow;
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+    }
+    if(bitMask >>= 1) {
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+    } else {
+      if(ptr >= end) break;
+      p       = *ptr++;
+      bitMask = 0x80;
+    }
+  }
+
+
+#ifdef NEO_KHZ400
+  } else { // 400 KHz bitstream
+    // ToDo!
+  }
+#endif
+//----
+
 #elif defined(__SAMD51__) // M4
 
   uint8_t *ptr, *end, p, bitMask, portNum, bit;
