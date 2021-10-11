@@ -2,7 +2,7 @@
 // ESP8266 work for the NeoPixelBus library: github.com/Makuna/NeoPixelBus
 // Needs to be a separate .c file to enforce ICACHE_RAM_ATTR execution.
 
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266)
 
 #include <Arduino.h>
 #ifdef ESP8266
@@ -17,24 +17,28 @@ static inline uint32_t _getCycleCount(void) {
 }
 
 #ifdef ESP8266
-void ICACHE_RAM_ATTR espShow(
- uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+IRAM_ATTR void espShow(
+ uint8_t pin, uint8_t *pixels, uint32_t numBytes, __attribute__((unused)) boolean is800KHz) {
 #else
 void espShow(
  uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
 #endif
 
-#define CYCLES_800_T0H  (F_CPU / 2500000) // 0.4us
-#define CYCLES_800_T1H  (F_CPU / 1250000) // 0.8us
-#define CYCLES_800      (F_CPU /  800000) // 1.25us per bit
+#define CYCLES_800_T0H  (F_CPU / 2500001) // 0.4us
+#define CYCLES_800_T1H  (F_CPU / 1250001) // 0.8us
+#define CYCLES_800      (F_CPU /  800001) // 1.25us per bit
 #define CYCLES_400_T0H  (F_CPU / 2000000) // 0.5uS
 #define CYCLES_400_T1H  (F_CPU /  833333) // 1.2us
 #define CYCLES_400      (F_CPU /  400000) // 2.5us per bit
 
   uint8_t *p, *end, pix, mask;
-  uint32_t t, time0, time1, period, c, startTime, pinMask;
+  uint32_t t, time0, time1, period, c, startTime;
 
+#ifdef ESP8266
+  uint32_t pinMask;
   pinMask   = _BV(pin);
+#endif
+
   p         =  pixels;
   end       =  p + numBytes;
   pix       = *p++;
