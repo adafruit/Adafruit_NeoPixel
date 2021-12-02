@@ -360,6 +360,10 @@ public:
   */
   static uint32_t gamma32(uint32_t x);
 
+  void rainbow(uint16_t first_hue = 0, int8_t reps = 1,
+               uint8_t saturation = 255, uint8_t brightness = 255,
+               boolean gammify = true);
+
 protected:
 #ifdef NEO_KHZ400 // If 400 KHz NeoPixel support enabled...
   bool is800KHz; ///< true if 800 KHz pixels
