@@ -3379,7 +3379,8 @@ uint32_t Adafruit_NeoPixel::gamma32(uint32_t x) {
                        be offset to complete one or more cycles over the
                        length of the strip.
   @param   reps        Number of cycles of the color wheel over the length
-                       of the strip. Default and minimum is 1.
+                       of the strip. Default is 1. Negative values can be
+                       used to reverse the hue order.
   @param   saturation  Saturation (optional), 0-255 = gray to pure hue,
                        default = 255.
   @param   brightness  Brightness/value (optional), 0-255 = off to max,
@@ -3388,12 +3389,10 @@ uint32_t Adafruit_NeoPixel::gamma32(uint32_t x) {
   @param   gammify     If true (default), apply gamma correction to colors
                        for better appearance.
 */
-void Adafruit_NeoPixel::rainbow(uint16_t first_hue, uint8_t reps,
+void Adafruit_NeoPixel::rainbow(uint16_t first_hue, int8_t reps,
   uint8_t saturation, uint8_t brightness, bool gammify) {
-  if (reps < 1) reps = 1;
-
   for (uint16_t i=0; i<numLEDs; i++) {
-    uint16_t hue = first_hue + (i * reps * 65536UL) / numLEDs;
+    uint16_t hue = first_hue + (i * reps * 65536) / numLEDs;
     uint32_t color = ColorHSV(hue, saturation, brightness);
     if (gammify) color = gamma32(color);
     setPixelColor(i, color);
