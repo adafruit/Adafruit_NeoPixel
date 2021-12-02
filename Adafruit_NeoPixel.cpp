@@ -3389,7 +3389,7 @@ uint32_t Adafruit_NeoPixel::gamma32(uint32_t x) {
                        for better appearance.
 */
 void Adafruit_NeoPixel::rainbow(uint16_t first_hue, uint8_t reps,
-uint8_t saturation, uint8_t brightness, bool gammify) {
+  uint8_t saturation, uint8_t brightness, bool gammify) {
   if (reps < 1) reps = 1;
 
   for (uint16_t i=0; i<numLEDs; i++) {
