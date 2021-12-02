@@ -138,9 +138,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:abccaba27e35bfae27c856e76b46c7924"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#abccaba27e35bfae27c856e76b46c7924">getPixelColor</a> (uint16_t n) const</td></tr>
 <tr class="memdesc:abccaba27e35bfae27c856e76b46c7924"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the color of a previously-set pixel.  <a href="#abccaba27e35bfae27c856e76b46c7924">More...</a><br /></td></tr>
 <tr class="separator:abccaba27e35bfae27c856e76b46c7924"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7a76d206968b9784441ea04cd22dcb6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#af7a76d206968b9784441ea04cd22dcb6">rainbow</a> (uint16_t first_hue=0, uint8_t reps=1, uint8_t saturation=255, uint8_t <a class="el" href="class_adafruit___neo_pixel.html#a983265c34a4008d2c7a9eeb12eebea84">brightness</a>=255, boolean gammify=true)</td></tr>
-<tr class="memdesc:af7a76d206968b9784441ea04cd22dcb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill NeoPixel strip with one or more cycles of hues. Everyone loves the rainbow swirl so much, now it's canon!  <a href="#af7a76d206968b9784441ea04cd22dcb6">More...</a><br /></td></tr>
-<tr class="separator:af7a76d206968b9784441ea04cd22dcb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae22bfa551304293671229229b7a1c759"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#ae22bfa551304293671229229b7a1c759">rainbow</a> (uint16_t first_hue=0, int8_t reps=1, uint8_t saturation=255, uint8_t <a class="el" href="class_adafruit___neo_pixel.html#a983265c34a4008d2c7a9eeb12eebea84">brightness</a>=255, boolean gammify=true)</td></tr>
+<tr class="memdesc:ae22bfa551304293671229229b7a1c759"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill NeoPixel strip with one or more cycles of hues. Everyone loves the rainbow swirl so much, now it's canon!  <a href="#ae22bfa551304293671229229b7a1c759">More...</a><br /></td></tr>
+<tr class="separator:ae22bfa551304293671229229b7a1c759"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -1041,8 +1041,8 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 
 </div>
 </div>
-<a id="af7a76d206968b9784441ea04cd22dcb6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7a76d206968b9784441ea04cd22dcb6">&#9670;&nbsp;</a></span>rainbow()</h2>
+<a id="ae22bfa551304293671229229b7a1c759"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae22bfa551304293671229229b7a1c759">&#9670;&nbsp;</a></span>rainbow()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1056,7 +1056,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramtype">int8_t&#160;</td>
           <td class="paramname"><em>reps</em> = <code>1</code>, </td>
         </tr>
         <tr>
@@ -1089,7 +1089,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">first_hue</td><td>Hue of first pixel, 0-65535, representing one full cycle of the color wheel. Each subsequent pixel will be offset to complete one or more cycles over the length of the strip. </td></tr>
-    <tr><td class="paramname">reps</td><td>Number of cycles of the color wheel over the length of the strip. Default and minimum is 1. </td></tr>
+    <tr><td class="paramname">reps</td><td>Number of cycles of the color wheel over the length of the strip. Default is 1. Negative values can be used to reverse the hue order. </td></tr>
     <tr><td class="paramname">saturation</td><td>Saturation (optional), 0-255 = gray to pure hue, default = 255. </td></tr>
     <tr><td class="paramname">brightness</td><td>Brightness/value (optional), 0-255 = off to max, default = 255. This is distinct and in combination with any configured global strip brightness. </td></tr>
     <tr><td class="paramname">gammify</td><td>If true (default), apply gamma correction to colors for better appearance. </td></tr>
