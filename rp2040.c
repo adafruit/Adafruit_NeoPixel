@@ -57,4 +57,4 @@ void  rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz)
         pio_sm_put_blocking(pio0, 0, ((uint32_t)*pixels++)<< 24);
 }
 
-#endif // KENDRYTE_K210
+#endif // RP2040
