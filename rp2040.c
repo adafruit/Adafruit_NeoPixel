@@ -20,7 +20,7 @@ void rp2040Init(uint8_t pin, bool is800KHz)
     // Find a free SM on one of the PIO's
     PIO pio = pio0;
     int sm = 0;
-    pio_sm = pio_claim_unused_sm(pio, false); // don't panic
+    sm = pio_claim_unused_sm(pio, false); // don't panic
     // Try pio1 if SM not found
     if (sm < 0) {
       pio = pio1;
