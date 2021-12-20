@@ -65,6 +65,13 @@
 #endif
 #endif
 
+#if defined(ARDUINO_ARCH_RP2040)
+#include <stdlib.h>
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "rp2040_pio.h"
+#endif
+
 /*!
   @brief   NeoPixel constructor when length, pin and pixel type are known
            at compile-time.
@@ -82,6 +89,16 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
   updateType(t);
   updateLength(n);
   setPin(p);
+#if defined(ARDUINO_ARCH_RP2040)
+  // Find a free SM on one of the PIO's
+  sm = pio_claim_unused_sm(pio, false); // don't panic
+  // Try pio1 if SM not found
+  if (sm < 0) {
+    pio = pio1;
+    sm = pio_claim_unused_sm(pio, true); // panic if no SM is free
+  }
+  init = true;
+#endif
 }
 
 /*!
@@ -183,9 +200,38 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
   }
 }
 
+// RP2040 specific driver
 #if defined(ARDUINO_ARCH_RP2040)
-extern "C" void rp2040Show(uint16_t pin, uint8_t *pixels, uint32_t numBytes,
-                           uint8_t type);
+void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
+{
+  uint offset = pio_add_program(pio, &ws2812_program);
+
+  if (is800KHz)
+  {
+    // 800kHz, 8 bit transfers
+    ws2812_program_init(pio, sm, offset, pin, 800000, 8);
+  }
+  else
+  {
+    // 400kHz, 8 bit transfers
+    ws2812_program_init(pio, sm, offset, pin, 400000, 8);
+  }
+}
+// Not a user API
+void  Adafruit_NeoPixel::rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz)
+{
+  if (this->init)
+  {
+    // On first pass through initialise the PIO
+    rp2040Init(pin, is800KHz);
+    this->init = false;
+  }
+
+  while(numBytes--)
+    // Bits for transmission must be shifted to top 8 bits
+    pio_sm_put_blocking(pio, sm, ((uint32_t)*pixels++)<< 24);
+}
+
 #endif
 
 #if defined(ESP8266)
