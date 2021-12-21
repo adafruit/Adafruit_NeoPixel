@@ -65,13 +65,6 @@
 #endif
 #endif
 
-#if defined(ARDUINO_ARCH_RP2040)
-#include <stdlib.h>
-#include "hardware/pio.h"
-#include "hardware/clocks.h"
-#include "rp2040_pio.h"
-#endif
-
 /*!
   @brief   NeoPixel constructor when length, pin and pixel type are known
            at compile-time.

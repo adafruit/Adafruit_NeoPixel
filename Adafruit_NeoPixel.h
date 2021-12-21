@@ -54,6 +54,13 @@
 #include <Arduino.h>
 #endif
 
+#if defined(ARDUINO_ARCH_RP2040)
+#include <stdlib.h>
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "rp2040_pio.h"
+#endif
+
 // The order of primary colors in the NeoPixel data stream can vary among
 // device types, manufacturers and even different revisions of the same
 // item.  The third parameter to the Adafruit_NeoPixel constructor encodes
