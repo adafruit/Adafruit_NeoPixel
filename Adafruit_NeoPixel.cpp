@@ -2253,10 +2253,11 @@ void Adafruit_NeoPixel::show(void) {
   }
   // END of NRF52 implementation
 
-#elif defined(__SAMD21E17A__) || defined(__SAMD21G18A__) ||                    \
-    defined(__SAMD21E18A__) ||                                                 \
-    defined(__SAMD21J18A__) // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo
-                            // and others
+#elif defined(__SAMD21E17A__) || defined(__SAMD21G18A__) || \
+      defined(__SAMD21E18A__) || defined(__SAMD21J18A__) || \
+      defined (__SAMD11C14A__)
+  // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo
+  // and others
   // Tried this with a timer/counter, couldn't quite get adequate
   // resolution. So yay, you get a load of goofball NOPs...
 
