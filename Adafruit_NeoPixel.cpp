@@ -3153,6 +3153,38 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
 }
 
 /*!
+  @brief   Set a pixel's color using a 32-bit 'packed' RGB or RGBW value. Sets
+           the color brightness directly, ignoring the global strip brightness.
+  @param   n  Pixel index, starting from 0.
+  @param   c  32-bit color value. Most significant byte is white (for RGBW
+              pixels) or ignored (for RGB pixels), next is red, then green,
+              and least significant byte is blue.
+  @param   brt  Brightness setting, 0=minimum (off), 255=brightest.
+*/
+void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c, uint8_t brt) {
+  if (n < numLEDs) {
+    uint8_t *p, r = (uint8_t)(c >> 16), g = (uint8_t)(c >> 8), b = (uint8_t)c;
+
+    uint8_t newBrightness = brt + 1; // See notes in setBrightness()
+    if (newBrightness) { 
+      r = (r * newBrightness) >> 8;
+      g = (g * newBrightness) >> 8;
+      b = (b * newBrightness) >> 8;
+    }
+    if (wOffset == rOffset) {
+      p = &pixels[n * 3];
+    } else {
+      p = &pixels[n * 4];
+      uint8_t w = (uint8_t)(c >> 24);
+      p[wOffset] = newBrightness ? ((w * newBrightness) >> 8) : w;
+    }
+    p[rOffset] = r;
+    p[gOffset] = g;
+    p[bOffset] = b;
+  }
+}
+
+/*!
   @brief   Fill all or part of the NeoPixel strip with a color.
   @param   c      32-bit color value. Most significant byte is white (for
                   RGBW pixels) or ignored (for RGB pixels), next is red,
