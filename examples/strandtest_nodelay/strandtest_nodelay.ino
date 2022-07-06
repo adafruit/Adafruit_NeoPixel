@@ -125,7 +125,7 @@ void theaterChase(uint32_t color, int wait) {
     strip.setPixelColor(i + pixelQueue, color); //  Set pixel's color (in RAM)
   }
   strip.show();                             //  Update strip to match
-  for(int i=0; i < pixelNumber; i+3) {
+  for(int i=0; i < pixelNumber; i+=3) {
     strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Set pixel's color (in RAM)
   }
   pixelQueue++;                             //  Advance current pixel
@@ -150,11 +150,11 @@ void rainbow(uint8_t wait) {
 void theaterChaseRainbow(uint8_t wait) {
   if(pixelInterval != wait)
     pixelInterval = wait;                   //  Update delay time  
-  for(int i=0; i < pixelNumber; i+3) {
+  for(int i=0; i < pixelNumber; i+=3) {
     strip.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255)); //  Update delay time  
   }
   strip.show();
-  for(int i=0; i < pixelNumber; i+3) {
+  for(int i=0; i < pixelNumber; i+=3) {
     strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Update delay time  
   }      
   pixelQueue++;                           //  Advance current queue  
