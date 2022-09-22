@@ -283,7 +283,8 @@ void Adafruit_NeoPixel::show(void) {
     // to the PORT register as needed.
 
     // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
-#if !(defined(NRF52) || defined(NRF52_SERIES))
+    // ESP32 may not disable interrupts because espShow() uses RMT which tries to acquire locks
+#if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
 
@@ -3031,7 +3032,7 @@ if(is800KHz) {
 
   // END ARCHITECTURE SELECT ------------------------------------------------
 
-#if !(defined(NRF52) || defined(NRF52_SERIES))
+#if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   interrupts();
 #endif
 
