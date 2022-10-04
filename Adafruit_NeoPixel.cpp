@@ -65,6 +65,10 @@
 #endif
 #endif
 
+#if defined(ARDUINO_ARCH_NRF52832)
+#include <pinDefinitions.h>
+#endif
+
 /*!
   @brief   NeoPixel constructor when length, pin and pixel type are known
            at compile-time.
@@ -1752,7 +1756,11 @@ void Adafruit_NeoPixel::show(void) {
 
   uint8_t *p = pixels, *end = p + numBytes, pix, mask;
   volatile uint32_t *set = portSetRegister(pin), *clr = portClearRegister(pin);
+#if defined(ARDUINO_ARCH_NRF52832)
+  uint32_t cyc, msk = digitalPinToPinName(pin);
+#else
   uint32_t cyc, msk = digitalPinToBitMask(pin);
+#endif
 
   ARM_DEMCR |= ARM_DEMCR_TRCENA;
   ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
@@ -2129,7 +2137,7 @@ void Adafruit_NeoPixel::show(void) {
     //    pwm->INTEN |= (PWM_INTEN_SEQEND0_Enabled<<PWM_INTEN_SEQEND0_Pos);
 
 // PSEL must be configured before enabling PWM
-#if defined(ARDUINO_ARCH_NRF52840)
+#if defined(ARDUINO_ARCH_NRF52840) || defined(ARDUINO_ARCH_NRF52832)
     pwm->PSEL.OUT[0] = g_APinDescription[pin].name;
 #else
     pwm->PSEL.OUT[0] = g_ADigitalPinMap[pin];
@@ -2145,7 +2153,7 @@ void Adafruit_NeoPixel::show(void) {
 
     // But we have to wait for the flag to be set.
     while (!pwm->EVENTS_SEQEND[0]) {
-#if defined(ARDUINO_NRF52_ADAFRUIT) || defined(ARDUINO_ARCH_NRF52840)
+#if defined(ARDUINO_NRF52_ADAFRUIT) || defined(ARDUINO_ARCH_NRF52840) || defined(DARDUINO_ARCH_NRF52832)
       yield();
 #endif
     }
@@ -2185,7 +2193,11 @@ void Adafruit_NeoPixel::show(void) {
 #endif
 
     NRF_GPIO_Type *nrf_port = (NRF_GPIO_Type *)digitalPinToPort(pin);
-    uint32_t pinMask = digitalPinToBitMask(pin);
+    #if defined(ARDUINO_ARCH_NRF52832)
+      uint32_t pinMask = digitalPinToPinName(pin);
+    #else
+      uint32_t pinMask = digitalPinToBitMask(pin);
+    #endif
 
     uint32_t CYCLES_X00 = CYCLES_800;
     uint32_t CYCLES_X00_T1H = CYCLES_800_T1H;
