@@ -2153,7 +2153,7 @@ void Adafruit_NeoPixel::show(void) {
 
     // But we have to wait for the flag to be set.
     while (!pwm->EVENTS_SEQEND[0]) {
-#if defined(ARDUINO_NRF52_ADAFRUIT) || defined(ARDUINO_ARCH_NRF52840) || defined(DARDUINO_ARCH_NRF52832)
+#if defined(ARDUINO_NRF52_ADAFRUIT) || defined(ARDUINO_ARCH_NRF52840) || defined(ARDUINO_ARCH_NRF52832)
       yield();
 #endif
     }
