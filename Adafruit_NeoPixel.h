@@ -354,6 +354,46 @@ public:
   }
   static uint32_t ColorHSV(uint16_t hue, uint8_t sat = 255, uint8_t val = 255);
   /*!
+    @brief   Filter out the white brightness from a 32-bit WRGB color.
+    @param   c  32-bit color value. Most significant byte is white (for
+                RGBW pixels) or ignored (for RGB pixels), next is red,
+                then green, and least significant byte is blue.
+    @return  White brightness, 0 to 255.
+  */
+  static uint8_t White(uint32_t c) {
+    return (uint8_t)((c >> 24) & 255);
+  }
+  /*!
+    @brief   Filter out the red brightness from a 32-bit WRGB color.
+    @param   c  32-bit color value. Most significant byte is white (for
+                RGBW pixels) or ignored (for RGB pixels), next is red,
+                then green, and least significant byte is blue.
+    @return  Red brightness, 0 to 255.
+  */
+  static uint8_t Red(uint32_t c) {
+    return (uint8_t)((c >> 16) & 255);
+  }
+  /*!
+    @brief   Filter out the green brightness from a 32-bit WRGB color.
+    @param   c  32-bit color value. Most significant byte is white (for
+                RGBW pixels) or ignored (for RGB pixels), next is red,
+                then green, and least significant byte is blue.
+    @return  Green brightness, 0 to 255.
+  */
+  static uint8_t Green(uint32_t c) {
+    return (uint8_t)((c >> 8) & 255);
+  }
+  /*!
+    @brief   Filter out the blue brightness from a 32-bit WRGB color.
+    @param   c  32-bit color value. Most significant byte is white (for
+                RGBW pixels) or ignored (for RGB pixels), next is red,
+                then green, and least significant byte is blue.
+    @return  Blue brightness, 0 to 255.
+  */
+  static uint8_t Blue(uint32_t c) {
+    return (uint8_t)(c & 255);
+  }
+  /*!
     @brief   A gamma-correction function for 32-bit packed RGB or WRGB
              colors. Makes color transitions appear more perceptially
              correct.
