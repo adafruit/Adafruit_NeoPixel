@@ -162,6 +162,9 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a0151163f5aeaa42676bc31a978d6d666"><td class="memItemLeft" align="right" valign="top">static uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a0151163f5aeaa42676bc31a978d6d666">gamma32</a> (uint32_t x)</td></tr>
 <tr class="memdesc:a0151163f5aeaa42676bc31a978d6d666"><td class="mdescLeft">&#160;</td><td class="mdescRight">A gamma-correction function for 32-bit packed RGB or WRGB colors. Makes color transitions appear more perceptially correct.  <a href="#a0151163f5aeaa42676bc31a978d6d666">More...</a><br /></td></tr>
 <tr class="separator:a0151163f5aeaa42676bc31a978d6d666"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5cec6fe17e75f8d607df305e2fa9db5c"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="_adafruit___neo_pixel_8h.html#ab88a50d51bb5488df4379ff49c81fd72">neoPixelType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_adafruit___neo_pixel.html#a5cec6fe17e75f8d607df305e2fa9db5c">str2order</a> (const char *v)</td></tr>
+<tr class="memdesc:a5cec6fe17e75f8d607df305e2fa9db5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert pixel color order from string (e.g. "BGR") to NeoPixel color order constant (e.g. NEO_BGR). This may be helpful for code that initializes from text configuration rather than compile-time constants.  <a href="#a5cec6fe17e75f8d607df305e2fa9db5c">More...</a><br /></td></tr>
+<tr class="separator:a5cec6fe17e75f8d607df305e2fa9db5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -1096,6 +1099,42 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a5cec6fe17e75f8d607df305e2fa9db5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cec6fe17e75f8d607df305e2fa9db5c">&#9670;&nbsp;</a></span>str2order()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_adafruit___neo_pixel_8h.html#ab88a50d51bb5488df4379ff49c81fd72">neoPixelType</a> Adafruit_NeoPixel::str2order </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Convert pixel color order from string (e.g. "BGR") to NeoPixel color order constant (e.g. NEO_BGR). This may be helpful for code that initializes from text configuration rather than compile-time constants. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">v</td><td>Input string. Should be reasonably sanitized (a 3- or 4- character NUL-terminated string) or undefined behavior may result (output is still a valid NeoPixel order constant, but might not present as expected). Garbage in, garbage out. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>One of the NeoPixel color order constants (e.g. NEO_BGR). NEO_KHZ400 or NEO_KHZ800 bits are not included, nor needed (all NeoPixels actually support 800 KHz it's been found, and this is the default state if no KHZ bits set). </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function is declared static in the class so it can be called without a NeoPixel object (since it's not likely been declared in the code yet). Use <a class="el" href="class_adafruit___neo_pixel.html#a5cec6fe17e75f8d607df305e2fa9db5c" title="Convert pixel color order from string (e.g. &quot;BGR&quot;) to NeoPixel color order constant (e...">Adafruit_NeoPixel::str2order()</a>. </dd></dl>
 
 </div>
 </div>
