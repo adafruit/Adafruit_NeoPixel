@@ -3460,7 +3460,6 @@ void Adafruit_NeoPixel::rainbow(uint16_t first_hue, int8_t reps,
 neoPixelType Adafruit_NeoPixel::str2order(const char *v) {
   int8_t r = 0, g = 0, b = 0, w = -1;
   if (v) {
-    uint8_t i;
     char c;
     for (uint8_t i=0; ((c = tolower(v[i]))); i++) {
       if (c == 'r') r = i;
