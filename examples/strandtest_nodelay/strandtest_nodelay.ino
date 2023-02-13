@@ -68,7 +68,7 @@ void loop() {
   if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
     patternPrevious = currentMillis;
     patternCurrent++;                                         //  Advance to next pattern
-    if(patternCurrent >= 7)
+    if(patternCurrent >= 8)
       patternCurrent = 0;
   }
   
