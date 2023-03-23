@@ -111,12 +111,14 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   if (pin >= 0)
     pinMode(pin, INPUT);
 
+#if defined(ARDUINO_ARCH_RP2040)
   if(!init)
   {
       pio_sm_set_enabled(pio, sm, false);
       pio_remove_program(pio, &ws2812_program, offset);
       pio_sm_unclaim(pio, sm);
   }
+#endif
 }
 
 /*!
