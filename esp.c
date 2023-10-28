@@ -26,7 +26,21 @@
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
 #define HAS_ESP_IDF_4
 #endif
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#define HAS_ESP_IDF_5
 #endif
+#endif
+
+
+
+#ifdef HAS_ESP_IDF_5
+
+
+
+
+
+#else
+
 
 // This code is adapted from the ESP-IDF v3.4 RMT "led_strip" example, altered
 // to work with the Arduino version of the ESP-IDF (3.2)
@@ -175,4 +189,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     gpio_set_direction(pin, GPIO_MODE_OUTPUT);
 }
 
-#endif
+#endif // ifndef IDF5
+ 
+
+#endif // ifdef(ESP32)
