@@ -20,7 +20,6 @@
 #if defined(ESP32)
 
 #include <Arduino.h>
-#include "driver/rmt.h"
 
 #if defined(ESP_IDF_VERSION)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
@@ -35,11 +34,42 @@
 
 #ifdef HAS_ESP_IDF_5
 
+void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+  rmt_data_t led_data[numBytes * 8];
 
+  if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000)) {
+    log_e("Failed to init RMT TX mode on pin %d", pin);
+    return;
+  }
+
+  int i=0;
+  for (int b=0; b < numBytes; b++) {
+    for (int bit=0; bit<8; bit++){
+      if ( pixels[b] & (1<<(7-bit)) ) {
+        led_data[i].level0 = 1;
+        led_data[i].duration0 = 8;
+        led_data[i].level1 = 0;
+        led_data[i].duration1 = 4;
+      } else {
+        led_data[i].level0 = 1;
+        led_data[i].duration0 = 4;
+        led_data[i].level1 = 0;
+        led_data[i].duration1 = 8;
+      }
+      i++;
+    }
+  }
+
+  //pinMode(pin, OUTPUT);  // don't do this, will cause the rmt to disable!
+  rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
+  delay(10);
+}
 
 
 
 #else
+
+#include "driver/rmt.h"
 
 
 // This code is adapted from the ESP-IDF v3.4 RMT "led_strip" example, altered
