@@ -62,7 +62,6 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
 
   //pinMode(pin, OUTPUT);  // don't do this, will cause the rmt to disable!
   rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
-  delay(10);
 }
 
 
