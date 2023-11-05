@@ -77,10 +77,11 @@
               pixel.
   @return  Adafruit_NeoPixel object. Call the begin() function before use.
 */
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t, uint8_t *staticArray)
     : begun(false), brightness(0), pixels(NULL), endTime(0) {
+  staticArray ? isStatic = true : isStatic = false;
   updateType(t);
-  updateLength(n);
+  updateLength(n, staticArray);
   setPin(p);
 #if defined(ARDUINO_ARCH_RP2040)
   // Find a free SM on one of the PIO's
@@ -117,7 +118,9 @@ Adafruit_NeoPixel::Adafruit_NeoPixel()
   @brief   Deallocate Adafruit_NeoPixel object, set data pin back to INPUT.
 */
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
-  free(pixels);
+  if(!isStatic){
+    free(pixels);
+  }
   if (pin >= 0)
     pinMode(pin, INPUT);
 }
@@ -143,17 +146,23 @@ void Adafruit_NeoPixel::begin(void) {
            'new' keyword with the first constructor syntax (length, pin,
            type).
 */
-void Adafruit_NeoPixel::updateLength(uint16_t n) {
-  free(pixels); // Free existing data (if any)
+void Adafruit_NeoPixel::updateLength(uint16_t n, uint8_t *staticArray) {
 
-  // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * ((wOffset == rOffset) ? 3 : 4);
-  if ((pixels = (uint8_t *)malloc(numBytes))) {
-    memset(pixels, 0, numBytes);
-    numLEDs = n;
+  if(staticArray){
+    pixels = staticArray;
   } else {
-    numLEDs = numBytes = 0;
+    free(pixels); // Free existing data (if any)
+
+    // Allocate new data -- note: ALL PIXELS ARE CLEARED
+    numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+    if ((pixels = (uint8_t *)malloc(numBytes))) {
+      memset(pixels, 0, numBytes);
+      numLEDs = n;
+    } else {
+      numLEDs = numBytes = 0;
+    }
   }
+  
 }
 
 /*!
@@ -186,10 +195,12 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 
   // If bytes-per-pixel has changed (and pixel data was previously
   // allocated), re-allocate to new size. Will clear any data.
-  if (pixels) {
-    bool newThreeBytesPerPixel = (wOffset == rOffset);
-    if (newThreeBytesPerPixel != oldThreeBytesPerPixel)
-      updateLength(numLEDs);
+  if(!isStatic){
+    if (pixels) {
+      bool newThreeBytesPerPixel = (wOffset == rOffset);
+      if (newThreeBytesPerPixel != oldThreeBytesPerPixel)
+        updateLength(numLEDs);
+    }
   }
 }
 

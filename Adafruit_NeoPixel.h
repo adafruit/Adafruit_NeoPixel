@@ -217,7 +217,7 @@ class Adafruit_NeoPixel {
 public:
   // Constructor: number of LEDs, pin number, LED type
   Adafruit_NeoPixel(uint16_t n, int16_t pin = 6,
-                    neoPixelType type = NEO_GRB + NEO_KHZ800);
+                    neoPixelType type = NEO_GRB + NEO_KHZ800, uint8_t *staticArray = nullptr);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
@@ -230,7 +230,7 @@ public:
   void fill(uint32_t c = 0, uint16_t first = 0, uint16_t count = 0);
   void setBrightness(uint8_t);
   void clear(void);
-  void updateLength(uint16_t n);
+  void updateLength(uint16_t n, uint8_t *staticArray = nullptr);
   void updateType(neoPixelType t);
   /*!
     @brief   Check whether a call to show() will start sending data
@@ -383,6 +383,7 @@ protected:
 #ifdef NEO_KHZ400 // If 400 KHz NeoPixel support enabled...
   bool is800KHz; ///< true if 800 KHz pixels
 #endif
+  bool isStatic;      ///< true if a static array is used
   bool begun;         ///< true if begin() previously called
   uint16_t numLEDs;   ///< Number of RGB LEDs in strip
   uint16_t numBytes;  ///< Size of 'pixels' buffer below
