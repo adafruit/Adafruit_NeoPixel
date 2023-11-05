@@ -217,7 +217,7 @@ class Adafruit_NeoPixel {
 public:
   // Constructor: number of LEDs, pin number, LED type
   Adafruit_NeoPixel(uint16_t n, int16_t pin = 6,
-                    neoPixelType type = NEO_GRB + NEO_KHZ800, uint8_t *staticArray = nullptr);
+                    neoPixelType type = NEO_GRB + NEO_KHZ800, uint8_t *s = nullptr);
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
@@ -230,7 +230,7 @@ public:
   void fill(uint32_t c = 0, uint16_t first = 0, uint16_t count = 0);
   void setBrightness(uint8_t);
   void clear(void);
-  void updateLength(uint16_t n, uint8_t *staticArray = nullptr);
+  void updateLength(uint16_t n, uint8_t *s = nullptr);
   void updateType(neoPixelType t);
   /*!
     @brief   Check whether a call to show() will start sending data
