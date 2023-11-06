@@ -143,7 +143,7 @@ void Adafruit_NeoPixel::begin(void) {
            strip object. Old data is deallocated and new data is cleared.
            Pin number and pixel format are unchanged.
   @param   n  New length of strip, in pixels.
-  @param   s  pointer to the static array for the LED Values. If there is not 
+  @param   s  Pointer to the static array for the LED Values. If there is not 
               static array, default arguement is nullptr
   @note    This function is deprecated, here only for old projects that
            may still be calling it. New projects should instead use the
@@ -152,8 +152,10 @@ void Adafruit_NeoPixel::begin(void) {
 */
 void Adafruit_NeoPixel::updateLength(uint16_t n, uint8_t *s) {
 
-  if(staticArray){
-    pixels = staticArray;
+  if(s){
+    numLEDs = n;
+    numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+    pixels = s;
   } else {
     free(pixels); // Free existing data (if any)
 
