@@ -2914,7 +2914,89 @@ if(is800KHz) {
     ; // Wait for last bit
   TC_Stop(TC1, 0);
 
-#endif // end Due
+
+// RENESAS including UNO R4
+#elif defined(ARDUINO_ARCH_RENESAS) || defined(ARDUINO_ARCH_RENESAS_UNO) || defined(ARDUINO_ARCH_RENESAS_PORTENTA)
+
+// Definition for a single channel clockless controller for RA4M1 (Cortex M4)
+// See clockless.h for detailed info on how the template parameters are used.
+#define ARM_DEMCR               (*(volatile uint32_t *)0xE000EDFC) // Debug Exception and Monitor Control
+#define ARM_DEMCR_TRCENA                (1 << 24)        // Enable debugging & monitoring blocks
+#define ARM_DWT_CTRL            (*(volatile uint32_t *)0xE0001000) // DWT control register
+#define ARM_DWT_CTRL_CYCCNTENA          (1 << 0)                // Enable cycle count
+#define ARM_DWT_CYCCNT          (*(volatile uint32_t *)0xE0001004) // Cycle count register
+
+#define F_CPU 48000000
+#define CYCLES_800_T0H (F_CPU / 4000000)
+#define CYCLES_800_T1H (F_CPU / 1250000)
+#define CYCLES_800 (F_CPU / 800000)
+#define CYCLES_400_T0H (F_CPU / 2000000)
+#define CYCLES_400_T1H (F_CPU / 833333)
+#define CYCLES_400 (F_CPU / 400000)
+
+  uint8_t *p = pixels, *end = p + numBytes, pix, mask;
+
+  bsp_io_port_pin_t io_pin = g_pin_cfg[pin].pin;
+  #define PIN_IO_PORT_ADDR(pn)      (R_PORT0 + ((uint32_t) (R_PORT1 - R_PORT0) * ((pn) >> 8u)))
+
+  volatile uint16_t *set = &(PIN_IO_PORT_ADDR(io_pin)->POSR);
+  volatile uint16_t *clr = &(PIN_IO_PORT_ADDR(io_pin)->PORR);
+  uint16_t msk = (1U << (io_pin & 0xFF));
+
+  uint32_t cyc;
+
+  ARM_DEMCR |= ARM_DEMCR_TRCENA;
+  ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
+
+#if defined(NEO_KHZ400) // 800 KHz check needed only if 400 KHz support enabled
+  if (is800KHz) {
+#endif
+    cyc = ARM_DWT_CYCCNT + CYCLES_800;
+    while (p < end) {
+      pix = *p++;
+      for (mask = 0x80; mask; mask >>= 1) {
+        while (ARM_DWT_CYCCNT - cyc < CYCLES_800)
+          ;
+        cyc = ARM_DWT_CYCCNT;
+        *set = msk;
+        if (pix & mask) {
+          while (ARM_DWT_CYCCNT - cyc < CYCLES_800_T1H)
+            ;
+        } else {
+          while (ARM_DWT_CYCCNT - cyc < CYCLES_800_T0H)
+            ;
+        }
+        *clr = msk;
+      }
+    }
+    while (ARM_DWT_CYCCNT - cyc < CYCLES_800)
+      ;
+#if defined(NEO_KHZ400)
+  } else { // 400 kHz bitstream
+    cyc = ARM_DWT_CYCCNT + CYCLES_400;
+    while (p < end) {
+      pix = *p++;
+      for (mask = 0x80; mask; mask >>= 1) {
+        while (ARM_DWT_CYCCNT - cyc < CYCLES_400)
+          ;
+        cyc = ARM_DWT_CYCCNT;
+        *set = msk;
+        if (pix & mask) {
+          while (ARM_DWT_CYCCNT - cyc < CYCLES_400_T1H)
+            ;
+        } else {
+          while (ARM_DWT_CYCCNT - cyc < CYCLES_400_T0H)
+            ;
+        }
+        *clr = msk;
+      }
+    }
+    while (ARM_DWT_CYCCNT - cyc < CYCLES_400)
+      ;
+  }
+#endif // NEO_KHZ400
+
+#endif // ARM
 
   // END ARM ----------------------------------------------------------------
 
