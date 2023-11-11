@@ -3045,6 +3045,12 @@ if(is800KHz) {
   @param   p  Arduino pin number (-1 = no pin).
 */
 void Adafruit_NeoPixel::setPin(int16_t p) {
+#if defined(ESP32) && defined(RGB_BUILTIN)
+    if((p == RGB_BUILTIN) && (RGB_BUILTIN > SOC_GPIO_PIN_COUNT)){
+      p -= SOC_GPIO_PIN_COUNT;
+  }
+#endif
+
   if (begun && (pin >= 0))
     pinMode(pin, INPUT); // Disable existing out pin
   pin = p;
