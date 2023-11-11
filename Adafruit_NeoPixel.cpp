@@ -2256,7 +2256,7 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined(__SAMD21E17A__) || defined(__SAMD21G18A__) || \
       defined(__SAMD21E18A__) || defined(__SAMD21J18A__) || \
-      defined (__SAMD11C14A__)
+      defined(__SAMD11C14A__) || defined(__SAMD21G17A__)
   // Arduino Zero, Gemma/Trinket M0, SODAQ Autonomo
   // and others
   // Tried this with a timer/counter, couldn't quite get adequate
