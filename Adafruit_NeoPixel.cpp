@@ -199,6 +199,18 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 
 // RP2040 specific driver
 #if defined(ARDUINO_ARCH_RP2040)
+void  Adafruit_NeoPixel::rp2040PioProgramInit(uint8_t pin, bool is800KHz) {
+  if (is800KHz)
+  {
+    // 800kHz, 8 bit transfers
+    ws2812_program_init(pio, pio_sm, pio_program_offset, pin, 800000, 8);
+  }
+  else
+  {
+    // 400kHz, 8 bit transfers
+    ws2812_program_init(pio, pio_sm, pio_program_offset, pin, 400000, 8);
+  }
+}
 void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
 {
   // Find a PIO with enough available space in its instruction memory
@@ -213,16 +225,7 @@ void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
   // Find a free SM on one of the PIO's
   pio_sm = pio_claim_unused_sm(pio, true); // panic if no SM is free
   
-  if (is800KHz)
-  {
-    // 800kHz, 8 bit transfers
-    ws2812_program_init(pio, pio_sm, pio_program_offset, pin, 800000, 8);
-  }
-  else
-  {
-    // 400kHz, 8 bit transfers
-    ws2812_program_init(pio, pio_sm, pio_program_offset, pin, 400000, 8);
-  }
+  rp2040PioProgramInit(pin, is800KHz);
 
   this->init = false;
 }
@@ -3144,11 +3147,21 @@ if(is800KHz) {
 */
 void Adafruit_NeoPixel::setPin(int16_t p) {
   if (begun && (pin >= 0))
+  #if defined(ARDUINO_ARCH_RP2040)
+    pio_sm_set_enabled(pio, pio_sm, false);
+  #endif
     pinMode(pin, INPUT); // Disable existing out pin
   pin = p;
   if (begun) {
     pinMode(p, OUTPUT);
     digitalWrite(p, LOW);
+  #if defined(ARDUINO_ARCH_RP2040)
+  #ifdef NEO_KHZ400
+    rp2040PioProgramInit(pin, is800KHz);
+  #else
+    rp2040PioProgramInit(pin, true);
+  #endif
+#endif
   }
 #if defined(__AVR__)
   port = portOutputRegister(digitalPinToPort(p));
