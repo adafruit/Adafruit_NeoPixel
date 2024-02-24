@@ -404,7 +404,8 @@ protected:
 #endif
 #if defined(ARDUINO_ARCH_RP2040)
   PIO pio = pio0;
-  int sm = 0;
+  int pio_sm = -1;
+  uint pio_program_offset = 0;
   bool init = true;
 #endif
 };
