@@ -133,6 +133,10 @@ void Adafruit_NeoPixel::begin(void) {
   if (pin >= 0) {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
+
+    #if defined(ARDUINO_ARCH_RP2040)
+    rp2040PioProgramInit(pin, is800KHz);
+    #endif
   }
   begun = true;
 }
@@ -225,15 +229,13 @@ void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
   // Find a free SM on one of the PIO's
   pio_sm = pio_claim_unused_sm(pio, true); // panic if no SM is free
   
-  rp2040PioProgramInit(pin, is800KHz);
-
-  this->init = false;
+  init = false;
 }
 
 // Not a user API
 void  Adafruit_NeoPixel::rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz)
 {
-  if (this->init)
+  if (init)
   {
     // On first pass through initialise the PIO
     rp2040Init(pin, is800KHz);
@@ -3146,21 +3148,25 @@ if(is800KHz) {
   @param   p  Arduino pin number (-1 = no pin).
 */
 void Adafruit_NeoPixel::setPin(int16_t p) {
-  if (begun && (pin >= 0))
+  if (begun && (pin >= 0)) {
   #if defined(ARDUINO_ARCH_RP2040)
-    pio_sm_set_enabled(pio, pio_sm, false);
+    if (!init)
+      pio_sm_set_enabled(pio, pio_sm, false);
   #endif
     pinMode(pin, INPUT); // Disable existing out pin
+  }
   pin = p;
   if (begun) {
     pinMode(p, OUTPUT);
     digitalWrite(p, LOW);
   #if defined(ARDUINO_ARCH_RP2040)
+  if (!init) {
   #ifdef NEO_KHZ400
     rp2040PioProgramInit(pin, is800KHz);
   #else
     rp2040PioProgramInit(pin, true);
   #endif
+  }
 #endif
   }
 #if defined(__AVR__)
