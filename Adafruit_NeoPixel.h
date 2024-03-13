@@ -376,7 +376,7 @@ public:
 private:
 #if defined(ARDUINO_ARCH_RP2040)
   void  rp2040PioProgramInit(uint8_t pin, bool is800KHz);
-  void  rp2040Init(uint8_t pin, bool is800KHz);
+  void  rp2040Init(bool is800KHz);
   void  rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz);
 #endif
 

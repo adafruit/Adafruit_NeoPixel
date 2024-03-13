@@ -84,9 +84,9 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
   setPin(p);
 #if defined(ARDUINO_ARCH_RP2040)
   #ifdef NEO_KHZ400
-  rp2040Init(p, is800KHz);
+  rp2040Init(is800KHz);
   #else
-  rp2040Init(p, true);
+  rp2040Init(true);
   #endif
 #endif
 }
@@ -215,11 +215,11 @@ void  Adafruit_NeoPixel::rp2040PioProgramInit(uint8_t pin, bool is800KHz) {
     ws2812_program_init(pio, pio_sm, pio_program_offset, pin, 400000, 8);
   }
 }
-void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
+void Adafruit_NeoPixel::rp2040Init(bool is800KHz)
 {
   // Find a PIO with enough available space in its instruction memory
   pio = pio0;
-  if (!pio_can_add_program(this->pio, &ws2812_program)) {
+  if (!pio_can_add_program(pio, &ws2812_program)) {
     pio = pio1;
   }
 
@@ -238,9 +238,9 @@ void  Adafruit_NeoPixel::rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBy
   if (init)
   {
     // On first pass through initialise the PIO
-    rp2040Init(pin, is800KHz);
+    rp2040Init(is800KHz);
   }
-
+  
   while(numBytes--)
     // Bits for transmission must be shifted to top 8 bits
     pio_sm_put_blocking(pio, pio_sm, ((uint32_t)*pixels++)<< 24);
@@ -3152,7 +3152,7 @@ void Adafruit_NeoPixel::setPin(int16_t p) {
   #if defined(ARDUINO_ARCH_RP2040)
     if (!init)
       pio_sm_set_enabled(pio, pio_sm, false);
-  #endif
+      #endif
     pinMode(pin, INPUT); // Disable existing out pin
   }
   pin = p;
