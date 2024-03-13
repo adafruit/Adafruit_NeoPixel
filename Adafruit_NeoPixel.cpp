@@ -82,13 +82,6 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
   updateType(t);
   updateLength(n);
   setPin(p);
-#if defined(ARDUINO_ARCH_RP2040)
-  #ifdef NEO_KHZ400
-  rp2040Init(is800KHz);
-  #else
-  rp2040Init(true);
-  #endif
-#endif
 }
 
 /*!
@@ -3155,6 +3148,17 @@ void Adafruit_NeoPixel::setPin(int16_t p) {
       #endif
     pinMode(pin, INPUT); // Disable existing out pin
   }
+
+  #if defined(ARDUINO_ARCH_RP2040)
+  if (init) {
+    #ifdef NEO_KHZ400
+    rp2040Init(is800KHz);
+    #else
+    rp2040Init(true);
+    #endif
+  }
+  #endif
+  
   pin = p;
   if (begun) {
     pinMode(p, OUTPUT);
