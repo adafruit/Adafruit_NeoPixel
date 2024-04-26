@@ -42,6 +42,8 @@ unsigned long pixelPrevious = 0;        // Previous Pixel Millis
 unsigned long patternPrevious = 0;      // Previous Pattern Millis
 int           patternCurrent = 0;       // Current Pattern Number
 int           patternInterval = 5000;   // Pattern Interval (ms)
+bool          patternComplete = false;
+
 int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
@@ -65,13 +67,15 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
   unsigned long currentMillis = millis();                     //  Update current time
-  if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
+  if( patternComplete || (currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
+    patternComplete = false;
     patternPrevious = currentMillis;
     patternCurrent++;                                         //  Advance to next pattern
+    pixelCurrent = 0;
     if(patternCurrent >= 7)
       patternCurrent = 0;
   }
-  
+
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
@@ -116,8 +120,10 @@ void colorWipe(uint32_t color, int wait) {
   strip.setPixelColor(pixelCurrent, color); //  Set pixel's color (in RAM)
   strip.show();                             //  Update strip to match
   pixelCurrent++;                           //  Advance current pixel
-  if(pixelCurrent >= pixelNumber)           //  Loop the pattern from the first LED
+  if(pixelCurrent >= pixelNumber) {         //  Loop the pattern from the first LED
     pixelCurrent = 0;
+    patternComplete = true;
+  }
 }
 
 // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
