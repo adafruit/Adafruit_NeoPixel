@@ -42,10 +42,11 @@ unsigned long pixelPrevious = 0;        // Previous Pixel Millis
 unsigned long patternPrevious = 0;      // Previous Pattern Millis
 int           patternCurrent = 0;       // Current Pattern Number
 int           patternInterval = 5000;   // Pattern Interval (ms)
+bool          patternComplete = false;
+
 int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
-uint16_t      pixelCurrent = 0;         // Pattern Current Pixel Number
 uint16_t      pixelNumber = LED_COUNT;  // Total Number of Pixels
 
 // setup() function -- runs once at startup --------------------------------
@@ -65,13 +66,14 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
   unsigned long currentMillis = millis();                     //  Update current time
-  if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
+  if( patternComplete || (currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
+    patternComplete = false;
     patternPrevious = currentMillis;
     patternCurrent++;                                         //  Advance to next pattern
     if(patternCurrent >= 7)
       patternCurrent = 0;
   }
-  
+
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
@@ -111,31 +113,43 @@ void loop() {
 // strip.Color(red, green, blue) as shown in the loop() function above),
 // and a delay time (in milliseconds) between pixels.
 void colorWipe(uint32_t color, int wait) {
-  if(pixelInterval != wait)
-    pixelInterval = wait;                   //  Update delay time
-  strip.setPixelColor(pixelCurrent, color); //  Set pixel's color (in RAM)
-  strip.show();                             //  Update strip to match
-  pixelCurrent++;                           //  Advance current pixel
-  if(pixelCurrent >= pixelNumber)           //  Loop the pattern from the first LED
-    pixelCurrent = 0;
+  static uint16_t current_pixel = 0;
+  pixelInterval = wait;                        //  Update delay time
+  strip.setPixelColor(current_pixel++, color); //  Set pixel's color (in RAM)
+  strip.show();                                //  Update strip to match
+  if(current_pixel >= pixelNumber) {           //  Loop the pattern from the first LED
+    current_pixel = 0;
+    patternComplete = true;
+  }
 }
 
 // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
 // a la strip.Color(r,g,b) as mentioned above), and a delay time (in ms)
 // between frames.
 void theaterChase(uint32_t color, int wait) {
-  if(pixelInterval != wait)
-    pixelInterval = wait;                   //  Update delay time
-  for(int i = 0; i < pixelNumber; i++) {
-    strip.setPixelColor(i + pixelQueue, color); //  Set pixel's color (in RAM)
+  static uint32_t loop_count = 0;
+  static uint16_t current_pixel = 0;
+
+  pixelInterval = wait;                   //  Update delay time
+
+  strip.clear();
+
+  for(int c=current_pixel; c < pixelNumber; c += 3) {
+    strip.setPixelColor(c, color);
   }
-  strip.show();                             //  Update strip to match
-  for(int i=0; i < pixelNumber; i+=3) {
-    strip.setPixelColor(i + pixelQueue, strip.Color(0, 0, 0)); //  Set pixel's color (in RAM)
+  strip.show();
+
+  current_pixel++;
+  if (current_pixel >= 3) {
+    current_pixel = 0;
+    loop_count++;
   }
-  pixelQueue++;                             //  Advance current pixel
-  if(pixelQueue >= 3)
-    pixelQueue = 0;                         //  Loop the pattern from the first LED
+
+  if (loop_count >= 10) {
+    current_pixel = 0;
+    loop_count = 0;
+    patternComplete = true;
+  }
 }
 
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
