@@ -82,16 +82,6 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
   updateType(t);
   updateLength(n);
   setPin(p);
-#if defined(ARDUINO_ARCH_RP2040)
-  // Find a free SM on one of the PIO's
-  sm = pio_claim_unused_sm(pio, false); // don't panic
-  // Try pio1 if SM not found
-  if (sm < 0) {
-    pio = pio1;
-    sm = pio_claim_unused_sm(pio, true); // panic if no SM is free
-  }
-  init = true;
-#endif
 }
 
 /*!
@@ -120,6 +110,15 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   free(pixels);
   if (pin >= 0)
     pinMode(pin, INPUT);
+
+#if defined(ARDUINO_ARCH_RP2040)
+  if(!init)
+  {
+      pio_sm_set_enabled(pio, sm, false);
+      pio_remove_program(pio, &ws2812_program, offset);
+      pio_sm_unclaim(pio, sm);
+  }
+#endif
 }
 
 /*!
@@ -197,7 +196,18 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 #if defined(ARDUINO_ARCH_RP2040)
 void Adafruit_NeoPixel::rp2040Init(uint8_t pin, bool is800KHz)
 {
-  uint offset = pio_add_program(pio, &ws2812_program);
+    
+
+  // Find a free SM on one of the PIO's
+  sm = pio_claim_unused_sm(pio, false); // don't panic
+  // Try pio1 if SM not found
+  if (sm < 0) {
+    pio = pio1;
+    sm = pio_claim_unused_sm(pio, true); // panic if no SM is free
+  }
+  init = true;
+
+  offset = pio_add_program(pio, &ws2812_program);
 
   if (is800KHz)
   {

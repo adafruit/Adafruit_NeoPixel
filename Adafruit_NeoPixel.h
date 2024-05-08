@@ -406,6 +406,7 @@ protected:
   PIO pio = pio0;
   int sm = 0;
   bool init = true;
+  uint offset;
 #endif
 };
 
