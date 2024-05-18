@@ -3127,13 +3127,23 @@ if(is800KHz) {
   @param   p  Arduino pin number (-1 = no pin).
 */
 void Adafruit_NeoPixel::setPin(int16_t p) {
-  if (begun && (pin >= 0))
-    pinMode(pin, INPUT); // Disable existing out pin
-  pin = p;
   if (begun) {
     pinMode(p, OUTPUT);
     digitalWrite(p, LOW);
   }
+  #if defined(ARDUINO_ARCH_RP2040)
+  if (!init)
+  {
+    delayMicroseconds(100);
+    pio_gpio_init(pio, p);
+    pio_sm_set_consecutive_pindirs(pio, sm, p, 1, true);
+    pio_sm_set_sideset_pins(pio, sm, p);
+  }
+  #endif
+  if (begun && (pin >= 0))
+    pinMode(pin, INPUT); // Disable existing out pin
+  pin = p;
+  
 #if defined(__AVR__)
   port = portOutputRegister(digitalPinToPort(p));
   pinMask = digitalPinToBitMask(p);
