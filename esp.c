@@ -35,33 +35,72 @@
 #ifdef HAS_ESP_IDF_5
 
 void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
-  rmt_data_t led_data[numBytes * 8];
+  // Note: Not thread-safe!!! Also because rmtPin is shared between
+  //  all instances, we will end up releasing/initializing the RMT
+  //  channels each time we invoke on different pins. This is probably
+  //  ok, just not efficient. led_data will be allocated with enough
+  //  space for the largest instance but data is not used between
+  //  calls so this should be fine.
+  static rmt_data_t *led_data = NULL;
+  static uint32_t led_data_size = 0;
+  static int rmtPin = -1;
 
-  if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000)) {
-    log_e("Failed to init RMT TX mode on pin %d", pin);
+  uint32_t requiredSize = numBytes * 8;
+  if (requiredSize > led_data_size) {
+    free(led_data);
+    if (led_data = (rmt_data_t *)malloc(requiredSize * sizeof(rmt_data_t))) {
+      led_data_size = requiredSize;
+    } else {
+      led_data_size = 0;
+    }
+  } else if (requiredSize == 0) {
+    // To release RMT resources (RMT channels and led_data), call
+    //  .updateLength(0) to set number of pixels/bytes to zero,
+    //  then call .show() to invoke this code and free resources.
+    free(led_data);
+    led_data = NULL;
+    if (rmtPin >= 0) {
+      rmtDeinit(rmtPin);
+      rmtPin = -1;
+    }
+    led_data_size = 0;
     return;
   }
 
-  int i=0;
-  for (int b=0; b < numBytes; b++) {
-    for (int bit=0; bit<8; bit++){
-      if ( pixels[b] & (1<<(7-bit)) ) {
-        led_data[i].level0 = 1;
-        led_data[i].duration0 = 8;
-        led_data[i].level1 = 0;
-        led_data[i].duration1 = 4;
-      } else {
-        led_data[i].level0 = 1;
-        led_data[i].duration0 = 4;
-        led_data[i].level1 = 0;
-        led_data[i].duration1 = 8;
+  if (requiredSize <= led_data_size) {
+    if (pin != rmtPin) {
+      if (rmtPin >= 0) {
+        rmtDeinit(rmtPin);
+        rmtPin = -1;
       }
-      i++;
+      if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000)) {
+        log_e("Failed to init RMT TX mode on pin %d", pin);
+        return;
+      }
+      rmtPin = pin;
     }
-  }
 
-  //pinMode(pin, OUTPUT);  // don't do this, will cause the rmt to disable!
-  rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
+    int i=0;
+    for (int b=0; b < numBytes; b++) {
+      for (int bit=0; bit<8; bit++){
+        if ( pixels[b] & (1<<(7-bit)) ) {
+          led_data[i].level0 = 1;
+          led_data[i].duration0 = 8;
+          led_data[i].level1 = 0;
+          led_data[i].duration1 = 4;
+        } else {
+          led_data[i].level0 = 1;
+          led_data[i].duration0 = 4;
+          led_data[i].level1 = 0;
+          led_data[i].duration1 = 8;
+        }
+        i++;
+      }
+    }
+
+    //pinMode(pin, OUTPUT);  // don't do this, will cause the rmt to disable!
+    rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
+  }
 }
 
 
@@ -219,6 +258,6 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
 }
 
 #endif // ifndef IDF5
- 
+
 
 #endif // ifdef(ESP32)
