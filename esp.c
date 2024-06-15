@@ -33,6 +33,8 @@
 
 #ifdef HAS_ESP_IDF_5
 
+static SemaphoreHandle_t show_mutex = NULL;
+
 void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
   // Note: Because rmtPin is shared between all instances, we will
   //  end up releasing/initializing the RMT channels each time we
@@ -46,13 +48,8 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
   static rmt_data_t *led_data = NULL;
   static uint32_t led_data_size = 0;
   static int rmtPin = -1;
-  static SemaphoreHandle_t show_mutex = NULL;
 
-  if (!show_mutex) {
-    show_mutex = xSemaphoreCreateMutex();
-  }
-
-  if (xSemaphoreTake(show_mutex, SEMAPHORE_TIMEOUT_MS / portTICK_PERIOD_MS) == pdTRUE) {
+  if (show_mutex && xSemaphoreTake(show_mutex, SEMAPHORE_TIMEOUT_MS / portTICK_PERIOD_MS) == pdTRUE) {
     uint32_t requiredSize = numBytes * 8;
     if (requiredSize > led_data_size) {
       free(led_data);
@@ -111,6 +108,14 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     }
 
     xSemaphoreGive(show_mutex);
+  }
+}
+
+// To avoid race condition initializing the mutex, all instances of
+//  Adafruit_NeoPixel must be constructed before launching and child threads
+void espInit() {
+  if (!show_mutex) {
+    show_mutex = xSemaphoreCreateMutex();
   }
 }
 
