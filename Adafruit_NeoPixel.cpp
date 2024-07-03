@@ -224,7 +224,162 @@ void  Adafruit_NeoPixel::rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBy
     // Bits for transmission must be shifted to top 8 bits
     pio_sm_put_blocking(pio, sm, ((uint32_t)*pixels++)<< 24);
 }
+#elif defined(ARDUINO_ARCH_CH32)
 
+// F_CPU is defined to SystemCoreClock (not constant number)
+#if SYSCLK_FREQ_144MHz_HSE == 144000000 || SYSCLK_FREQ_HSE == 144000000 || \
+  SYSCLK_FREQ_144MHz_HSI == 144000000 || SYSCLK_FREQ_HSI == 144000000
+#define CH32_F_CPU 144000000
+
+#elif SYSCLK_FREQ_120MHz_HSE == 120000000 || SYSCLK_FREQ_HSE == 120000000 || \
+  SYSCLK_FREQ_120MHz_HSI == 120000000 || SYSCLK_FREQ_HSI == 120000000
+#define CH32_F_CPU 120000000
+
+#elif SYSCLK_FREQ_96MHz_HSE == 96000000 || SYSCLK_FREQ_HSE == 96000000 || \
+  SYSCLK_FREQ_96MHz_HSI == 96000000 || SYSCLK_FREQ_HSI == 96000000
+#define CH32_F_CPU 96000000
+
+#elif SYSCLK_FREQ_72MHz_HSE == 72000000 || SYSCLK_FREQ_HSE == 72000000 || \
+  SYSCLK_FREQ_72MHz_HSI == 72000000 || SYSCLK_FREQ_HSI == 72000000
+#define CH32_F_CPU 72000000
+
+#elif SYSCLK_FREQ_56MHz_HSE == 56000000 || SYSCLK_FREQ_HSE == 56000000 || \
+  SYSCLK_FREQ_56MHz_HSI == 56000000 || SYSCLK_FREQ_HSI == 56000000
+#define CH32_F_CPU 56000000
+
+#elif SYSCLK_FREQ_48MHz_HSE == 48000000 || SYSCLK_FREQ_HSE == 48000000 || \
+  SYSCLK_FREQ_48MHz_HSI == 48000000 || SYSCLK_FREQ_HSI == 48000000
+#define CH32_F_CPU 48000000
+
+#endif
+
+static void ch32Show(GPIO_TypeDef* ch_port, uint32_t ch_pin, uint8_t* pixels, uint32_t numBytes, bool is800KHz) {
+  // not support 400khz
+  if (!is800KHz) return;
+
+  volatile uint32_t* set = &ch_port->BSHR;
+  volatile uint32_t* clr = &ch_port->BCR;
+
+  uint8_t* ptr = pixels;
+  uint8_t* end = ptr + numBytes;
+  uint8_t p = *ptr++;
+  uint8_t bitMask = 0x80;
+
+  // NVIC_DisableIRQ(SysTicK_IRQn);
+
+  while (1) {
+    if (p & bitMask) { // ONE
+      // High 800ns
+      *set = ch_pin;
+      __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop;"
+#if CH32_F_CPU >= 72000000
+        "nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 96000000
+        "nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 120000000
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 144000000
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+        );
+
+      // Low 450ns
+      *clr = ch_pin;
+      __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop;"
+#if CH32_F_CPU >= 72000000
+        "nop; nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 96000000
+        "nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 120000000
+        "nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 144000000
+        "nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+        );
+    } else {   // ZERO
+      // High 400ns
+      *set = ch_pin;
+      __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop;"
+#if CH32_F_CPU >= 72000000
+        "nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 96000000
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 120000000
+        "nop; nop; nop; "
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 144000000
+        "nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+        );
+
+      // Low 850ns
+      *clr = ch_pin;
+      __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop;"
+#if CH32_F_CPU >= 72000000
+        "nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 96000000
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 120000000
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop;"
+#endif
+#if CH32_F_CPU >= 144000000
+        "nop; nop; nop; nop;"
+        "nop; nop; nop; nop; nop; nop; nop; nop; nop; nop; nop;"
+#endif
+        );
+    }
+
+    if (bitMask >>= 1) {
+      // Move on to the next pixel
+      asm("nop;");
+    }
+    else {
+      if (ptr >= end) {
+        break;
+      }
+      p = *ptr++;
+      bitMask = 0x80;
+    }
+  }
+
+  // NVIC_EnableIRQ(SysTicK_IRQn);
+}
 #endif
 
 #if defined(ESP8266)
@@ -282,8 +437,8 @@ void Adafruit_NeoPixel::show(void) {
     // state, computes 'pin high' and 'pin low' values, and writes these back
     // to the PORT register as needed.
 
-    // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
-    // ESP32 may not disable interrupts because espShow() uses RMT which tries to acquire locks
+  // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
+  // ESP32 may not disable interrupts because espShow() uses RMT which tries to acquire locks
 #if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
@@ -3108,6 +3263,8 @@ if(is800KHz) {
     }
   }
 
+#elif defined(ARDUINO_ARCH_CH32)
+  ch32Show(gpioPort, gpioPin, pixels, numBytes, is800KHz);
 #else
 #error Architecture not supported
 #endif
@@ -3141,6 +3298,15 @@ void Adafruit_NeoPixel::setPin(int16_t p) {
 #if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
   gpioPort = digitalPinToPort(p);
   gpioPin = STM_LL_GPIO_PIN(digitalPinToPinName(p));
+#elif defined(ARDUINO_ARCH_CH32)
+  PinName const pin_name = digitalPinToPinName(pin);
+  gpioPort = get_GPIO_Port(CH_PORT(pin_name));
+  gpioPin = CH_GPIO_PIN(pin_name);
+  #if defined (CH32V20x_D6)
+  if (gpioPort == GPIOC && ((*(volatile uint32_t*)0x40022030) & 0x0F000000) == 0) {
+    gpioPin = gpioPin >> 13;
+  }
+  #endif
 #endif
 }
 
@@ -3553,4 +3719,4 @@ neoPixelType Adafruit_NeoPixel::str2order(const char *v) {
   }
   if (w < 0) w = r; // If 'w' not specified, duplicate r bits
   return (w << 6) | (r << 4) | ((g & 3) << 2) | (b & 3);
-} 
+}
