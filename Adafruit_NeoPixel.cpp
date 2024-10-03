@@ -45,6 +45,13 @@
 
 #include "Adafruit_NeoPixel.h"
 
+#define barrier() __asm__ __volatile__ ("" ::: "memory")
+
+#undef REPRODUCE_TEENSY_TIMING
+#ifdef REPRODUCE_TEENSY_TIMING
+#include "imxrt.h"
+#endif
+
 #if defined(TARGET_LPC1768)
 #include <time.h>
 #endif
@@ -1912,16 +1919,32 @@ void Adafruit_NeoPixel::show(void) {
   ARM_DEMCR |= ARM_DEMCR_TRCENA;
   ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 
+#ifdef REPRODUCE_TEENSY_TIMING
+	// reproducer for the timing issue
+	{
+		static uint8_t ct;
+
+		//if (!(ct & 1)) {
+		if (true) {
+			asm("dsb");
+			asm("isb");
+			SCB_CACHE_ICIALLU = 0UL;
+			asm("dsb");
+			asm("isb");
+		}
+		ct++;
+	}
+#endif
+
 #if defined(NEO_KHZ400) // 800 KHz check needed only if 400 KHz support enabled
   if (is800KHz) {
 #endif
-    cyc = ARM_DWT_CYCCNT + CYCLES_800;
+    cyc = ARM_DWT_CYCCNT;  // make sure it's initialised..
     while (p < end) {
       pix = *p++;
       for (mask = 0x80; mask; mask >>= 1) {
-        while (ARM_DWT_CYCCNT - cyc < CYCLES_800)
-          ;
         cyc = ARM_DWT_CYCCNT;
+        barrier();
         *set = msk;
         if (pix & mask) {
           while (ARM_DWT_CYCCNT - cyc < CYCLES_800_T1H)
@@ -1931,10 +1954,11 @@ void Adafruit_NeoPixel::show(void) {
             ;
         }
         *clr = msk;
+        barrier();
+        while (ARM_DWT_CYCCNT - cyc < CYCLES_800)
+            ;
       }
     }
-    while (ARM_DWT_CYCCNT - cyc < CYCLES_800)
-      ;
 #if defined(NEO_KHZ400)
   } else { // 400 kHz bitstream
     cyc = ARM_DWT_CYCCNT + CYCLES_400;
