@@ -54,6 +54,11 @@
 #include <Arduino.h>
 #endif
 
+#if defined(TARGET_GIGA) || defined(TARGET_M4)
+#include "mbed.h"
+#include "pinDefinitions.h"
+#endif
+
 #if defined(ARDUINO_ARCH_RP2040)
 #include <stdlib.h>
 #include "hardware/pio.h"
@@ -401,6 +406,9 @@ protected:
 #if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(ARDUINO_ARCH_CH32)
   GPIO_TypeDef *gpioPort; ///< Output GPIO PORT
   uint32_t gpioPin;       ///< Output GPIO PIN
+#endif
+#if defined(TARGET_GIGA) || defined(TARGET_M4)
+  mbed::DigitalInOut *gpio;
 #endif
 #if defined(ARDUINO_ARCH_RP2040)
   PIO pio = pio0;
