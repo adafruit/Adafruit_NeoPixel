@@ -2657,7 +2657,7 @@ if(is800KHz) {
 
 #elif defined(__SAMD51__) // M4
 
-  uint8_t *ptr, *end, p, bitMask, portNum, bit;
+  uint8_t *ptr, *end, p, bitMask, portNum;
   uint32_t pinMask;
 
   portNum = g_APinDescription[pin].ulPort;
