@@ -1141,7 +1141,7 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     bit = 8;
 
-    asm volatile("head20:"
+    asm volatile("head20%=:"
                  "\n\t" // Clk  Pseudocode    (T =  0)
                  "st   %a[port], %[hi]"
                  "\n\t" // 2    PORT = hi     (T =  2)
@@ -1155,7 +1155,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 1    next = lo     (T =  7)
                  "dec  %[bit]"
                  "\n\t" // 1    bit--         (T =  8)
-                 "breq nextbyte20"
+                 "breq nextbyte20%="
                  "\n\t" // 1-2  if(bit == 0)
                  "rol  %[byte]"
                  "\n\t" // 1    b <<= 1       (T = 10)
@@ -1167,9 +1167,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    nop nop       (T = 16)
                  "rjmp .+0"
                  "\n\t" // 2    nop nop       (T = 18)
-                 "rjmp head20"
+                 "rjmp head20%="
                  "\n\t" // 2    -> head20 (next bit out)
-                 "nextbyte20:"
+                 "nextbyte20%=:"
                  "\n\t" //                    (T = 10)
                  "st   %a[port], %[lo]"
                  "\n\t" // 2    PORT = lo     (T = 12)
@@ -1181,7 +1181,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    b = *ptr++    (T = 16)
                  "sbiw %[count], 1"
                  "\n\t" // 2    i--           (T = 18)
-                 "brne head20"
+                 "brne head20%="
                  "\n" // 2    if(i != 0) -> (next byte)
                  : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
                    [next] "+r"(next), [count] "+w"(i)
@@ -1690,7 +1690,7 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     bit = 8;
 
-    asm volatile("head20:"
+    asm volatile("head20%=:"
                  "\n\t" // Clk  Pseudocode    (T =  0)
                  "st   %a[port],  %[hi]"
                  "\n\t" // 2    PORT = hi     (T =  2)
@@ -1704,7 +1704,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    PORT = next   (T =  7)
                  "mov  %[next] ,  %[lo]"
                  "\n\t" // 1    next = lo     (T =  8)
-                 "breq nextbyte20"
+                 "breq nextbyte20%="
                  "\n\t" // 1-2  if(bit == 0) (from dec above)
                  "rol  %[byte]"
                  "\n\t" // 1    b <<= 1       (T = 10)
@@ -1718,9 +1718,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 1    nop           (T = 16)
                  "rjmp .+0"
                  "\n\t" // 2    nop nop       (T = 18)
-                 "rjmp head20"
+                 "rjmp head20%="
                  "\n\t" // 2    -> head20 (next bit out)
-                 "nextbyte20:"
+                 "nextbyte20%=:"
                  "\n\t" //                    (T = 10)
                  "ldi  %[bit]  ,  8"
                  "\n\t" // 1    bit = 8       (T = 11)
@@ -1732,7 +1732,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 1    nop           (T = 16)
                  "sbiw %[count], 1"
                  "\n\t" // 2    i--           (T = 18)
-                 "brne head20"
+                 "brne head20%="
                  "\n" // 2    if(i != 0) -> (next byte)
                  : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
                    [next] "+r"(next), [count] "+w"(i)
@@ -1753,7 +1753,7 @@ void Adafruit_NeoPixel::show(void) {
     next = lo;
     bit = 8;
 
-    asm volatile("head40:"
+    asm volatile("head40%=:"
                  "\n\t" // Clk  Pseudocode    (T =  0)
                  "st   %a[port], %[hi]"
                  "\n\t" // 2    PORT = hi     (T =  2)
@@ -1785,7 +1785,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 1    next = lo     (T = 24)
                  "dec  %[bit]"
                  "\n\t" // 1    bit--         (T = 25)
-                 "breq nextbyte40"
+                 "breq nextbyte40%="
                  "\n\t" // 1-2  if(bit == 0)
                  "rol  %[byte]"
                  "\n\t" // 1    b <<= 1       (T = 27)
@@ -1801,9 +1801,9 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    nop nop       (T = 36)
                  "rjmp .+0"
                  "\n\t" // 2    nop nop       (T = 38)
-                 "rjmp head40"
+                 "rjmp head40%="
                  "\n\t" // 2    -> head40 (next bit out)
-                 "nextbyte40:"
+                 "nextbyte40%=:"
                  "\n\t" //                    (T = 27)
                  "ldi  %[bit]  , 8"
                  "\n\t" // 1    bit = 8       (T = 28)
@@ -1817,7 +1817,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    nop nop       (T = 36)
                  "sbiw %[count], 1"
                  "\n\t" // 2    i--           (T = 38)
-                 "brne head40"
+                 "brne head40%="
                  "\n" // 1-2  if(i != 0) -> (next byte)
                  : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
                    [next] "+r"(next), [count] "+w"(i)
