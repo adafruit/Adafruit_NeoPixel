@@ -92,6 +92,11 @@ Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
   }
   init = true;
 #endif
+#if defined(ESP32)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  espInit();
+#endif
+#endif
 }
 
 /*!
@@ -389,6 +394,7 @@ extern "C" IRAM_ATTR void espShow(uint16_t pin, uint8_t *pixels,
 #elif defined(ESP32)
 extern "C" void espShow(uint16_t pin, uint8_t *pixels, uint32_t numBytes,
                         uint8_t type);
+
 #endif // ESP8266
 
 #if defined(K210)
