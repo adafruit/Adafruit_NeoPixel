@@ -75,12 +75,15 @@
               NeoPixels expecting an 800 KHz (vs 400 KHz) data stream
               with color bytes expressed in green, red, blue order per
               pixel.
+  @param   s  Static Array that can be used to store the RGB values. 
+              Default value is a nullptr
   @return  Adafruit_NeoPixel object. Call the begin() function before use.
 */
-Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t)
+Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, int16_t p, neoPixelType t, uint8_t *s)
     : begun(false), brightness(0), pixels(NULL), endTime(0) {
+  s ? isStatic = true : isStatic = false;
   updateType(t);
-  updateLength(n);
+  updateLength(n, s);
   setPin(p);
 #if defined(ARDUINO_ARCH_RP2040)
   // Find a free SM on one of the PIO's
@@ -122,7 +125,9 @@ Adafruit_NeoPixel::Adafruit_NeoPixel()
   @brief   Deallocate Adafruit_NeoPixel object, set data pin back to INPUT.
 */
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
-  free(pixels);
+  if(!isStatic){
+    free(pixels);
+  }
   if (pin >= 0)
     pinMode(pin, INPUT);
 }
@@ -143,22 +148,32 @@ void Adafruit_NeoPixel::begin(void) {
            strip object. Old data is deallocated and new data is cleared.
            Pin number and pixel format are unchanged.
   @param   n  New length of strip, in pixels.
+  @param   s  Pointer to the static array for the LED Values. If there is not 
+              static array, default arguement is nullptr
   @note    This function is deprecated, here only for old projects that
            may still be calling it. New projects should instead use the
            'new' keyword with the first constructor syntax (length, pin,
            type).
 */
-void Adafruit_NeoPixel::updateLength(uint16_t n) {
-  free(pixels); // Free existing data (if any)
+void Adafruit_NeoPixel::updateLength(uint16_t n, uint8_t *s) {
 
-  // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * ((wOffset == rOffset) ? 3 : 4);
-  if ((pixels = (uint8_t *)malloc(numBytes))) {
-    memset(pixels, 0, numBytes);
+  if(s){
     numLEDs = n;
+    numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+    pixels = s;
   } else {
-    numLEDs = numBytes = 0;
+    free(pixels); // Free existing data (if any)
+
+    // Allocate new data -- note: ALL PIXELS ARE CLEARED
+    numBytes = n * ((wOffset == rOffset) ? 3 : 4);
+    if ((pixels = (uint8_t *)malloc(numBytes))) {
+      memset(pixels, 0, numBytes);
+      numLEDs = n;
+    } else {
+      numLEDs = numBytes = 0;
+    }
   }
+  
 }
 
 /*!
@@ -191,10 +206,12 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 
   // If bytes-per-pixel has changed (and pixel data was previously
   // allocated), re-allocate to new size. Will clear any data.
-  if (pixels) {
-    bool newThreeBytesPerPixel = (wOffset == rOffset);
-    if (newThreeBytesPerPixel != oldThreeBytesPerPixel)
-      updateLength(numLEDs);
+  if(!isStatic){
+    if (pixels) {
+      bool newThreeBytesPerPixel = (wOffset == rOffset);
+      if (newThreeBytesPerPixel != oldThreeBytesPerPixel)
+        updateLength(numLEDs);
+    }
   }
 }
 
