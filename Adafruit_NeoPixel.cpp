@@ -417,6 +417,12 @@ extern "C" void k210Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes,
            very device-specific peripherals to work around it.
 */
 void Adafruit_NeoPixel::show(void) {
+
+#ifndef ARDUINO_ARCH_ESP32
+  if (!pixels)
+    return;
+#endif
+
   // Data latch = 300+ microsecond pause in the output stream. Rather than
   // put a delay at the end of the function, the ending time is noted and
   // the function will simply hold off (if needed) on issuing the
