@@ -122,11 +122,14 @@ Adafruit_NeoPixel::Adafruit_NeoPixel()
   @brief   Deallocate Adafruit_NeoPixel object, set data pin back to INPUT.
 */
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
+#ifdef ARDUINO_ARCH_ESP32
+  // Release RMT resources (RMT channels and led_data)
+  // by indirectly calling into espShow()
+  memset(pixels, 0, numBytes);
+  numLEDs = numBytes = 0;
+  show();
+#endif
   free(pixels);
-  #ifdef ARDUINO_ARCH_ESP32
-  // Release RMT resources (RMT channel and led_data)
-  espShow(pin, NULL, 0, true);
-  #endif
   if (pin >= 0)
     pinMode(pin, INPUT);
 }
