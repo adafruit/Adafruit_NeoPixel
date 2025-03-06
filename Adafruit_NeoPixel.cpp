@@ -125,7 +125,7 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   free(pixels);
   #ifdef ARDUINO_ARCH_ESP32
   // Release RMT resources (RMT channel and led_data)
-  espShow(pin, NULL, 0, true, NEO_RGB);
+  espShow(pin, NULL, 0, true);
   #endif
   if (pin >= 0)
     pinMode(pin, INPUT);
