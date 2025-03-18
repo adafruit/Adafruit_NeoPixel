@@ -3278,6 +3278,9 @@ if(is800KHz) {
 
 #elif defined(ARDUINO_ARCH_CH32)
   ch32Show(gpioPort, gpioPin, pixels, numBytes, is800KHz);
+#elif defined(ARDUINO_ARCH_RP2040) && defined(__riscv)
+  // Use PIO
+  rp2040Show(pin, pixels, numBytes, is800KHz);
 #else
 #error Architecture not supported
 #endif
