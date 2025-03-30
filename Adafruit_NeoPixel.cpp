@@ -2521,21 +2521,21 @@ void Adafruit_NeoPixel::show(void) {
   XMC_GPIO_PORT_t*  XMC_port = mapping_port_pin[ pin ].port;
   uint8_t  XMC_pin           = mapping_port_pin[ pin ].pin;
 
-	uint32_t omrhigh = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_HIGH << XMC_pin;
-	uint32_t omrlow  = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
+  uint32_t omrhigh = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_HIGH << XMC_pin;
+  uint32_t omrlow  = (uint32_t)XMC_GPIO_OUTPUT_LEVEL_LOW << XMC_pin;
 
 #ifdef NEO_KHZ400 // 800 KHz check needed only if 400 KHz support enabled
   if(is800KHz) {
 #endif
     for(;;) {
-			XMC_port->OMR = omrhigh;
+      XMC_port->OMR = omrhigh;
       asm("nop; nop; nop; nop;");
       if(p & bitMask) {
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop;");
-			  XMC_port->OMR = omrlow;
+        XMC_port->OMR = omrlow;
       } else {
-				XMC_port->OMR = omrlow;
+        XMC_port->OMR = omrlow;
         asm("nop; nop; nop; nop; nop; nop; nop; nop;"
             "nop; nop;");
       }
@@ -2865,7 +2865,7 @@ if(is800KHz) {
     // ToDo!
   }
 #endif
-#elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
+#elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(__OPENCR__)
   uint8_t *p = pixels, *end = p + numBytes, pix = *p++, mask = 0x80;
   uint32_t cyc;
   uint32_t saveLoad = SysTick->LOAD, saveVal = SysTick->VAL;
@@ -2875,14 +2875,24 @@ if(is800KHz) {
     uint32_t top = (F_CPU / 800000);       // 1.25µs
     uint32_t t0 = top - (F_CPU / 2500000); // 0.4µs
     uint32_t t1 = top - (F_CPU / 1250000); // 0.8µs
+    
     SysTick->LOAD = top - 1; // Config SysTick for NeoPixel bit freq
     SysTick->VAL = 0;        // Set to start value
     for (;;) {
-      LL_GPIO_SetOutputPin(gpioPort, gpioPin);
+      #if defined(__OPENCR__)
+        digitalWrite(pin,HIGH);
+      #else
+        LL_GPIO_SetOutputPin(gpioPort, gpioPin);
+      #endif
       cyc = (pix & mask) ? t1 : t0;
+
       while (SysTick->VAL > cyc)
         ;
-      LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      #if defined(__OPENCR__)
+        digitalWrite(pin,LOW);
+      #else
+       LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      #endif
       if (!(mask >>= 1)) {
         if (p >= end)
           break;
@@ -2895,16 +2905,27 @@ if(is800KHz) {
 #if defined(NEO_KHZ400)
   } else {                                 // 400 kHz bitstream
     uint32_t top = (F_CPU / 400000);       // 2.5µs
-    uint32_t t0 = top - (F_CPU / 2000000); // 0.5µs
-    uint32_t t1 = top - (F_CPU / 833333);  // 1.2µs
-    SysTick->LOAD = top - 1; // Config SysTick for NeoPixel bit freq
+    #ifndef __OPENCR__
+      uint32_t t0 = top - (F_CPU / 2000000); // 0.5µs
+      uint32_t t1 = top - (F_CPU / 833333);  // 1.2µs
+    #endif
+    SysTick->LOAD = top -1; // Config SysTick for NeoPixel bit freq
     SysTick->VAL = 0;        // Set to start value
     for (;;) {
-      LL_GPIO_SetOutputPin(gpioPort, gpioPin);
-      cyc = (pix & mask) ? t1 : t0;
+   #if defined(__OPENCR__)
+        digitalWrite(pin,HIGH);
+        cyc = (pix & mask) ;
+      #else
+        LL_GPIO_SetOutputPin(gpioPort, gpioPin);
+        cyc = (pix & mask) ? t1 : t0;
+      #endif
       while (SysTick->VAL > cyc)
         ;
-      LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      #if defined(__OPENCR__)
+        digitalWrite(pin,LOW);
+      #else
+       LL_GPIO_ResetOutputPin(gpioPort, gpioPin);
+      #endif
       if (!(mask >>= 1)) {
         if (p >= end)
           break;
