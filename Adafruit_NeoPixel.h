@@ -208,6 +208,15 @@ static const uint8_t PROGMEM _NeoPixelGammaTable[256] = {
     218, 220, 223, 225, 227, 230, 232, 235, 237, 240, 242, 245, 247, 250, 252,
     255};
 
+/* Declare external methods required by the Adafruit_NeoPixel implementation
+    for specific hardware/library versions
+*/
+#if defined(ESP32)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+extern "C" void espInit();
+#endif
+#endif
+
 /*!
     @brief  Class that stores state and functions for interacting with
             Adafruit NeoPixels and compatible devices.
@@ -398,7 +407,7 @@ protected:
   volatile uint8_t *port; ///< Output PORT register
   uint8_t pinMask;        ///< Output PORT bitmask
 #endif
-#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
+#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(ARDUINO_ARCH_CH32)
   GPIO_TypeDef *gpioPort; ///< Output GPIO PORT
   uint32_t gpioPin;       ///< Output GPIO PIN
 #endif
