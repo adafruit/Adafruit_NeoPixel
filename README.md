@@ -61,6 +61,7 @@ Compatibility notes: Port A is not supported on any AVR processors at this time
   - Infineon XMC1100 2Go @ 32 MHz
   - Infineon XMC1300 BootKit  @ 32 MHz
   - Infineon XMC4700 RelaxKit, XMC4800 RelaxKit, XMC4800 IoT Amazon FreeRTOS Kit @ 144 MHz
+  - Sipeed Maix Bit (K210 processor)
 
   Check forks for other architectures not listed here!
 
