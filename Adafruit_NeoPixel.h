@@ -407,7 +407,7 @@ protected:
   volatile uint8_t *port; ///< Output PORT register
   uint8_t pinMask;        ///< Output PORT bitmask
 #endif
-#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(ARDUINO_ARCH_CH32)
+#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(ARDUINO_ARCH_CH32) || defined(_PY32_DEF_)
   GPIO_TypeDef *gpioPort; ///< Output GPIO PORT
   uint32_t gpioPin;       ///< Output GPIO PIN
 #endif

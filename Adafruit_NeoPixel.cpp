@@ -2869,7 +2869,7 @@ if(is800KHz) {
     // ToDo!
   }
 #endif
-#elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
+#elif defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(_PY32_DEF_)
   uint8_t *p = pixels, *end = p + numBytes, pix = *p++, mask = 0x80;
   uint32_t cyc;
   uint32_t saveLoad = SysTick->LOAD, saveVal = SysTick->VAL;
@@ -3356,6 +3356,9 @@ void Adafruit_NeoPixel::setPin(int16_t p) {
 #if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32)
   gpioPort = digitalPinToPort(p);
   gpioPin = STM_LL_GPIO_PIN(digitalPinToPinName(p));
+#elif defined(_PY32_DEF_)
+  gpioPort = digitalPinToPort(p);
+  gpioPin = PY32_LL_GPIO_PIN(digitalPinToPinName(p));
 #elif defined(ARDUINO_ARCH_CH32)
   PinName const pin_name = digitalPinToPinName(pin);
   gpioPort = get_GPIO_Port(CH_PORT(pin_name));
