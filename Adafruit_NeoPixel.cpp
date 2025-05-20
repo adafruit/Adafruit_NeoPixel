@@ -2988,7 +2988,8 @@ if(is800KHz) {
   unsigned int bitmask = (1 << g_ADigitalPinMap[pin]);
   // https://github.com/sandeepmistry/arduino-nRF5/blob/dc53980c8bac27898fca90d8ecb268e11111edc1/variants/BBCmicrobit/variant.cpp
 
-  volatile unsigned int *reg = (unsigned int *)(0x50000000UL + 0x508);
+  //volatile unsigned int *reg = (unsigned int *)(0x50000000UL + 0x508);
+  volatile uint32_t *reg = (uint32_t *)(NRF_GPIO_BASE + offsetof(NRF_GPIO_Type, OUTSET));
 
   // https://github.com/sandeepmistry/arduino-nRF5/blob/dc53980c8bac27898fca90d8ecb268e11111edc1/cores/nRF5/SDK/components/device/nrf51.h
   // http://www.iot-programmer.com/index.php/books/27-micro-bit-iot-in-c/chapters-micro-bit-iot-in-c/47-micro-bit-iot-in-c-fast-memory-mapped-gpio?showall=1
@@ -3004,7 +3005,7 @@ if(is800KHz) {
       "L%=_nextbit:"
       "\n\t" //;            C0
       //    str r1, [r3, #0]    ; pin := hi  C2
-      "strb %[bitmask], [%[reg], #0]"
+      "str %[bitmask], [%[reg], #0]"
       "\n\t" //; pin := hi  C2
       //    tst r6, r0          ;            C3
       "tst %[mask], %[pix]"
@@ -3013,7 +3014,7 @@ if(is800KHz) {
       "bne L%=_islate"
       "\n\t" //;            C4
       //    str r1, [r2, #0]    ; pin := lo  C6
-      "strb %[bitmask], [%[reg], #4]"
+      "str %[bitmask], [%[reg], #4]"
       "\n\t" //; pin := lo  C6
       // .islate:
       "L%=_islate:"
@@ -3048,7 +3049,7 @@ if(is800KHz) {
       "L%=_common:"
       "\n\t" //;            C13
       //    str r1, [r2, #0]   ; pin := lo   C15
-      "strb %[bitmask], [%[reg], #4]"
+      "str %[bitmask], [%[reg], #4]"
       "\n\t" //; pin := lo  C15
       //    ; always re-load byte - it just fits with the cycles better this way
       //    ldrb r0, [r4, #0]  ; r0 := *r4   C17
@@ -3070,7 +3071,7 @@ if(is800KHz) {
       "L%=_stop:"
       "\n\t"
       //    str r1, [r2, #0]   ; pin := lo
-      "strb %[bitmask], [%[reg], #4]"
+      "str %[bitmask], [%[reg], #4]"
       "\n\t" //; pin := lo
       //    cpsie i            ; enable irq
 
