@@ -4,24 +4,27 @@
 
 bool Adafruit_NeoPixel::rp2040claimPIO(void) {
   // Find a PIO with enough available space in its instruction memory
-  pio = pio0;
-  if (pio_can_add_program(pio, &ws2812_program)) {
-    pio_program_offset = pio_add_program(pio, &ws2812_program);
-  } else {
-    // ok try pio1
-    pio = pio1;
-    if (pio_can_add_program(pio, &ws2812_program)) {
-      pio_program_offset = pio_add_program(pio, &ws2812_program);
-    } else {
-      // ok try pio2 (RP2350)
-      pio = pio2;
-      if (pio_can_add_program(pio, &ws2812_program)) {
+  pio = NULL;
+
+#ifdef pio2
+  // RP2350 - has 3 PIOs
+  PIO pios[] = {pio0, pio1, pio2};
+#else
+  // RP2040 - has 2 PIOs  
+  PIO pios[] = {pio0, pio1};
+#endif
+
+  uint8_t pio_count = sizeof(pios) / sizeof(pios[0]);
+
+  for (uint8_t i = 0; i < pio_count; i++) {
+    if (pio_can_add_program(pios[i], &ws2812_program)) {
+        pio = pios[i];
         pio_program_offset = pio_add_program(pio, &ws2812_program);
-      } else {
-        pio = NULL;
-        return false;
-      }
+        break;
     }
+  }
+  if (pio == NULL) {
+    return false; // No PIO available
   }
 
   // Find a free SM on one of the PIO's
