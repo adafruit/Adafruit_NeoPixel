@@ -138,6 +138,7 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
 
 /*!
   @brief   Configure NeoPixel pin for output.
+  @returns False if we weren't able to claim resources required
 */
 bool Adafruit_NeoPixel::begin(void) {
   if (pin >= 0) {
