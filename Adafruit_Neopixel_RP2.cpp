@@ -6,31 +6,13 @@ bool Adafruit_NeoPixel::rp2040claimPIO(void) {
   // Find a PIO with enough available space in its instruction memory
   pio = NULL;
 
-#ifdef pio2
-  // RP2350 - has 3 PIOs
-  PIO pios[] = {pio0, pio1, pio2};
-#else
-  // RP2040 - has 2 PIOs  
-  PIO pios[] = {pio0, pio1};
-#endif
-
-  uint8_t pio_count = sizeof(pios) / sizeof(pios[0]);
-
-  for (uint8_t i = 0; i < pio_count; i++) {
-    if (pio_can_add_program(pios[i], &ws2812_program)) {
-        pio = pios[i];
-        pio_program_offset = pio_add_program(pio, &ws2812_program);
-        break;
-    }
-  }
-  if (pio == NULL) {
+  if (! pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program, 
+                                                         &pio, &pio_sm, &pio_program_offset, 
+                                                         pin, 1, true)) {
+    pio = NULL;
+    pio_sm = -1;
+    pio_program_offset = 0;
     return false; // No PIO available
-  }
-
-  // Find a free SM on one of the PIO's
-  pio_sm = pio_claim_unused_sm(pio, false);  // don't panic
-  if (pio_sm < 0) {
-    return false;
   }
 
   // yay ok!
@@ -50,13 +32,7 @@ void Adafruit_NeoPixel::rp2040releasePIO(void) {
   if (pio == NULL) 
     return;
 
-  pio_remove_program(pio, &ws2812_program, pio_program_offset);
-
-  if (pio_sm < 0)
-    return;
-
-  pio_sm_set_enabled(pio, pio_sm, false);
-  pio_sm_unclaim(pio, pio_sm);
+  pio_remove_program_and_unclaim_sm(&ws2812_program, pio, pio_sm,  pio_program_offset);
 }
 
 

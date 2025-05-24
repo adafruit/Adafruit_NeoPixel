@@ -388,8 +388,8 @@ private:
   void   rp2040releasePIO(void);
   void   rp2040Show(uint8_t *pixels, uint32_t numBytes);
   PIO    pio = NULL;
-  int8_t pio_sm = -1;
-  uint32_t pio_program_offset = 0;
+  uint   pio_sm = -1;
+  uint   pio_program_offset = 0;
 #endif
 
 protected:
