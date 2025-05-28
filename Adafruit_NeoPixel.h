@@ -37,12 +37,7 @@
 #define ADAFRUIT_NEOPIXEL_H
 
 #ifdef ARDUINO
-#if (ARDUINO >= 100)
 #include <Arduino.h>
-#else
-#include <WProgram.h>
-#include <pins_arduino.h>
-#endif
 
 #ifdef USE_TINYUSB // For Serial when selecting TinyUSB
 #include <Adafruit_TinyUSB.h>
@@ -235,7 +230,7 @@ public:
   Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
-  void begin(void);
+  bool begin(void);
   void show(void);
   void setPin(int16_t p);
   void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
@@ -389,15 +384,20 @@ public:
 
 private:
 #if defined(ARDUINO_ARCH_RP2040)
-  void  rp2040Init(uint8_t pin, bool is800KHz);
-  void  rp2040Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz);
+  bool   rp2040claimPIO(void);
+  void   rp2040releasePIO(void);
+  void   rp2040Show(uint8_t *pixels, uint32_t numBytes);
+  PIO    pio = NULL;
+  uint   pio_sm = -1;
+  uint   pio_program_offset = 0;
 #endif
 
 protected:
 #ifdef NEO_KHZ400 // If 400 KHz NeoPixel support enabled...
   bool is800KHz; ///< true if 800 KHz pixels
 #endif
-  bool begun;         ///< true if begin() previously called
+
+  bool begun;         ///< true if begin() previously called successfully
   uint16_t numLEDs;   ///< Number of RGB LEDs in strip
   uint16_t numBytes;  ///< Size of 'pixels' buffer below
   int16_t pin;        ///< Output pin number (-1 if not yet set)
@@ -408,22 +408,24 @@ protected:
   uint8_t bOffset;    ///< Index of blue byte
   uint8_t wOffset;    ///< Index of white (==rOffset if no white)
   uint32_t endTime;   ///< Latch timing reference
+
 #ifdef __AVR__
   volatile uint8_t *port; ///< Output PORT register
   uint8_t pinMask;        ///< Output PORT bitmask
 #endif
-#if defined(ARDUINO_ARCH_STM32) || defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || defined(ARDUINO_ARCH_CH32) || defined(_PY32_DEF_)
+
+#if defined(ARDUINO_ARCH_STM32) || \
+    defined(ARDUINO_ARCH_ARDUINO_CORE_STM32) || \
+    defined(ARDUINO_ARCH_CH32) || \
+    defined(_PY32_DEF_)
   GPIO_TypeDef *gpioPort; ///< Output GPIO PORT
   uint32_t gpioPin;       ///< Output GPIO PIN
 #endif
+
 #if defined(TARGET_GIGA) || defined(TARGET_M4)
   mbed::DigitalInOut *gpio;
 #endif
-#if defined(ARDUINO_ARCH_RP2040)
-  PIO pio = pio0;
-  int sm = 0;
-  bool init = true;
-#endif
+
 };
 
 #endif // ADAFRUIT_NEOPIXEL_H
