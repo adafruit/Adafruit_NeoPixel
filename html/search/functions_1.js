@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['begin',['begin',['../class_adafruit___neo_pixel.html#ac1cb16509be644232ce0e28d250083da',1,'Adafruit_NeoPixel']]]
+  ['begin',['begin',['../class_adafruit___neo_pixel.html#a8a44d3d56666547290d151ab4c44cf91',1,'Adafruit_NeoPixel']]]
 ];
