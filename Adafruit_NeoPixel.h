@@ -54,7 +54,8 @@
 #include "pinDefinitions.h"
 #endif
 
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(ARDUINO_ARCH_RP2040) && (PICO_SDK_VERSION_MAJOR > 1)
+#define USE_RP2040_PIO
 #include <stdlib.h>
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
@@ -383,7 +384,7 @@ public:
   static neoPixelType str2order(const char *v);
 
 private:
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(USE_RP2040_PIO)
   bool   rp2040claimPIO(void);
   void   rp2040releasePIO(void);
   void   rp2040Show(uint8_t *pixels, uint32_t numBytes);

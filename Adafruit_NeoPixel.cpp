@@ -126,7 +126,7 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
 #endif
 
 
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(USE_RP2040_PIO)
   // Release any PIO
   rp2040releasePIO();
 #endif
@@ -149,14 +149,13 @@ bool Adafruit_NeoPixel::begin(void) {
     return false;
   }
 
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(USE_RP2040_PIO)
   // if we're calling begin() again, unclaim any existing PIO resc.
   rp2040releasePIO();
   if (! rp2040claimPIO()) {
     begun = false;
     return false;
   }
-  
 #endif
 
   begun = true;
@@ -1890,7 +1889,7 @@ void Adafruit_NeoPixel::show(void) {
   }
     // ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due, RP2040 -------------------
 
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(USE_RP2040_PIO)
   // Use PIO
   rp2040Show(pixels, numBytes);
 
@@ -3365,7 +3364,7 @@ if(is800KHz) {
 
 #elif defined(ARDUINO_ARCH_CH32)
   ch32Show(gpioPort, gpioPin, pixels, numBytes, is800KHz);
-#elif defined(ARDUINO_ARCH_RP2040) && defined(__riscv)
+#elif defined(USE_RP2040_PIO) && defined(__riscv)
   rp2040Show(pixels, numBytes);  // Use PIO
 #else
 #error Architecture not supported
