@@ -1,5 +1,3 @@
-//#if defined(ARDUINO_ARCH_RP2040)  // RP2040 specific driver
-//&& (PICO_SDK_VERSION_MAJOR > 1)
 #include "Adafruit_NeoPixel.h"
 #if defined(USE_RP2040_PIO)
 
