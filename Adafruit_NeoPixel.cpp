@@ -1828,69 +1828,9 @@ void Adafruit_NeoPixel::show(void) {
 
 #elif defined(__arm__)
 
-#if defined(TARGET_GIGA) || defined(TARGET_M4)
-  // Arduino GIGA -----------------------------------------------------------
-  uint8_t *p = pixels, *end = p + numBytes, pix;
-  while (p < end)
-  {
-    pix = *p++;
-    for (int i = 7; i >= 0; i--)
-    {
-      // gpio_write(&gpio->gpio, 1);
-      gpio->write(1);
-
-      // duty cycle determines bit value
-      // if (pix & 0x80)
-      if (bitRead(pix, i) == 0)
-      {
-        // one
-        // wait_ns(400); -> 192 cycles
-#if defined(TARGET_GIGA)
-        for (int j = 0; j < 96; j++)
-#else
-        for (int j = 0; j < 48; j++)
-#endif
-          __NOP();
-
-        // gpio_write(&gpio->gpio, 0);
-        gpio->write(0);
-
-        // wait_ns(850) -> 408 cycles
-#if defined(TARGET_GIGA)
-        for (int j = 0; j < 204; j++)
-#else
-        for (int j = 0; j < 102; j++)
-#endif
-          __NOP();
-      }
-      else
-      {
-        // zero
-        // wait_ns(800) -> 384 cycles
-#if defined(TARGET_GIGA)
-        for (int j = 0; j < 192; j++)
-#else
-        for (int j = 0; j < 96; j++)
-#endif
-          __NOP();
-
-        gpio->write(0);
-        // gpio_write(&gpio->gpio, 0);
-        // wait_ns(450) -> 216 cycles
-#if defined(TARGET_GIGA)
-        for (int j = 0; j < 108; j++)
-#else
-        for (int j = 0; j < 54; j++)
-#endif
-          __NOP();
-      }
-
-      // pix = pix << 1; // shift to next bit
-    }
-  }
     // ARM MCUs -- Teensy 3.0, 3.1, LC, Arduino Due, RP2040 -------------------
 
-#elif defined(ARDUINO_ARCH_RP2040)
+#if defined(ARDUINO_ARCH_RP2040)
   // Use PIO
   rp2040Show(pixels, numBytes);
 
@@ -3412,14 +3352,6 @@ void Adafruit_NeoPixel::setPin(int16_t p) {
     gpioPin = gpioPin >> 13;
   }
   #endif
-#endif
-#if defined(TARGET_GIGA) || defined(TARGET_M4)
-  gpio = digitalPinToGpio(pin);
-  if (gpio == NULL)
-  {
-      gpio = new mbed::DigitalInOut(digitalPinToPinName(pin), PIN_OUTPUT, PullNone, 0);
-      digitalPinToGpio(pin) = gpio;
-  }
 #endif
 }
 
