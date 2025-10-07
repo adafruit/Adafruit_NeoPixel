@@ -400,6 +400,12 @@ extern "C" void espShow(uint16_t pin, uint8_t *pixels, uint32_t numBytes,
 extern "C" void k210Show(uint8_t pin, uint8_t *pixels, uint32_t numBytes,
                          boolean is800KHz);
 #endif // KENDRYTE_K210
+
+
+#if defined(ARDUINO_ARCH_PSOC6)
+extern "C" void psoc6_show(uint8_t pin, uint8_t *pixels, uint32_t numBytes,
+                         boolean is800KHz);
+#endif
 /*!
   @brief   Transmit pixel data in RAM to NeoPixels.
   @note    On most architectures, interrupts are temporarily disabled in
@@ -442,6 +448,10 @@ void Adafruit_NeoPixel::show(void) {
   // ESP32 may not disable interrupts because espShow() uses RMT which tries to acquire locks
 #if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   noInterrupts(); // Need 100% focus on instruction timing
+#endif
+
+#if defined(ARDUINO_ARCH_PSOC6)
+  psoc6_show(pin, pixels, numBytes, is800KHz);
 #endif
 
 #if defined(__AVR__)
