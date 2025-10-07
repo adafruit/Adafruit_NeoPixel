@@ -53,7 +53,8 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     uint32_t requiredSize = numBytes * 8;
     if (requiredSize > led_data_size) {
       free(led_data);
-      if (led_data = (rmt_data_t *)malloc(requiredSize * sizeof(rmt_data_t))) {
+      led_data = (rmt_data_t *)malloc(requiredSize * sizeof(rmt_data_t));
+      if (led_data != NULL) {
         led_data_size = requiredSize;
       } else {
         led_data_size = 0;
