@@ -135,7 +135,7 @@ static void releaseSpiHost(spi_host_device_t spi_host)
   - High bit (1): 110 (binary) → ~800ns high, ~400ns low
   Ported directly from Espressif led_strip_spi_dev.cpp    
 */
-static uint32_t encodeLeds800hz(uint8_t *pixels, uint32_t numBytes, uint8_t *SpiBuffer) {
+static uint32_t encodeLeds800hz(uint8_t *pixels, uint8_t MaxPower, uint32_t numBytes, uint8_t *SpiBuffer) {
 uint8_t* buf;
     // WS2812 timing via SPI at 2.5MHz (400ns per bit):
     // Each LED bit needs 3 SPI bits:
@@ -154,8 +154,9 @@ uint8_t* buf;
       buf=&SpiBuffer[i * 3];
     // Buffer is zero-initialized, so we only need to set high bits
     // Process each bit from MSB (bit 7) to LSB (bit 0)
+    uint8_t LedPixel = (pixels[i] * MaxPower) / 255;
     for (int bit = 7; bit >= 0; bit--) {
-          uint8_t pattern = (pixels[i] & (1 << bit)) ? 0b110 : 0b100;  // High bit: 110, Low bit: 100
+          uint8_t pattern = (LedPixel & (1 << bit)) ? 0b110 : 0b100;  // High bit: 110, Low bit: 100
 
         // Map LED bit position to SPI byte/bit positions
         int spi_bit_offset = (7 - bit) * 3;  // Each LED bit → 3 SPI bits
@@ -179,20 +180,21 @@ uint8_t* buf;
 /*!
   @brief Encode a single LED color byte to SPI bits (WS2811)
   @param data LED color byte (0-255)
-  @param buf Output buffer (must be zeroed, 10 bytes / LED byte)
+  @param buf Output buffer (must be zeroed, 10 bytes / LED byte)0
   @return Length in bits
   @note  WS2811 timing via SPI at 4.0MHz (250ns per SPI bit):
     Each LED bit needs 10 SPI bits.
     LED '0' → 1100000000 (2×250ns high + 8×250ns low = 500ns + 2000ns)
     LED '1' → 1111100000 (5×250ns high + 5×250ns low = 1250ns + 1250ns)
 */
-uint32_t encodeLeds400hz(uint8_t *pixels, uint32_t numBytes, uint8_t *SpiBuffer) {
+uint32_t encodeLeds400hz(uint8_t *pixels, uint8_t MaxPower, uint32_t numBytes, uint8_t *SpiBuffer) {
     uint8_t Highbits=0;
     uint8_t Lowbits=0;
     uint32_t Bitpos=0;
     for (uint32_t i = 0; i < numBytes; i++) {
+      uint8_t LedPixel = (pixels[i] * MaxPower) / 255;
       for (uint32_t bit = 0x80; bit; bit >>= 1) {
-        if (pixels[i] & bit) {
+        if (LedPixel & bit) {
           Highbits =5;
           Lowbits =5;
         }
@@ -331,10 +333,29 @@ void espShowInit(uint8_t pin, uint32_t numBytes, bool is800KHz)
            encoding each byte and managing the SPI transaction with synchronization via a semaphore. 
            It supports both 800KHz and other timing modes, and handles errors during SPI queueing and transaction completion.
 */
-extern "C" void espShow( uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool is800KHz) {
   
+
+extern "C" void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz, uint32_t maxCurrent, uint32_t CurrentPerLED,boolean Dynamic) {
+uint8_t MaxPower=0xff;
+uint32_t PowerUsed=0;  
   if(numBytes>0)
   {
+    if( CurrentPerLED != 0)
+    {
+      if(Dynamic) {
+        for (uint32_t i = 0; i < numBytes; i++) {
+        PowerUsed += (pixels[i] * CurrentPerLED) / 255;
+        } 
+        if(PowerUsed > maxCurrent) 
+          MaxPower = (maxCurrent*0xff)/PowerUsed;
+      } else 
+      {
+        if( CurrentPerLED != 0 && numBytes * CurrentPerLED > maxCurrent) 
+          MaxPower = ((maxCurrent*0xff)/numBytes)/CurrentPerLED;
+        else 
+          MaxPower = 0xff;
+      }
+    }
     espShowInit( pin,numBytes,is800KHz);         
     for(int attempt=0;attempt<1;attempt++) {
       SpiBuffer = (uint8_t *)malloc(SpiBufferlen); // 3 or 10 bytes per LED byte
@@ -349,9 +370,9 @@ extern "C" void espShow( uint8_t pin, uint8_t *pixels, uint32_t numBytes, bool i
         // Encode LED buffer to SPI buffer and return the length in bits
         memset(SpiBuffer, 0, SpiBufferlen);     // Buffer is zero-initialized, so we only need to set high bits
     if(is800KHz) {
-            mTransaction.length = encodeLeds800hz(pixels, numBytes, SpiBuffer);
+            mTransaction.length = encodeLeds800hz(pixels, MaxPower, numBytes, SpiBuffer);
     } else {
-            mTransaction.length = encodeLeds400hz(pixels, numBytes, SpiBuffer);
+            mTransaction.length = encodeLeds400hz(pixels, MaxPower, numBytes, SpiBuffer);
     }
         if (show_mutex && xSemaphoreTake(show_mutex, SEMAPHORE_TIMEOUT_MS / portTICK_PERIOD_MS) == pdTRUE) {
     mTransaction.tx_buffer = SpiBuffer;

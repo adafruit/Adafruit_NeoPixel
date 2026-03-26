@@ -385,10 +385,10 @@ static void ch32Show(GPIO_TypeDef* ch_port, uint32_t ch_pin, uint8_t* pixels, ui
 #if defined(ESP8266)
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
 extern "C" IRAM_ATTR void espShow(uint16_t pin, uint8_t *pixels,
-                                  uint32_t numBytes, uint8_t type);
+                                  uint32_t numBytes, uint8_t type, uint32_t maxCurrent, uint32_t CurrentPerLED, boolean Dynamic);
 #elif defined(ESP32)
 extern "C" void espShow(uint16_t pin, uint8_t *pixels, uint32_t numBytes,
-                        uint8_t type);
+                        uint8_t type, uint32_t maxCurrent, uint32_t CurrentPerLED, boolean Dynamic);
 
 #endif // ESP8266
 
@@ -3210,7 +3210,7 @@ if(is800KHz) {
   // ESP8266 ----------------------------------------------------------------
 
   // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
-  espShow(pin, pixels, numBytes, is800KHz);
+  espShow(pin, pixels, numBytes, is800KHz, maxCurrent, CurrentPerLED,DynamicCurrent);
 
 #elif defined(KENDRYTE_K210)
 
@@ -3692,7 +3692,26 @@ void Adafruit_NeoPixel::setBrightness(uint8_t b) {
   @return  Brightness value: 0 = minimum (off), 255 = maximum.
 */
 uint8_t Adafruit_NeoPixel::getBrightness(void) const { return brightness - 1; }
-
+/*!
+  @brief   Set the maximum current (in milliamps) that the strip should draw, and
+           the estimated current per LED. This is used to limit brightness
+           when a large number of LEDs are used, to avoid overloading the
+           power supply or damaging the strip. The library will automatically
+           scale back brightness to stay within the specified current limit.
+  @param   mAmaxCurrent  Maximum current in milliamps that the strip should draw.
+  @param   mAPerLED      Estimated current per LED in milliamps. 
+           This should be the maximum current draw of a single LED at full brightness, 
+           which is typically around 60 mA for RGB Device and 80 mA for RGBW Device, 
+           This will be 20 mA or for a LED, so adjust accordingly,
+           but check your specific strip's datasheet for accurate values.
+  @param   Dynamic  If true, the library will dynamically adjust brightness to stay within the current limit as the number of lit LEDs changes.
+*/
+void Adafruit_NeoPixel::setMaxCurrent(uint32_t mAmaxCurrent,uint32_t mAPerLED,bool Dynamic)
+{
+  maxCurrent = mAmaxCurrent;
+  CurrentPerLED = mAPerLED;
+  DynamicCurrent = Dynamic;
+}
 /*!
   @brief   Fill the whole NeoPixel strip with 0 / black / off.
 */

@@ -41,7 +41,7 @@
 
 static SemaphoreHandle_t show_mutex = NULL;
 
-void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz, uint32_t maxCurrent, uint32_t CurrentPerLED,boolean Dynamic) {
   // Note: Because rmtPin is shared between all instances, we will
   //  end up releasing/initializing the RMT channels each time we
   //  invoke on different pins. This is probably ok, just not
@@ -54,7 +54,24 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
   static rmt_data_t *led_data = NULL;
   static uint32_t led_data_size = 0;
   static int rmtPin = -1;
-
+  uint8_t MaxPower=0xff;
+  uint32_t PowerUsed=0;
+  if( CurrentPerLED != 0)
+  {
+    if(Dynamic) {
+      for (uint32_t i = 0; i < numBytes; i++) {
+      PowerUsed += (pixels[i] * CurrentPerLED) / 255;
+      } 
+      if(PowerUsed > maxCurrent) 
+        MaxPower = (maxCurrent*0xff)/PowerUsed;
+    } else 
+    {
+      if( CurrentPerLED != 0 && numBytes * CurrentPerLED > maxCurrent) 
+        MaxPower = ((maxCurrent*0xff)/numBytes)/CurrentPerLED;
+      else 
+        MaxPower = 0xff;
+    }
+  }
   if (show_mutex && xSemaphoreTake(show_mutex, SEMAPHORE_TIMEOUT_MS / portTICK_PERIOD_MS) == pdTRUE) {
     uint32_t requiredSize = numBytes * 8;
     if (requiredSize > led_data_size) {
@@ -93,9 +110,11 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
 
       if (rmtPin >= 0) {
         int i=0;
+        uint8_t LedPixel;
         for (int b=0; b < numBytes; b++) {
+          LedPixel = (pixels[b] * MaxPower) / 255;
           for (int bit=0; bit<8; bit++){
-            if ( pixels[b] & (1<<(7-bit)) ) {
+            if ( LedPixel & (1<<(7-bit)) ) {
               led_data[i].level0 = 1;
               led_data[i].duration0 = 8;
               led_data[i].level1 = 0;
@@ -109,7 +128,6 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
             i++;
           }
         }
-
         rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
       }
     }
