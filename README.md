@@ -1,6 +1,7 @@
 # Adafruit NeoPixel Library [![Build Status](https://github.com/adafruit/Adafruit_NeoPixel/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_NeoPixel/actions)[![Documentation](https://github.com/adafruit/ci-arduino/blob/master/assets/doxygen_badge.svg)](http://adafruit.github.io/Adafruit_NeoPixel/html/index.html)
 
-This is a Version that will suppprt the ESP32C2 on the SPI port.
+This is a Version that will suppprt the ESP32C2 on the SPI port.  
+But when used the **-D ADAFRUIT_SPI** Define it will use the SPI.  
 
 This also has A setMaxCurrent() so that the Current can be limmeted.
 
