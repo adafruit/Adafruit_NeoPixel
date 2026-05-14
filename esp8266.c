@@ -18,11 +18,11 @@ static inline uint32_t _getCycleCount(void) {
 
 #ifdef ESP8266
 IRAM_ATTR void espShow(
- uint8_t pin, uint8_t *pixels, uint32_t numBytes, __attribute__((unused)) boolean is800KHz) {
+ uint8_t pin, uint8_t *pixels, uint32_t numBytes, __attribute__((unused)) boolean is800KHz, uint32_t maxCurrent, uint32_t CurrentPerLED,boolean Dynamic) {
 #else
-void espShow(
- uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz, uint32_t maxCurrent, uint32_t CurrentPerLED,boolean Dynamic) {
 #endif
+uint8_t MaxPower=0xff;
 
 #define CYCLES_800_T0H  (F_CPU / 2500001) // 0.4us
 #define CYCLES_800_T1H  (F_CPU / 1250001) // 0.8us
@@ -38,10 +38,24 @@ void espShow(
   uint32_t pinMask;
   pinMask   = _BV(pin);
 #endif
+uint32_t PowerUsed = 0;
+ if(Dynamic) {
+    for (uint32_t i = 0; i < numBytes; i++) {
+    PowerUsed += (pixels[i] * CurrentPerLED) / 255;
+    } 
+    if(PowerUsed > maxCurrent) 
+      MaxPower = (maxCurrent*0xff)/PowerUsed;
+  } else 
+  {
+    if( CurrentPerLED != 0 && numBytes * CurrentPerLED > maxCurrent) 
+      MaxPower = ((maxCurrent*0xff)/numBytes)/CurrentPerLED;
+    else 
+      MaxPower = 0xff;
+  }
 
   p         =  pixels;
   end       =  p + numBytes;
-  pix       = *p++;
+  pix       = (*p++) * MaxPower / 255;
   mask      = 0x80;
   startTime = 0;
 
@@ -76,7 +90,7 @@ void espShow(
 #endif
     if(!(mask >>= 1)) {                                   // Next bit/byte
       if(p >= end) break;
-      pix  = *p++;
+      pix  = (*p++) * MaxPower / 255;
       mask = 0x80;
     }
   }

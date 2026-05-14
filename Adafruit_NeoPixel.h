@@ -233,6 +233,7 @@ public:
   void setPixelColor(uint16_t n, uint32_t c);
   void fill(uint32_t c = 0, uint16_t first = 0, uint16_t count = 0);
   void setBrightness(uint8_t);
+  void setMaxCurrent(uint32_t mAmaxCurrent,uint32_t mAPerLED=20, bool DynamicCurrent=true);
   void clear(void);
   void updateLength(uint16_t n);
   void updateType(neoPixelType t);
@@ -403,7 +404,10 @@ protected:
   uint8_t bOffset;    ///< Index of blue byte
   uint8_t wOffset;    ///< Index of white (==rOffset if no white)
   uint32_t endTime;   ///< Latch timing reference
-
+  uint32_t maxCurrent=0xffffffff;  ///< Maximum power (in mA) allowed to be delivered to LEDs
+  uint32_t CurrentPerLED=20;  ///< Estimated maximum power (in mA) consumed by each LED at full brightness 
+  bool DynamicCurrent=true; /// to dynamically adjust brightness to stay within maxCurrent
+                            /// if false, brightness will alway be adjusted based on maxCurrent
 #ifdef __AVR__
   volatile uint8_t *port; ///< Output PORT register
   uint8_t pinMask;        ///< Output PORT bitmask

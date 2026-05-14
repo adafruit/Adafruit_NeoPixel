@@ -1,5 +1,10 @@
 # Adafruit NeoPixel Library [![Build Status](https://github.com/adafruit/Adafruit_NeoPixel/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_NeoPixel/actions)[![Documentation](https://github.com/adafruit/ci-arduino/blob/master/assets/doxygen_badge.svg)](http://adafruit.github.io/Adafruit_NeoPixel/html/index.html)
 
+This is a Version that will suppprt the ESP32C2 on the SPI port.  
+But when used the **-D ADAFRUIT_SPI** Define it will use the SPI.  
+
+This also has A setMaxCurrent() so that the Current can be limmeted.
+
 Arduino library for controlling single-wire-based LED pixels and strip such as the [Adafruit 60 LED/meter Digital LED strip][strip], the [Adafruit FLORA RGB Smart Pixel][flora], the [Adafruit Breadboard-friendly RGB Smart Pixel][pixel], the [Adafruit NeoPixel Stick][stick], and the [Adafruit NeoPixel Shield][shield].
 
 After downloading, rename folder to 'Adafruit_NeoPixel' and install in Arduino Libraries folder. Restart Arduino IDE, then open File->Sketchbook->Library->Adafruit_NeoPixel->strandtest sketch.
@@ -80,6 +85,7 @@ Compatibility notes: Port A is not supported on any AVR processors at this time
 - delay_ns()
 - setPin()
 - setPixelColor()
+- setMaxCurrent() 
 - fill()
 - ColorHSV()
 - getPixelColor()
