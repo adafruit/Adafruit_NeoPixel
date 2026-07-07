@@ -21,6 +21,108 @@
 
 #include <Arduino.h>
 
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP8684)
+
+// ---------------------------------------------------------------------
+// SPI "clock-less" driver for chips without an RMT peripheral
+// (ESP32-C2 / ESP8684 / ESP32-C61)
+// ---------------------------------------------------------------------
+#include "driver/spi_master.h"
+
+#define WS2812_SPI_CLOCK_HZ (2400000)
+
+static spi_device_handle_t ws2812_spi = NULL;
+static int ws2812_spi_pin = -1;
+
+static void ws2812_spi_encode(const uint8_t *pixels, uint32_t numBytes, uint8_t *out) {
+  for (uint32_t b = 0; b < numBytes; b++) {
+    uint32_t acc = 0;
+    uint8_t byte = pixels[b];
+    for (int bit = 7; bit >= 0; bit--) {
+      acc <<= 3;
+      acc |= (byte & (1 << bit)) ? 0b110 : 0b100;
+    }
+    out[b * 3 + 0] = (acc >> 16) & 0xFF;
+    out[b * 3 + 1] = (acc >> 8) & 0xFF;
+    out[b * 3 + 2] = acc & 0xFF;
+  }
+}
+
+static bool ws2812_spi_init(uint8_t pin) {
+  if (ws2812_spi != NULL && ws2812_spi_pin == pin) {
+    return true;
+  }
+  if (ws2812_spi != NULL) {
+    spi_bus_remove_device(ws2812_spi);
+    spi_bus_free(SPI2_HOST);
+    ws2812_spi = NULL;
+  }
+
+  spi_bus_config_t buscfg = {
+    .mosi_io_num = pin,
+    .miso_io_num = -1,
+    .sclk_io_num = -1,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    .max_transfer_sz = 4096,
+  };
+  if (spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO) != ESP_OK) {
+    return false;
+  }
+
+  spi_device_interface_config_t devcfg = {
+    .clock_speed_hz = WS2812_SPI_CLOCK_HZ,
+    .mode = 0,
+    .spics_io_num = -1,
+    .queue_size = 1,
+    .flags = SPI_DEVICE_HALFDUPLEX,
+  };
+  if (spi_bus_add_device(SPI2_HOST, &devcfg, &ws2812_spi) != ESP_OK) {
+    spi_bus_free(SPI2_HOST);
+    return false;
+  }
+
+  ws2812_spi_pin = pin;
+
+  // SPI bus init can produce a short glitch pulse on MOSI (~6 µs).
+  // Ensure RESET condition (>50 µs low) before first transmission.
+  delayMicroseconds(60);
+
+  return true;
+}
+
+void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+  (void)is800KHz;
+
+  if (!ws2812_spi_init(pin)) {
+    log_e("Failed to init SPI for WS2812 on pin %d (no RMT on this chip)", pin);
+    return;
+  }
+
+  static uint8_t *spi_buf = NULL;
+  static uint32_t spi_buf_size = 0;
+  uint32_t neededSize = numBytes * 3;
+
+  if (neededSize > spi_buf_size) {
+    free(spi_buf);
+    spi_buf = (uint8_t *)malloc(neededSize);
+    spi_buf_size = spi_buf ? neededSize : 0;
+  }
+  if (!spi_buf) {
+    log_e("Failed to allocate SPI encode buffer (%d bytes)", neededSize);
+    return;
+  }
+
+  ws2812_spi_encode(pixels, numBytes, spi_buf);
+
+  spi_transaction_t t = {0};
+  t.length = neededSize * 8;
+  t.tx_buffer = spi_buf;
+  spi_device_transmit(ws2812_spi, &t);
+}
+
+#else // not C2/ESP8684 -- existing RMT-based implementation follows
+
 #if defined(ESP_IDF_VERSION)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
 #define HAS_ESP_IDF_4
@@ -28,6 +130,7 @@
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #define HAS_ESP_IDF_5
 #endif
+#endif // CONFIG_IDF_TARGET_ESP32C2 / ESP8684
 #endif
 
 
