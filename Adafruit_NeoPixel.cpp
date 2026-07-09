@@ -3622,10 +3622,12 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
       // attempts to scale back to an approximation of the original 24-bit
       // value used when setting the pixel color, but there will always be
       // some error -- those bits are simply gone. Issue is most
-      // pronounced at low brightness levels.
-      return (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) << 8) |
-             ((uint32_t)(p[bOffset] << 8) / brightness);
+      // pronounced at low brightness levels. Rounding to the nearest
+      // value (instead of truncating) reduces this error on average.
+      uint8_t half = brightness >> 1;
+      return ((((uint32_t)(p[rOffset] << 8) + half) / brightness) << 16) |
+             ((((uint32_t)(p[gOffset] << 8) + half) / brightness) << 8) |
+             (((uint32_t)(p[bOffset] << 8) + half) / brightness);
     } else {
       // No brightness adjustment has been made -- return 'raw' color
       return ((uint32_t)p[rOffset] << 16) | ((uint32_t)p[gOffset] << 8) |
@@ -3634,10 +3636,11 @@ uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
   } else { // Is RGBW-type device
     p = &pixels[n * 4];
     if (brightness) { // Return scaled color
-      return (((uint32_t)(p[wOffset] << 8) / brightness) << 24) |
-             (((uint32_t)(p[rOffset] << 8) / brightness) << 16) |
-             (((uint32_t)(p[gOffset] << 8) / brightness) << 8) |
-             ((uint32_t)(p[bOffset] << 8) / brightness);
+      uint8_t half = brightness >> 1;
+      return ((((uint32_t)(p[wOffset] << 8) + half) / brightness) << 24) |
+             ((((uint32_t)(p[rOffset] << 8) + half) / brightness) << 16) |
+             ((((uint32_t)(p[gOffset] << 8) + half) / brightness) << 8) |
+             (((uint32_t)(p[bOffset] << 8) + half) / brightness);
     } else { // Return raw color
       return ((uint32_t)p[wOffset] << 24) | ((uint32_t)p[rOffset] << 16) |
              ((uint32_t)p[gOffset] << 8) | (uint32_t)p[bOffset];
