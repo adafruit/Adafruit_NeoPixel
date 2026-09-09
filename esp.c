@@ -147,11 +147,19 @@ static uint32_t t1l_ticks = 0;
 // channels (8 on ESP32, 4 on ESP32-S2 and S3). Redefining this value will free
 // any channels with a higher number for other uses, such as IR send-and-recieve
 // libraries. Redefine as 1 to restrict Neopixels to only a single channel.
+#ifndef ADAFRUIT_RMT_CHANNEL_MAX
 #define ADAFRUIT_RMT_CHANNEL_MAX RMT_CHANNEL_MAX
+#endif // ADAFRUIT_RMT_CHANNEL_MAX
+
+// Support offsetting the RMT channels that Neopixels uses, so as to play nice
+// with other libs / user functions that do not (or cannot) do this themselves
+#ifndef ADAFRUIT_RMT_CHANNEL_START
+#define ADAFRUIT_RMT_CHANNEL_START 0
+#endif // ADAFRUIT_RMT_CHANNEL_START
 
 #define RMT_LL_HW_BASE  (&RMT)
 
-bool rmt_reserved_channels[ADAFRUIT_RMT_CHANNEL_MAX];
+bool rmt_reserved_channels[ADAFRUIT_RMT_CHANNEL_MAX - ADAFRUIT_RMT_CHANNEL_START];
 
 static void IRAM_ATTR ws2812_rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,
         size_t wanted_num, size_t *translated_size, size_t *item_num)
@@ -188,9 +196,9 @@ static void IRAM_ATTR ws2812_rmt_adapter(const void *src, rmt_item32_t *dest, si
 void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
     // Reserve channel
     rmt_channel_t channel = ADAFRUIT_RMT_CHANNEL_MAX;
-    for (size_t i = 0; i < ADAFRUIT_RMT_CHANNEL_MAX; i++) {
-        if (!rmt_reserved_channels[i]) {
-            rmt_reserved_channels[i] = true;
+    for (size_t i = ADAFRUIT_RMT_CHANNEL_START; i < ADAFRUIT_RMT_CHANNEL_MAX; i++) {
+        if (!rmt_reserved_channels[i - ADAFRUIT_RMT_CHANNEL_START]) {
+            rmt_reserved_channels[i - ADAFRUIT_RMT_CHANNEL_START] = true;
             channel = i;
             break;
         }
@@ -267,7 +275,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
 
     // Free channel again
     rmt_driver_uninstall(config.channel);
-    rmt_reserved_channels[channel] = false;
+    rmt_reserved_channels[channel - ADAFRUIT_RMT_CHANNEL_START] = false;
 
     gpio_set_direction(pin, GPIO_MODE_OUTPUT);
 }
