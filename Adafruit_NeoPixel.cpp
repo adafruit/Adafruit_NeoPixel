@@ -227,6 +227,60 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 
 #if defined(ARDUINO_ARCH_CH32)
 
+#if defined(CH32V4x7)
+
+/*!
+  @brief  Count CPU ticks across the Arduino core's millisecond SysTick wrap.
+  @param  start  Counter value at the start of the pulse.
+  @param  wrap   Number of ticks in one SysTick period.
+  @return Elapsed ticks, including a counter wrap if one occurred.
+*/
+static inline uint32_t ch32v4x7ElapsedTicks(uint32_t start, uint32_t wrap) {
+  uint32_t now = SysTick->CNT;
+  if (now >= start) {
+    return now - start;
+  }
+  return now + wrap - start;
+}
+
+/*!
+  @brief  Send an 800 kHz pixel buffer on CH32V407/467 at 100 or 200 MHz.
+  @param  ch_port   Output GPIO port.
+  @param  ch_pin    Output pin mask.
+  @param  pixels   RGB or RGBW bytes in wire order.
+  @param  numBytes Number of bytes to transmit.
+  @param  is800KHz True for the supported 800 kHz protocol.
+*/
+static void ch32Show(GPIO_TypeDef *ch_port, uint32_t ch_pin, uint8_t *pixels,
+                     uint32_t numBytes, bool is800KHz) {
+  if (!is800KHz) {
+    return; // As on the other CH32 parts, 400 kHz pixels are not supported.
+  }
+
+  // Allow for GPIO writes and polling overhead. Pad timing is verified with
+  // timer/DMA capture at both supported CPU clocks. SysTick runs at HCLK.
+  const uint32_t wrap = SysTick->CMP + 1;
+  const uint32_t ticksPerMicrosecond = F_CPU / 1000000;
+  const uint32_t period = ticksPerMicrosecond * 1150 / 1000;
+  const uint32_t zeroHigh = ticksPerMicrosecond * 250 / 1000;
+  const uint32_t oneHigh = ticksPerMicrosecond * 700 / 1000;
+  for (uint32_t i = 0; i < numBytes; i++) {
+    uint8_t value = pixels[i];
+    for (uint8_t mask = 0x80; mask; mask >>= 1) {
+      uint32_t highTicks = (value & mask) ? oneHigh : zeroHigh;
+      ch_port->BSHR = ch_pin;
+      uint32_t start = SysTick->CNT;
+      while (ch32v4x7ElapsedTicks(start, wrap) < highTicks) {
+      }
+      ch_port->BCR = ch_pin;
+      while (ch32v4x7ElapsedTicks(start, wrap) < period) {
+      }
+    }
+  }
+}
+
+#else
+
 // F_CPU is defined to SystemCoreClock (not constant number)
 #if SYSCLK_FREQ_144MHz_HSE == 144000000 || SYSCLK_FREQ_HSE == 144000000 || \
   SYSCLK_FREQ_144MHz_HSI == 144000000 || SYSCLK_FREQ_HSI == 144000000
@@ -389,7 +443,8 @@ static void ch32Show(GPIO_TypeDef* ch_port, uint32_t ch_pin, uint8_t* pixels, ui
 
   // NVIC_EnableIRQ(SysTicK_IRQn);
 }
-#endif
+#endif // CH32V4x7
+#endif // ARDUINO_ARCH_CH32
 
 #if defined(ESP8266)
 // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
@@ -455,7 +510,17 @@ void Adafruit_NeoPixel::show(void) {
 
   // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
   // ESP32 may not disable interrupts because espShow() uses RMT which tries to acquire locks
-#if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
+#if defined(ARDUINO_ARCH_CH32) && defined(CH32V4x7)
+  // QingKe V3V uses GINTENR (CSR 0x800) for global interrupt enables. Preserve
+  // the original state, including when show() is called with IRQs disabled.
+  uint32_t irqState;
+  const uint32_t irqEnableMask = 0x88;
+  __asm volatile("csrrc %0, 0x800, %1"
+                 : "=r"(irqState)
+                 : "r"(irqEnableMask)
+                 : "memory");
+  __asm volatile("fence.i" ::: "memory");
+#elif !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   noInterrupts(); // Need 100% focus on instruction timing
 #endif
 
@@ -3332,7 +3397,9 @@ if(is800KHz) {
 
   // END ARCHITECTURE SELECT ------------------------------------------------
 
-#if !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
+#if defined(ARDUINO_ARCH_CH32) && defined(CH32V4x7)
+  __asm volatile("csrw 0x800, %0" : : "r"(irqState) : "memory");
+#elif !(defined(NRF52) || defined(NRF52_SERIES) || defined(ESP32))
   interrupts();
 #endif
 
