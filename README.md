@@ -18,7 +18,7 @@ Compatibility notes: Port A is not supported on any AVR processors at this time
 
 ### First Method
 
-![image](https://user-images.githubusercontent.com/36513474/68967967-3e37f480-0803-11ea-91d9-601848c306ee.png)
+![image](Adafruit%20NeoPixel%20Library%20Selection.png)
 
 1. In the Arduino IDE, navigate to Sketch > Include Library > Manage Libraries
 1. Then the Library Manager will open and you will find a list of libraries that are already installed or ready for installation.
@@ -124,6 +124,21 @@ void loop() {
   }
 }
 ```
+
+### Ring and sensor examples
+
+The following examples drive an 8-LED NeoPixel ring and each document their own
+wiring in a header comment at the top of the sketch. All of them use data pin 4
+and require a 330 ohm resistor in series between the pin and the ring's `DIN`,
+plus a common ground between the ring and the board.
+
+| Example | What it does | Extra hardware |
+| --- | --- | --- |
+| [`demo_modes`](examples/demo_modes) | Cycles six effects every 6 seconds: loading spinner, analog gauge, fireplace flicker, rainbow wheel, emergency strobe, sleep | none |
+| [`potentiometer_power_dial`](examples/potentiometer_power_dial) | Turns a dial into a green-to-pink power ramp, one LED per threshold | potentiometer on A0 |
+
+`demo_modes` runs on a bare ring. Its gauge mode simulates its own sensor input
+over time, so no external hardware is needed for any of the six modes.
 
 ## Contributing
 
