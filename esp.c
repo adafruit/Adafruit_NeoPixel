@@ -80,6 +80,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
         }
         if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000)) {
           log_e("Failed to init RMT TX mode on pin %d", pin);
+          xSemaphoreGive(show_mutex);
           return;
         }
         rmtPin = pin;
