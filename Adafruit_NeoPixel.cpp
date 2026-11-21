@@ -1262,7 +1262,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 18)
                  "brne head20%="
                  "\n" // 2    if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
+                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+d"(bit),
                    [next] "+r"(next), [count] "+w"(i)
                  : [hi] "r"(hi), [lo] "r"(lo), [ptr] "e"(ptr));
   }
@@ -1743,7 +1743,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 28)
                  "brne head30"
                  "\n" // 1-2  if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
+                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+d"(bit),
                    [next] "+r"(next), [count] "+w"(i)
                  : [hi] "r"(hi), [lo] "r"(lo), [ptr] "e"(ptr));
   }
@@ -1813,7 +1813,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 18)
                  "brne head20%="
                  "\n" // 2    if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
+                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+d"(bit),
                    [next] "+r"(next), [count] "+w"(i)
                  : [ptr] "e"(ptr), [hi] "r"(hi), [lo] "r"(lo));
 
@@ -1898,7 +1898,7 @@ void Adafruit_NeoPixel::show(void) {
                  "\n\t" // 2    i--           (T = 38)
                  "brne head40%="
                  "\n" // 1-2  if(i != 0) -> (next byte)
-                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+r"(bit),
+                 : [port] "+e"(port), [byte] "+r"(b), [bit] "+d"(bit),
                    [next] "+r"(next), [count] "+w"(i)
                  : [ptr] "e"(ptr), [hi] "r"(hi), [lo] "r"(lo));
   }
