@@ -51,6 +51,7 @@ Compatibility notes: Port A is not supported on any AVR processors at this time
   - Arduino Due
   - Arduino 101
   - Arm® Cortex®-M7/M4 - RENESAS/STM (Arduino UNO R4, Arduino Portenta H7, Arduino Giga R1)
+  - NXP MCX (FRDM-MCXA153, FRDM-MCXA156, FRDM-MCXN236, FRDM-MCXN947, FRDM-MCXC444) with mcx-arduino-core
   - ATSAMD21 (Arduino Zero/M0 and other SAMD21 boards) @ 48 MHz
   - ATSAMD51 @ 120 MHz
   - Adafruit STM32 Feather @ 120 MHz
