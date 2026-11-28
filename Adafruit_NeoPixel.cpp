@@ -3157,7 +3157,7 @@ if(is800KHz) {
 
 
 // RENESAS including Arduino UNO R4 + STM32H7 Arduino Portenta H7 (Dual Core M7+M4) / Arduino Giga R1
-#elif defined(ARDUINO_ARCH_RENESAS) || defined(ARDUINO_ARCH_RENESAS_UNO) || defined(ARDUINO_ARCH_RENESAS_PORTENTA) || defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#elif defined(ARDUINO_ARCH_RENESAS) || defined(ARDUINO_ARCH_RENESAS_UNO) || defined(ARDUINO_ARCH_RENESAS_PORTENTA) || defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
 
 // Definition for a single channel clockless controller for RA4M1 (Cortex M4)
 // See clockless.h for detailed info on how the template parameters are used.
@@ -3167,7 +3167,7 @@ if(is800KHz) {
 #define ARM_DWT_CTRL_CYCCNTENA          (1 << 0)                // Enable cycle count
 #define ARM_DWT_CYCCNT          (*(volatile uint32_t *)0xE0001004) // Cycle count register
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || (defined(ARDUINO_ARCH_MBED_GIGA) && defined(TARGET_M7))
+#if defined(ARDUINO_PORTENTA_H7_M7) || (defined(ARDUINO_ARCH_MBED_GIGA) && defined(TARGET_M7)) || defined(ARDUINO_NICLA_VISION)
 #define F_CPU 480000000
 #elif defined(ARDUINO_PORTENTA_H7_M4) || (defined(ARDUINO_ARCH_MBED_GIGA) && defined(TARGET_M4)) 
 #define F_CPU 240000000
@@ -3184,7 +3184,7 @@ if(is800KHz) {
   uint8_t *p = pixels, *end = p + numBytes, pix, mask;
 
 // --- Platform-specific Pin Setup ---
-#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
   // Convert the Arduino pin number to an mbed PinName.
   mbed::DigitalOut dout(digitalPinToPinName(pin));
 #else
@@ -3215,7 +3215,7 @@ if(is800KHz) {
           ;
         cyc = ARM_DWT_CYCCNT;
         // Set the pin high:
-#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
         dout = 1;
 #else
         *set = msk;
@@ -3229,7 +3229,7 @@ if(is800KHz) {
             ;
         }
         // Set the pin low:
-#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
         dout = 0;
 #else
         *clr = msk;
@@ -3249,7 +3249,7 @@ if(is800KHz) {
           ;
         cyc = ARM_DWT_CYCCNT;
         // Set the pin high:
-#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
         dout = 1;
 #else
         *set = msk;
@@ -3262,7 +3262,7 @@ if(is800KHz) {
             ;
         }
         // Set the pin low:
-#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
+#if defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA) || defined(ARDUINO_NICLA_VISION)
         dout = 0;
 #else
         *clr = msk;
