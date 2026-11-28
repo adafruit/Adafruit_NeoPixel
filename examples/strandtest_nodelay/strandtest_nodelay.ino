@@ -70,7 +70,7 @@ void loop() {
     patternComplete = false;
     patternPrevious = currentMillis;
     patternCurrent++;                                         //  Advance to next pattern
-    if(patternCurrent >= 7)
+    if(patternCurrent >= 8)
       patternCurrent = 0;
   }
 
