@@ -3156,6 +3156,155 @@ if(is800KHz) {
   TC_Stop(TC1, 0);
 
 
+#elif defined(ARDUINO_ARCH_MCX)
+  // NXP FRDM-MCXA153, FRDM-MCXA156, FRDM-MCXN947, FRDM-MCXN236 (Cortex-M33)
+  // and FRDM-MCXC444 (Cortex-M0+) with mcx-arduino-core. The pin is set and
+  // cleared through its GPIO's set and clear registers, PSOR and PCOR,
+  // which every one of these chips has.
+  GPIO_Type *port = digitalPinToPort(pin);
+  volatile uint32_t *set = &port->PSOR, *clr = &port->PCOR;
+  uint32_t msk = digitalPinToBitMask(pin);
+  uint8_t *ptr = pixels, *end = ptr + numBytes, p, bitMask;
+
+#if defined(__ARM_ARCH_6M__)
+  // FRDM-MCXC444: a 48 MHz Cortex-M0+ with no cycle counter, timed by
+  // counting instructions, as for the SAMD21 (also a 48 MHz Cortex-M0+)
+  p = *ptr++;
+  bitMask = 0x80;
+#if defined(NEO_KHZ400) // 800 KHz check needed only if 400 KHz support enabled
+  if (is800KHz) {
+#endif
+    for (;;) {
+      *set = msk;
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;");
+      if (p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop;");
+        *clr = msk;
+        asm("nop; nop; nop;");
+      } else {
+        *clr = msk;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;");
+      }
+      if (bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if (ptr >= end)
+          break;
+        p = *ptr++;
+        bitMask = 0x80;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop; nop;");
+      }
+    }
+#if defined(NEO_KHZ400)
+  } else { // 400 KHz bitstream
+    for (;;) {
+      *set = msk;
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop;");
+      if (p & bitMask) {
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop;");
+        *clr = msk;
+        asm("nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        *clr = msk;
+        asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop; nop; nop; nop;"
+            "nop; nop; nop; nop; nop;");
+      }
+      asm("nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;"
+          "nop; nop; nop; nop; nop; nop; nop; nop;");
+      if (bitMask >>= 1) {
+        asm("nop; nop; nop; nop; nop; nop; nop;");
+      } else {
+        if (ptr >= end)
+          break;
+        p = *ptr++;
+        bitMask = 0x80;
+      }
+    }
+  }
+#endif // NEO_KHZ400
+
+#else
+  // Cortex-M33 at F_CPU (96 or 150 MHz): each bit timed from its start by
+  // the DWT cycle counter, as for the RA4M1 below. Interrupts are off.
+  // T0H 0.3 us and T1H 0.65 us, short of the usual 0.4 and 0.8: setting
+  // and clearing the pin and reading the counter add 40-60 ns, and that
+  // keeps both inside the narrower windows of the WS2812B V5 (T0H
+  // 0.22-0.38 us) and SK6812 (T1H 0.45-0.75 us) as well as the WS2812B's
+  const uint32_t cyc800T0H = F_CPU / 3333333, // 0.3 us
+                 cyc800T1H = F_CPU / 1538462, // 0.65 us
+                 cyc800 = F_CPU / 800000;     // 1.25 us
+  uint32_t cyc;
+
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+#if defined(NEO_KHZ400) // 800 KHz check needed only if 400 KHz support enabled
+  if (is800KHz) {
+#endif
+    cyc = DWT->CYCCNT + cyc800;
+    while (ptr < end) {
+      p = *ptr++;
+      for (bitMask = 0x80; bitMask; bitMask >>= 1) {
+        while (DWT->CYCCNT - cyc < cyc800)
+          ;
+        cyc = DWT->CYCCNT;
+        *set = msk;
+        if (p & bitMask) {
+          while (DWT->CYCCNT - cyc < cyc800T1H)
+            ;
+        } else {
+          while (DWT->CYCCNT - cyc < cyc800T0H)
+            ;
+        }
+        *clr = msk;
+      }
+    }
+    while (DWT->CYCCNT - cyc < cyc800)
+      ;
+#if defined(NEO_KHZ400)
+  } else { // 400 KHz bitstream
+    const uint32_t cyc400T0H = F_CPU / 2000000, // 0.5 us
+                   cyc400T1H = F_CPU / 833333,  // 1.2 us
+                   cyc400 = F_CPU / 400000;     // 2.5 us
+    cyc = DWT->CYCCNT + cyc400;
+    while (ptr < end) {
+      p = *ptr++;
+      for (bitMask = 0x80; bitMask; bitMask >>= 1) {
+        while (DWT->CYCCNT - cyc < cyc400)
+          ;
+        cyc = DWT->CYCCNT;
+        *set = msk;
+        if (p & bitMask) {
+          while (DWT->CYCCNT - cyc < cyc400T1H)
+            ;
+        } else {
+          while (DWT->CYCCNT - cyc < cyc400T0H)
+            ;
+        }
+        *clr = msk;
+      }
+    }
+    while (DWT->CYCCNT - cyc < cyc400)
+      ;
+  }
+#endif // NEO_KHZ400
+#endif // __ARM_ARCH_6M__
+
 // RENESAS including Arduino UNO R4 + STM32H7 Arduino Portenta H7 (Dual Core M7+M4) / Arduino Giga R1
 #elif defined(ARDUINO_ARCH_RENESAS) || defined(ARDUINO_ARCH_RENESAS_UNO) || defined(ARDUINO_ARCH_RENESAS_PORTENTA) || defined(ARDUINO_ARCH_MBED_PORTENTA) || defined(ARDUINO_ARCH_MBED_GIGA)
 
