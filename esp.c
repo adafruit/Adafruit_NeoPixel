@@ -20,13 +20,110 @@
 #if defined(ESP32)
 
 #include <Arduino.h>
-#include "driver/rmt.h"
 
 #if defined(ESP_IDF_VERSION)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
 #define HAS_ESP_IDF_4
 #endif
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#define HAS_ESP_IDF_5
 #endif
+#endif
+
+
+#ifdef HAS_ESP_IDF_5
+
+static SemaphoreHandle_t show_mutex = NULL;
+
+void espShow(uint16_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+  // Note: Because rmtPin is shared between all instances, we will
+  //  end up releasing/initializing the RMT channels each time we
+  //  invoke on different pins. This is probably ok, just not
+  //  efficient. led_data is shared between all instances but will
+  //  be allocated with enough space for the largest instance; data
+  //  is not used beyond the mutex lock so this should be fine.
+
+#define SEMAPHORE_TIMEOUT_MS 50
+
+  static rmt_data_t *led_data = NULL;
+  static uint32_t led_data_size = 0;
+  static int rmtPin = -1;
+
+  if (show_mutex && xSemaphoreTake(show_mutex, SEMAPHORE_TIMEOUT_MS / portTICK_PERIOD_MS) == pdTRUE) {
+    uint32_t requiredSize = numBytes * 8;
+    if (requiredSize > led_data_size) {
+      free(led_data);
+      led_data = (rmt_data_t *)malloc(requiredSize * sizeof(rmt_data_t));
+      if (led_data != NULL) {
+        led_data_size = requiredSize;
+      } else {
+        led_data_size = 0;
+      }
+    } else if (requiredSize == 0) {
+      // To release RMT resources (RMT channels and led_data), call
+      //  .updateLength(0) to set number of pixels/bytes to zero,
+      //  then call .show() to invoke this code and free resources.
+      free(led_data);
+      led_data = NULL;
+      if (rmtPin >= 0) {
+        rmtDeinit(rmtPin);
+        rmtPin = -1;
+      }
+      led_data_size = 0;
+    }
+
+    if (led_data_size > 0 && requiredSize <= led_data_size) {
+      if (pin != rmtPin) {
+        if (rmtPin >= 0) {
+          rmtDeinit(rmtPin);
+          rmtPin = -1;
+        }
+        if (!rmtInit(pin, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000)) {
+          log_e("Failed to init RMT TX mode on pin %d", pin);
+          return;
+        }
+        rmtPin = pin;
+      }
+
+      if (rmtPin >= 0) {
+        int i=0;
+        for (int b=0; b < numBytes; b++) {
+          for (int bit=0; bit<8; bit++){
+            if ( pixels[b] & (1<<(7-bit)) ) {
+              led_data[i].level0 = 1;
+              led_data[i].duration0 = 8;
+              led_data[i].level1 = 0;
+              led_data[i].duration1 = 4;
+            } else {
+              led_data[i].level0 = 1;
+              led_data[i].duration0 = 4;
+              led_data[i].level1 = 0;
+              led_data[i].duration1 = 8;
+            }
+            i++;
+          }
+        }
+
+        rmtWrite(pin, led_data, numBytes * 8, RMT_WAIT_FOR_EVER);
+      }
+    }
+
+    xSemaphoreGive(show_mutex);
+  }
+}
+
+// To avoid race condition initializing the mutex, all instances of
+//  Adafruit_NeoPixel must be constructed before launching and child threads
+void espInit() {
+  if (!show_mutex) {
+    show_mutex = xSemaphoreCreateMutex();
+  }
+}
+
+#else
+
+#include "driver/rmt.h"
+
 
 // This code is adapted from the ESP-IDF v3.4 RMT "led_strip" example, altered
 // to work with the Arduino version of the ESP-IDF (3.2)
@@ -88,7 +185,7 @@ static void IRAM_ATTR ws2812_rmt_adapter(const void *src, rmt_item32_t *dest, si
     *item_num = num;
 }
 
-void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
+void espShow(uint16_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) {
     // Reserve channel
     rmt_channel_t channel = ADAFRUIT_RMT_CHANNEL_MAX;
     for (size_t i = 0; i < ADAFRUIT_RMT_CHANNEL_MAX; i++) {
@@ -175,4 +272,7 @@ void espShow(uint8_t pin, uint8_t *pixels, uint32_t numBytes, boolean is800KHz) 
     gpio_set_direction(pin, GPIO_MODE_OUTPUT);
 }
 
-#endif
+#endif // ifndef IDF5
+
+
+#endif // ifdef(ESP32)
